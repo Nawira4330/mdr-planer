@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Zuchtplaner – MDR Zucht- &amp; Turnierplaner</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>🐴 Zuchtplaner</h1>
+    <nav>
+      <a class="btn secondary" href="index.html">← Zur Übersicht</a>
+      <a class="btn secondary" href="turnierplaner.html">Turnierplaner</a>
+      <a class="btn secondary" href="https://nawira4330.github.io/mdr-datenbank/" target="_blank" rel="noopener">Pferdedatenbank ↗</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p class="muted small">
+      Nur lesender Zugriff auf die Pferdedatenbank – hier wird nichts
+      gespeichert oder verändert. Die Inzuchtprüfung vergleicht ausschließlich
+      die sichtbaren Namen im Stammbaum (Eltern, Großeltern, Urgroßeltern) auf
+      Dopplungen, sie berechnet keinen Inzuchtkoeffizienten.
+    </p>
+
+    <fieldset>
+      <legend>Stute</legend>
+      <div class="form-grid">
+        <div>
+          <label for="mare-select">Stute auswählen</label>
+          <select id="mare-select"><option value="">– bitte wählen –</option></select>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="inzucht">Inzuchtprüfung</button>
+      <button type="button" class="tab-btn" data-tab="auswahl">Beste Hengstauswahl</button>
+    </div>
+
+    <section id="tab-inzucht" class="tab-panel">
+      <fieldset>
+        <legend>Hengst</legend>
+        <div class="form-grid">
+          <div>
+            <label for="stallion-select">Hengst auswählen</label>
+            <select id="stallion-select"><option value="">– bitte wählen –</option></select>
+          </div>
+        </div>
+      </fieldset>
+      <div id="inzucht-result"></div>
+    </section>
+
+    <section id="tab-auswahl" class="tab-panel" hidden>
+      <p class="small muted">
+        Zeigt alle Hengste, die (nach sichtbarem Stammbaum) nicht mit der
+        gewählten Stute verwandt sind und – falls die Stute Overo trägt –
+        selbst kein Overo tragen. Weitere Auswahlkriterien werden später
+        ergänzt.
+      </p>
+      <div id="auswahl-hint" class="muted small"></div>
+      <div class="table-wrap">
+        <table id="auswahl-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Fellfarbe</th>
+              <th>GP</th>
+              <th>Ext%</th>
+              <th>Int</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="5" class="muted">Bitte zuerst eine Stute auswählen.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p id="load-error" class="error"></p>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/breeding.js"></script>
+  <script src="js/zuchtplaner.js"></script>
+</body>
+</html>

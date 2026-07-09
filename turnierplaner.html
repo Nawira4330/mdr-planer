@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Turnierplaner – MDR Zucht- &amp; Turnierplaner</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>🏆 Turnierplaner</h1>
+    <nav>
+      <a class="btn secondary" href="index.html">← Zur Übersicht</a>
+      <a class="btn secondary" href="zuchtplaner.html">Zuchtplaner</a>
+      <a class="btn secondary" href="https://nawira4330.github.io/mdr-datenbank/" target="_blank" rel="noopener">Pferdedatenbank ↗</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="notice notice-warning">
+      ⚠️ Turnierwert-Berechnung und Prämierungs-Prüfung sind <strong>vorläufig</strong> –
+      die genauen Formeln/Kriterien werden noch ergänzt. Die unten gezeigten Werte
+      sind nur ein grober Platzhalter.
+    </div>
+
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-mode="db">Pferd aus Datenbank</button>
+      <button type="button" class="tab-btn" data-mode="freetext">Freitext</button>
+    </div>
+
+    <section id="mode-db">
+      <fieldset>
+        <legend>Pferd auswählen</legend>
+        <div class="form-grid">
+          <div>
+            <label for="horse-select">Pferd</label>
+            <select id="horse-select"><option value="">– bitte wählen –</option></select>
+          </div>
+        </div>
+      </fieldset>
+    </section>
+
+    <section id="mode-freetext" hidden>
+      <fieldset class="paste-box">
+        <legend>Text von der Pferdeseite einfügen (auch fremde Pferde)</legend>
+        <p class="muted small">
+          Öffne die Pferdeseite im Spiel, markiere die komplette Seite (Strg+A) und
+          kopiere sie (Strg+C). Text hier einfügen und auf "Auslesen" klicken. Es
+          wird nichts gespeichert.
+        </p>
+        <textarea id="raw-text" placeholder="Hier den kopierten Seitentext einfügen…"></textarea>
+        <div class="paste-actions">
+          <button type="button" id="parse-btn">Auslesen</button>
+          <span id="parse-status" class="muted small"></span>
+        </div>
+      </fieldset>
+    </section>
+
+    <p id="load-error" class="error"></p>
+
+    <div id="profile-result"></div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/tournamentScoring.js"></script>
+  <script src="js/turnierplaner.js"></script>
+</body>
+</html>
