@@ -109,7 +109,7 @@ function rowHtml(v) {
   return `<tr>
     <td>${escapeHtml(v.category)}</td>
     <td>${escapeHtml(v.name)}</td>
-    <td>${v.wert != null ? v.wert + '%' : '–'}</td>
+    <td>${v.wert != null ? v.wert : '–'}</td>
     <td>${v.interieur != null ? v.interieur.toFixed(2) : '–'}</td>
     <td>${v.complete && v.lk != null ? 'LK' + v.lk : '–'}</td>
   </tr>`;
