@@ -140,8 +140,14 @@ function extractSimpleTable(lines, startLabel, endLabels) {
   return rows;
 }
 
-// Die genetische Exterieur-Tabelle hat 3 Spalten (Körperteil / Genotyp /
-// Punktzahl) und endet mit einer Gesamtzeile wie "141/224 62.95%".
+// Die genetische Exterieur-Tabelle hat auf dem Desktop 3 Spalten
+// (Körperteil / Genotyp / Punktzahl je Merkmal) und endet mit einer
+// Gesamtzeile wie "141/224 62.95%". In der Handy-Ansicht fehlt sowohl die
+// Punktzahl-Spalte je Zeile als auch die Gesamtzeile komplett (nur 2
+// Spalten: Körperteil / Genotyp) - wird hier mit "score: null" bzw.
+// "overall: null" abgefangen, statt die Zeilen zu verwerfen. "Disziplin"
+// als zusätzlicher Abbruch, da die Handy-Ansicht direkt dorthin springt
+// (ohne die Desktop-only "Leistung"-Zwischenüberschrift).
 function parseExteriorGenetics(lines) {
   const startIdx = lines.indexOf('Exterieur');
   if (startIdx === -1) return { rows: [], overall: null };
@@ -155,10 +161,12 @@ function parseExteriorGenetics(lines) {
       overall = { score: `${totalMatch[1]}/${totalMatch[2]}`, percent: parseFloat(totalMatch[3].replace(',', '.')) };
       break;
     }
-    if (line === 'Leistung' || line === 'Körperbau') break;
+    if (line === 'Leistung' || line === 'Körperbau' || line === 'Disziplin') break;
     const parts = line.split(/\t+/).map((p) => p.trim()).filter(Boolean);
     if (parts.length === 3) {
       rows.push({ label: parts[0], genotype: parts[1], score: parts[2] });
+    } else if (parts.length === 2) {
+      rows.push({ label: parts[0], genotype: parts[1], score: null });
     }
   }
   return { rows, overall };
@@ -167,7 +175,14 @@ function parseExteriorGenetics(lines) {
 // Disziplinen und Eigenschaften bestehen aus Gruppen (z.B. "Western",
 // "Grundlagen"): eine Zeile ohne folgende Prozentwerte ist eine Gruppen-
 // überschrift, eine Zeile gefolgt von zwei "NN %" Zeilen ist ein Eintrag
-// (aktueller Wert / Potenzial).
+// (aktueller Wert / Potenzial). In der Handy-Ansicht wird der aktuelle
+// Wert weggelassen, wenn er 0% ist - dann folgt nur ein einzelner
+// Prozentwert (das Potenzial), der hier als "current: 0" ergänzt wird.
+// "Anstrengung"/"Fitness"/"Erfahrung" (Trainingszustand-Block zwischen der
+// trainierten Kategorie und "Alle Disziplinen anzeigen?") sehen wie eine
+// Disziplin mit nur einem Wert aus, sind aber keine - werden daher
+// ausgeschlossen (dieser Block wird separat in parseTournamentPotential
+// ausgewertet).
 function extractPercentGroups(lines, startLabel, endLabel) {
   const startIdx = lines.indexOf(startLabel);
   if (startIdx === -1) return {};
@@ -180,15 +195,18 @@ function extractPercentGroups(lines, startLabel, endLabel) {
   }
 
   const percentRe = /^\d+(\.\d+)?\s*%$/;
+  const RESERVED_NAMES = new Set(['Anstrengung', 'Fitness', 'Erfahrung']);
   const result = {};
   let currentGroup = null;
 
   for (let i = startIdx + 1; i < endIdx; i++) {
     const line = lines[i];
-    if (!line) continue;
+    if (!line || RESERVED_NAMES.has(line)) continue;
     const p1 = lines[i + 1];
     const p2 = lines[i + 2];
-    if (p1 && p2 && percentRe.test(p1) && percentRe.test(p2)) {
+    const bothPercent = p1 && p2 && percentRe.test(p1) && percentRe.test(p2);
+    const onlyPotential = !bothPercent && p1 && percentRe.test(p1);
+    if (bothPercent) {
       if (!currentGroup) currentGroup = 'Allgemein';
       if (!result[currentGroup]) result[currentGroup] = [];
       result[currentGroup].push({
@@ -197,6 +215,15 @@ function extractPercentGroups(lines, startLabel, endLabel) {
         potential: parseFloat(p2),
       });
       i += 2;
+    } else if (onlyPotential) {
+      if (!currentGroup) currentGroup = 'Allgemein';
+      if (!result[currentGroup]) result[currentGroup] = [];
+      result[currentGroup].push({
+        name: line,
+        current: 0,
+        potential: parseFloat(p1),
+      });
+      i += 1;
     } else {
       currentGroup = line;
     }
@@ -233,17 +260,31 @@ function parseTournamentPotential(lines) {
 // unsortierte Liste aller im Text vorkommenden Vorfahren gespeichert
 // (Name, Rasse, ggf. Potenzial) - in der Reihenfolge, in der sie im Text
 // auftauchen.
+//
+// Die Handy-Ansicht zeigt die Überschrift "Stammbaum" selbst nicht an (nur
+// ein Klapp-Icon ohne Text) - "Besitzhistorie" steht aber unmittelbar davor
+// und existiert in beiden Ansichten, daher als Fallback-Anker. Ebenso fehlt
+// in der Handy-Ansicht die spätere "Exterieur"-Zwischenüberschrift vor
+// "Körperbau" - "Körperbau" selbst (der eigentliche Tabellenkopf) dient
+// daher als zusätzliches Abbruchkriterium. Außerdem blendet die Handy-
+// Ansicht Großeltern/Urgroßeltern über "… anzeigen?"-Zeilen ein und
+// beschriftet dabei jede Vorfahren-Gruppe zusätzlich (z.B. "Eltern des
+// Vaters", "Eltern der Großmutter väterlicherseits") - diese Zeilen sind
+// keine Pferdenamen und werden daher herausgefiltert.
 function parsePedigree(lines) {
-  const startIdx = lines.indexOf('Stammbaum');
+  let startIdx = lines.indexOf('Stammbaum');
+  if (startIdx === -1) startIdx = lines.indexOf('Besitzhistorie');
   if (startIdx === -1) return [];
   let endIdx = lines.length;
   for (let i = startIdx + 1; i < lines.length; i++) {
-    if (lines[i] === 'Exterieur') {
+    if (lines[i] === 'Exterieur' || lines[i] === 'Körperbau') {
       endIdx = i;
       break;
     }
   }
-  const segment = lines.slice(startIdx + 1, endIdx).filter(Boolean);
+  const segment = lines.slice(startIdx + 1, endIdx)
+    .filter(Boolean)
+    .filter((l) => !/anzeigen\?$/.test(l) && !/^Eltern (des|der) /.test(l));
 
   const entries = [];
   let current = null;
