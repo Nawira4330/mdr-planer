@@ -37,6 +37,7 @@
     <section id="mode-db">
       <fieldset>
         <legend>Pferd auswählen</legend>
+        <p class="muted small">Nur Pferde ohne ZZL (Zuchtzulassung) werden angezeigt.</p>
         <div class="form-grid">
           <div>
             <label for="owner-select">Besitzer</label>
@@ -47,6 +48,7 @@
             <select id="horse-select"><option value="">– bitte wählen –</option></select>
           </div>
         </div>
+        <p id="horse-select-empty-hint" class="muted small" hidden>Aktuell haben alle Pferde bereits eine ZZL – keine Auswahl möglich.</p>
       </fieldset>
     </section>
 

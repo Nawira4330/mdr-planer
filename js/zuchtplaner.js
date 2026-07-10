@@ -182,9 +182,9 @@ function foalSectionHtml(mare, stallion) {
   let html = '<div class="result-card">';
   html += '<h2>Fohlen</h2>';
   if (duplicates.length === 0) {
-    html += '<div class="pill yes">Keine Namensdopplung im sichtbaren Stammbaum gefunden</div>';
+    html += '<div class="pill yes">KEINE Inzucht</div>';
   } else {
-    html += '<div class="pill no">Inzucht-Risiko: gemeinsame Namen im sichtbaren Stammbaum</div>';
+    html += '<div class="pill no">INZUCHT!!!</div>';
   }
   if (depth < 14) {
     html += `<p class="small muted">Hinweis: Stammbaum unvollständig erfasst (${depth}/14 bekannte Positionen) – eine Verwandtschaft kann dadurch nicht sicher ausgeschlossen werden.</p>`;

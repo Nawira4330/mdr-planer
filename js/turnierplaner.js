@@ -1,5 +1,5 @@
 const TOURNAMENT_SELECT_FIELDS =
-  'id,name,owner,gender,coat_color,disciplines,traits,tournament_potential,exterior_genetics,exterior_descriptive,temperament,genetic_diseases';
+  'id,name,owner,gender,coat_color,breeding_allowed,disciplines,traits,tournament_potential,exterior_genetics,exterior_descriptive,temperament,genetic_diseases';
 
 let horses = [];
 let currentMode = 'db';
@@ -27,7 +27,11 @@ async function loadHorses() {
       '"migration_005_public_read_access.sql" im Supabase-Dashboard ausgeführt worden sein).';
     return;
   }
-  horses = data || [];
+  // Nur Pferde ohne ZZL (Zuchtzulassung/Leistungsprüfung) - der
+  // Turnierplaner soll ja gerade helfen abzuschätzen, ob ein Pferd seine
+  // Leistungsprüfung bestehen könnte, das ist für bereits zugelassene
+  // Pferde nicht mehr relevant.
+  horses = (data || []).filter((h) => h.breeding_allowed !== true);
 
   const ownerSel = document.querySelector('#owner-select');
   const owners = [...new Set(horses.map((h) => h.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
@@ -53,6 +57,7 @@ function populateHorseSelect() {
     opt.textContent = h.name || '(ohne Name)';
     sel.appendChild(opt);
   }
+  document.querySelector('#horse-select-empty-hint').hidden = horses.length > 0;
 }
 
 function onOwnerChange() {
