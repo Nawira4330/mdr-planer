@@ -196,7 +196,6 @@ function foalSectionHtml(mare, stallion) {
 
   html += foalPedigreeHtml(nodes, dupNames);
 
-  html += '<p class="small muted" style="margin-top:0.8rem;">Mögliche Werte des Fohlens (Erklärung folgt später)</p>';
   html += '</div>';
   return html;
 }
