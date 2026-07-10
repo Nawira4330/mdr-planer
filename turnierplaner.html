@@ -61,6 +61,30 @@
     <p id="load-error" class="error"></p>
 
     <div id="profile-result"></div>
+
+    <div id="tournament-wrap" class="table-wrap" hidden>
+      <table id="tournament-table">
+        <thead>
+          <tr>
+            <th data-sort="category">Kategorie</th>
+            <th data-sort="name">Disziplin</th>
+            <th data-sort="wert">Wert</th>
+            <th data-sort="interieur">Interieur</th>
+            <th data-sort="lk">LK</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" class="muted">Noch kein Pferd ausgewählt.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">
+      LK = Leistungsklasse (LK10 = 0-9% … LK1 = 90-100%), bestimmt vom
+      schlechtesten der benötigten Werte (Disziplin-Potenzial + Grundlagen).
+      Interieur = Mittelwert der für die Disziplin relevanten Interieur-Werte
+      (Skala 1 = exzellent … 4 = schlecht). "–" bedeutet: Daten dafür im
+      Profil unvollständig.
+    </p>
   </main>
 
   <script src="js/config.js"></script>

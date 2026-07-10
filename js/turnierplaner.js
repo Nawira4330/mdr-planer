@@ -1,14 +1,16 @@
 const TOURNAMENT_SELECT_FIELDS =
-  'id,name,gender,coat_color,disciplines,tournament_potential,exterior_genetics,temperament';
+  'id,name,gender,coat_color,disciplines,traits,tournament_potential,exterior_genetics,temperament';
 
 let horses = [];
 let currentMode = 'db';
 let currentProfile = null;
+let currentSort = { field: 'category', dir: 'asc' };
 
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   wireModeTabs();
+  wireSortableHeaders();
   document.querySelector('#horse-select').addEventListener('change', onHorseSelect);
   document.querySelector('#parse-btn').addEventListener('click', onParse);
   await loadHorses();
@@ -69,30 +71,89 @@ function onParse() {
 
 function renderProfile() {
   const container = document.querySelector('#profile-result');
+  const wrap = document.querySelector('#tournament-wrap');
+  const tbody = document.querySelector('#tournament-table tbody');
+
   if (!currentProfile) {
     container.innerHTML = '';
+    wrap.hidden = true;
     return;
   }
 
   const values = computeTournamentValues(currentProfile);
   const praemierung = checkPraemierung(currentProfile);
 
+  const extPct = currentProfile.exterior_genetics?.overall?.percent;
+  const intAvg = averageScore(currentProfile.temperament, scoreTemperamentTerm);
+
   let html = `<div class="result-card">`;
   html += `<h2>${escapeHtml(currentProfile.name || '(ohne Name)')}</h2>`;
-
-  if (!values.length) {
-    html += '<p class="muted small">Keine Disziplin-Werte im Profil gefunden.</p>';
-  } else {
-    html += '<table class="detail-table"><tr><th>Disziplin</th><th>Turnierwert (vorläufig)</th></tr>';
-    for (const v of values) {
-      html += `<tr><td>${escapeHtml(v.group)} – ${escapeHtml(v.name)}</td><td>${v.value != null ? v.value.toFixed(1) + '%' : '–'}</td></tr>`;
-    }
-    html += '</table>';
-  }
-
-  html += `<p class="small muted" style="margin-top:0.8rem;">Prämierung: <strong>${escapeHtml(praemierung.status)}</strong> – ${escapeHtml(praemierung.hint)}</p>`;
+  html += `<p class="small muted">`;
+  html += `Ext (Körperbau): <strong>${extPct != null ? extPct + '%' : '–'}</strong>`;
+  html += ` &nbsp;·&nbsp; Int: <strong>${intAvg != null ? intAvg.toFixed(2) : '–'}</strong>`;
+  html += `</p>`;
+  html += `<p class="small muted">Prämierung: <strong>${escapeHtml(praemierung.status)}</strong> – ${escapeHtml(praemierung.hint)}</p>`;
   html += '</div>';
   container.innerHTML = html;
+
+  if (!values.length) {
+    wrap.hidden = true;
+    return;
+  }
+
+  wrap.hidden = false;
+  tbody.innerHTML = applySort(values).map(rowHtml).join('');
+}
+
+function rowHtml(v) {
+  return `<tr>
+    <td>${escapeHtml(v.category)}</td>
+    <td>${escapeHtml(v.name)}</td>
+    <td>${v.wert != null ? v.wert + '%' : '–'}</td>
+    <td>${v.interieur != null ? v.interieur.toFixed(2) : '–'}</td>
+    <td>${v.complete && v.lk != null ? 'LK' + v.lk : '–'}</td>
+  </tr>`;
+}
+
+function sortValue(row, field) {
+  switch (field) {
+    case 'category': return (row.category || '').toLowerCase();
+    case 'name': return (row.name || '').toLowerCase();
+    case 'wert': return row.wert;
+    case 'interieur': return row.interieur;
+    case 'lk': return row.complete ? row.lk : null;
+    default: return null;
+  }
+}
+
+// Fehlende Werte (null) landen unabhängig von der Richtung immer am Ende,
+// gleiches Muster wie in js/list.js (MDR-Datenbank).
+function applySort(rows) {
+  const { field, dir } = currentSort;
+  const mult = dir === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const va = sortValue(a, field);
+    const vb = sortValue(b, field);
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return va.localeCompare(vb, 'de') * mult;
+    return (va - vb) * mult;
+  });
+}
+
+function wireSortableHeaders() {
+  document.querySelectorAll('#tournament-table th[data-sort]').forEach((th) => {
+    th.addEventListener('click', () => {
+      const field = th.dataset.sort;
+      if (currentSort.field === field) {
+        currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort = { field, dir: 'asc' };
+      }
+      renderProfile();
+    });
+  });
 }
 
 function escapeHtml(str) {
