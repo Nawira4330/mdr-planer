@@ -337,3 +337,29 @@ legend {
   margin: 1rem 0;
 }
 .result-card .pill { font-size: 0.95rem; padding: 0.2rem 0.7rem; margin-bottom: 0.5rem; }
+
+/* --- Durchsuchbares Auswahlfeld (Zuchtplaner/Turnierplaner Pferdeauswahl) --- */
+.searchselect { position: relative; }
+.searchselect-panel {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem;
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.searchselect-item {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.searchselect-item:hover, .searchselect-item.active { background: rgba(107, 157, 0, 0.12); }

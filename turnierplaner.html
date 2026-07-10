@@ -44,8 +44,11 @@
             <select id="owner-select"><option value="">Alle</option></select>
           </div>
           <div>
-            <label for="horse-select">Pferd</label>
-            <select id="horse-select"><option value="">– bitte wählen –</option></select>
+            <label for="horse-search">Pferd</label>
+            <div class="searchselect">
+              <input type="text" id="horse-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
+              <div class="searchselect-panel" id="horse-panel" hidden></div>
+            </div>
           </div>
         </div>
         <p id="horse-select-empty-hint" class="muted small" hidden>Aktuell haben alle Pferde bereits eine ZZL – keine Auswahl möglich.</p>
@@ -94,6 +97,7 @@
   <script src="js/supabaseClient.js"></script>
   <script src="js/parser.js"></script>
   <script src="js/tournamentScoring.js"></script>
+  <script src="js/searchableSelect.js"></script>
   <script src="js/turnierplaner.js"></script>
 </body>
 </html>

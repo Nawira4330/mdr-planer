@@ -8,15 +8,22 @@ let mares = [];
 let stallions = [];
 let foreignStallion = null; // per Freitext eingelesener, nicht gespeicherter Hengst
 let activeTab = 'inzucht';
+let mareSelect, stallionSelect;
 
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   wireTabs();
+  mareSelect = createSearchableSelect(
+    document.querySelector('#mare-search'), document.querySelector('#mare-panel'),
+    { onChange: onMareChange },
+  );
+  stallionSelect = createSearchableSelect(
+    document.querySelector('#stallion-search'), document.querySelector('#stallion-panel'),
+    { onChange: onStallionChange },
+  );
   document.querySelector('#mare-owner-select').addEventListener('change', onMareOwnerChange);
   document.querySelector('#stallion-owner-select').addEventListener('change', onStallionOwnerChange);
-  document.querySelector('#mare-select').addEventListener('change', onMareChange);
-  document.querySelector('#stallion-select').addEventListener('change', onStallionChange);
   document.querySelector('#stallion-parse-btn').addEventListener('click', onStallionParse);
   await loadHorses();
 }
@@ -40,8 +47,8 @@ async function loadHorses() {
   stallions = stallionRes.data || [];
   fillOwnerSelect('#mare-owner-select', mares);
   fillOwnerSelect('#stallion-owner-select', stallions);
-  fillHorseSelect('#mare-select', mares);
-  fillHorseSelect('#stallion-select', stallions);
+  fillHorseSelect(mareSelect, mares, '#mare-owner-select');
+  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select');
 }
 
 function fillOwnerSelect(selector, horses) {
@@ -56,29 +63,20 @@ function fillOwnerSelect(selector, horses) {
   }
 }
 
-function fillHorseSelect(selector, horses) {
-  const ownerSelector = selector === '#mare-select' ? '#mare-owner-select' : '#stallion-owner-select';
+function fillHorseSelect(select, horses, ownerSelector) {
   const owner = document.querySelector(ownerSelector).value;
   const filtered = owner ? horses.filter((h) => h.owner === owner) : horses;
-
-  const sel = document.querySelector(selector);
-  sel.innerHTML = '<option value="">– bitte wählen –</option>';
-  for (const h of filtered) {
-    const opt = document.createElement('option');
-    opt.value = h.id;
-    opt.textContent = h.name || '(ohne Name)';
-    sel.appendChild(opt);
-  }
+  select.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
 }
 
 function onMareOwnerChange() {
-  fillHorseSelect('#mare-select', mares);
-  onMareChange();
+  fillHorseSelect(mareSelect, mares, '#mare-owner-select');
+  mareSelect.clear(); // löst onMareChange('') aus und rendert damit die geleerte Auswahl
 }
 
 function onStallionOwnerChange() {
-  fillHorseSelect('#stallion-select', stallions);
-  onStallionChange();
+  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select');
+  stallionSelect.clear(); // löst onStallionChange('') aus
 }
 
 function wireTabs() {
@@ -100,8 +98,7 @@ function onMareChange() {
 
 // Auswahl per Dropdown ersetzt einen zuvor per Freitext eingelesenen
 // fremden Hengst wieder.
-function onStallionChange() {
-  const id = document.querySelector('#stallion-select').value;
+function onStallionChange(id) {
   if (id) {
     foreignStallion = null;
     document.querySelector('#stallion-raw-text').value = '';
@@ -118,19 +115,19 @@ function onStallionParse() {
     return;
   }
   foreignStallion = parseHorseText(text);
-  document.querySelector('#stallion-select').value = '';
+  stallionSelect.clear();
   statusEl.textContent = 'Erkannt: ' + (foreignStallion.name || 'kein Name gefunden');
   renderInzuchtResult();
 }
 
 function selectedMare() {
-  const id = document.querySelector('#mare-select').value;
+  const id = mareSelect.getValue();
   return mares.find((m) => m.id === id) || null;
 }
 
 function selectedStallion() {
   if (foreignStallion) return foreignStallion;
-  const id = document.querySelector('#stallion-select').value;
+  const id = stallionSelect.getValue();
   return stallions.find((s) => s.id === id) || null;
 }
 

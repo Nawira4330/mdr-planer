@@ -34,8 +34,11 @@
           <select id="mare-owner-select"><option value="">Alle</option></select>
         </div>
         <div>
-          <label for="mare-select">Stute auswählen</label>
-          <select id="mare-select"><option value="">– bitte wählen –</option></select>
+          <label for="mare-search">Stute auswählen</label>
+          <div class="searchselect">
+            <input type="text" id="mare-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
+            <div class="searchselect-panel" id="mare-panel" hidden></div>
+          </div>
         </div>
       </div>
     </fieldset>
@@ -54,8 +57,11 @@
             <select id="stallion-owner-select"><option value="">Alle</option></select>
           </div>
           <div>
-            <label for="stallion-select">Hengst auswählen</label>
-            <select id="stallion-select"><option value="">– bitte wählen –</option></select>
+            <label for="stallion-search">Hengst auswählen</label>
+            <div class="searchselect">
+              <input type="text" id="stallion-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
+              <div class="searchselect-panel" id="stallion-panel" hidden></div>
+            </div>
           </div>
         </div>
       </fieldset>
@@ -111,6 +117,7 @@
   <script src="js/supabaseClient.js"></script>
   <script src="js/parser.js"></script>
   <script src="js/breeding.js"></script>
+  <script src="js/searchableSelect.js"></script>
   <script src="js/zuchtplaner.js"></script>
 </body>
 </html>

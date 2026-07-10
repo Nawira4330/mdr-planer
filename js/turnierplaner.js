@@ -5,14 +5,18 @@ let horses = [];
 let currentMode = 'db';
 let currentProfile = null;
 let currentSort = { field: 'category', dir: 'asc' };
+let horseSelect;
 
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   wireModeTabs();
   wireSortableHeaders();
+  horseSelect = createSearchableSelect(
+    document.querySelector('#horse-search'), document.querySelector('#horse-panel'),
+    { onChange: onHorseSelect },
+  );
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
-  document.querySelector('#horse-select').addEventListener('change', onHorseSelect);
   document.querySelector('#parse-btn').addEventListener('click', onParse);
   await loadHorses();
 }
@@ -49,22 +53,13 @@ async function loadHorses() {
 function populateHorseSelect() {
   const owner = document.querySelector('#owner-select').value;
   const filtered = owner ? horses.filter((h) => h.owner === owner) : horses;
-  const sel = document.querySelector('#horse-select');
-  sel.innerHTML = '<option value="">– bitte wählen –</option>';
-  for (const h of filtered) {
-    const opt = document.createElement('option');
-    opt.value = h.id;
-    opt.textContent = h.name || '(ohne Name)';
-    sel.appendChild(opt);
-  }
+  horseSelect.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
   document.querySelector('#horse-select-empty-hint').hidden = horses.length > 0;
 }
 
 function onOwnerChange() {
   populateHorseSelect();
-  currentProfile = null;
-  document.querySelector('#profile-result').innerHTML = '';
-  document.querySelector('#tournament-wrap').hidden = true;
+  horseSelect.clear(); // löst onHorseSelect('') aus und rendert damit die geleerte Auswahl
 }
 
 function wireModeTabs() {
@@ -80,8 +75,7 @@ function wireModeTabs() {
   });
 }
 
-function onHorseSelect() {
-  const id = document.querySelector('#horse-select').value;
+function onHorseSelect(id) {
   const horse = horses.find((h) => h.id === id) || null;
   currentProfile = horse;
   renderProfile();
