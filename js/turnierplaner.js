@@ -84,6 +84,7 @@ function renderProfile() {
   const lp = checkLP(currentProfile);
 
   const gp = currentProfile.tournament_potential?.['Gesamtpotenzial'];
+  const extAvg = averageScore(currentProfile.exterior_descriptive, scoreExteriorTerm);
   const extPct = currentProfile.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(currentProfile.temperament, scoreTemperamentTerm);
 
@@ -91,7 +92,8 @@ function renderProfile() {
   html += `<h2>${escapeHtml(currentProfile.name || '(ohne Name)')}</h2>`;
   html += `<p class="small muted">`;
   html += `GP: <strong>${gp != null ? gp : '–'}</strong>`;
-  html += ` &nbsp;·&nbsp; Ext: <strong>${extPct != null ? extPct + '%' : '–'}</strong>`;
+  html += ` &nbsp;·&nbsp; Ext: <strong>${extAvg != null ? extAvg.toFixed(2) : '–'}</strong>`;
+  html += ` &nbsp;·&nbsp; Ext%: <strong>${extPct != null ? extPct + '%' : '–'}</strong>`;
   html += ` &nbsp;·&nbsp; Int: <strong>${intAvg != null ? intAvg.toFixed(2) : '–'}</strong>`;
   html += `</p>`;
   html += lpResultHtml(lp);
