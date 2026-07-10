@@ -69,8 +69,14 @@ function foalPedigreeNodes(mare, stallion) {
 // Rückgabe: Array von { name, occurrences } für jeden doppelt (oder
 // öfter) vorkommenden Namen; leeres Array = keine Dopplung gefunden.
 // "occurrences" listet je Fundstelle { side: 'Mutter'|'Vater', role }.
+//
+// "Unbekannt" (Platzhalter des Spiels für einen nicht erfassten Vorfahren)
+// wird dabei ausdrücklich ignoriert - mehrere unbekannte Vorfahren sind
+// keine echte Namensdopplung und sollen keinen Inzuchtalarm auslösen.
 function findSharedNames(mare, stallion) {
-  const pool = foalPedigreeNodes(mare, stallion).filter((entry) => entry.name);
+  const pool = foalPedigreeNodes(mare, stallion)
+    .filter((entry) => entry.name)
+    .filter((entry) => normalizeName(entry.name) !== 'unbekannt');
 
   const byNormalized = new Map();
   for (const entry of pool) {

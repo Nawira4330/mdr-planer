@@ -190,6 +190,10 @@ function foalSectionHtml(mare, stallion) {
     html += `<p class="small muted">Hinweis: Stammbaum unvollständig erfasst (${depth}/14 bekannte Positionen) – eine Verwandtschaft kann dadurch nicht sicher ausgeschlossen werden.</p>`;
   }
 
+  if (hasOveroGene(mare) && hasOveroGene(stallion)) {
+    html += '<div class="notice notice-warning">⚠️ Beide Elterntiere tragen Overo – bei Overo × Overo besteht ein erhöhtes Risiko für das Overo Lethal White Syndrome (OLWS) bei homozygoten Fohlen.</div>';
+  }
+
   html += foalPedigreeHtml(nodes, dupNames);
 
   html += '<p class="small muted" style="margin-top:0.8rem;">Mögliche Werte des Fohlens (Erklärung folgt später)</p>';
@@ -198,7 +202,7 @@ function foalSectionHtml(mare, stallion) {
 }
 
 function nameColorSpan(name, dupNames) {
-  if (!name) return '<span class="muted">unbekannt</span>';
+  if (!name || normalizeName(name) === 'unbekannt') return '<span class="muted">unbekannt</span>';
   const isDup = dupNames.has(normalizeName(name));
   const color = isDup ? 'var(--danger)' : 'var(--success)';
   return `<span style="color:${color};${isDup ? ' font-weight:600;' : ''}">${escapeHtml(name)}</span>`;
