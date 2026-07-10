@@ -141,6 +141,21 @@ function isDiseaseAusgepraegt(value) {
   return /[a-z]/.test(value) && !/[A-Z]/.test(value);
 }
 
+// Wie in horseForm.js (js/list.js-Pendant in MDR-Datenbank): die
+// "Hauptdisziplin" ist die übergeordnete Kategorie der Begabung (z.B.
+// "Western" für die Begabung "Reining"), nicht die Begabung selbst.
+function findDisciplineCategory(disciplines, name) {
+  if (!disciplines || !name) return null;
+  for (const [category, entries] of Object.entries(disciplines)) {
+    if (entries.some((e) => e.name === name)) return category;
+  }
+  return null;
+}
+
+// Von den 8 Gangarten zählen für die LP nur die 4 "normalen" Gangarten -
+// Tölt/Pass/Foxtrott/Rack (Gangpferd-spezifisch) bleiben unberücksichtigt.
+const LP_RELEVANT_GANGARTEN = ['Schritt', 'Trab', 'Galopp', 'Renngalopp'];
+
 // Kriterien:
 // - Krankheiten: keine ausgeprägten Erbkrankheiten (Träger erlaubt)
 // - Interieur (Skala 1=exzellent...5=miserabel): kein miserabler Wert,
@@ -148,9 +163,12 @@ function isDiseaseAusgepraegt(value) {
 // - Exterieur/Körperbau (Skala 1=exzellent...5=viel zu X, hier als
 //   "grün"=1-2, "gelb"=3, "sehr schlecht"=5 interpretiert): max. 2 sehr
 //   schlechte Werte, mind. 5x gelb oder grün, mind. 1x grün
-// - Disziplinen: mind. 20% in allen Disziplinen, mind. 1x 25%
-// - Eigenschaften (Grundlagen+Gangarten): mind. 15% in allen, mind. 6x
-//   20%+ insgesamt, davon mind. 4x in Grundlagen und mind. 1x in Gangarten
+// - Disziplinen: nur innerhalb der Hauptdisziplin (Kategorie der
+//   Begabung, z.B. "Western") - mind. 20% in allen deren Disziplinen,
+//   mind. 1x 25%
+// - Eigenschaften (Grundlagen + die 4 relevanten Gangarten): mind. 15%
+//   in allen, mind. 6x 20%+ insgesamt, davon mind. 4x in Grundlagen und
+//   mind. 1x in den relevanten Gangarten
 //
 // Rückgabe: { possible: true/false/null, reasons: [...Gründe für
 // voraussichtliches Nichtbestehen...], warnings: [...fehlende Daten...] }.
@@ -213,24 +231,26 @@ function checkLP(profile) {
     warnings.push('Exterieur: keine Daten vorhanden, Kriterium nicht geprüft.');
   }
 
-  // Disziplinen
-  const allDisciplines = Object.values(profile.disciplines || {}).flat();
-  if (allDisciplines.length) {
-    const under20 = allDisciplines.filter((e) => e.potential != null && e.potential < 20);
-    const ab25 = allDisciplines.filter((e) => e.potential != null && e.potential >= 25);
+  // Disziplinen (nur Hauptdisziplin-Kategorie, siehe findDisciplineCategory)
+  const begabung = profile.tournament_potential?.['Begabung'];
+  const hauptkategorie = findDisciplineCategory(profile.disciplines, begabung);
+  const relevantDisciplines = hauptkategorie ? (profile.disciplines[hauptkategorie] || []) : [];
+  if (relevantDisciplines.length) {
+    const under20 = relevantDisciplines.filter((e) => e.potential != null && e.potential < 20);
+    const ab25 = relevantDisciplines.filter((e) => e.potential != null && e.potential >= 25);
     if (under20.length) {
-      reasons.push(`Disziplinen unter 20% Potenzial: ${under20.map((e) => `${e.name} (${e.potential}%)`).join(', ')}`);
+      reasons.push(`Disziplinen (Hauptdisziplin ${hauptkategorie}) unter 20% Potenzial: ${under20.map((e) => `${e.name} (${e.potential}%)`).join(', ')}`);
     }
     if (ab25.length < 1) {
-      reasons.push('Keine Disziplin mit mind. 25% Potenzial vorhanden');
+      reasons.push(`Keine Disziplin in der Hauptdisziplin (${hauptkategorie}) mit mind. 25% Potenzial vorhanden`);
     }
   } else {
-    warnings.push('Disziplinen: keine Daten vorhanden, Kriterium nicht geprüft.');
+    warnings.push('Disziplinen: Hauptdisziplin (Kategorie der Begabung) konnte nicht ermittelt werden, Kriterium nicht geprüft.');
   }
 
-  // Eigenschaften (Grundlagen + Gangarten)
+  // Eigenschaften (Grundlagen + die 4 relevanten Gangarten)
   const grundlagen = profile.traits?.['Grundlagen'] || [];
-  const gangarten = profile.traits?.['Gangarten'] || [];
+  const gangarten = (profile.traits?.['Gangarten'] || []).filter((e) => LP_RELEVANT_GANGARTEN.includes(e.name));
   if (grundlagen.length || gangarten.length) {
     const alle = [...grundlagen, ...gangarten];
     const under15 = alle.filter((e) => e.potential != null && e.potential < 15);
