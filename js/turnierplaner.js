@@ -1,5 +1,5 @@
 const TOURNAMENT_SELECT_FIELDS =
-  'id,name,gender,coat_color,disciplines,traits,tournament_potential,exterior_genetics,exterior_descriptive,temperament,genetic_diseases';
+  'id,name,owner,gender,coat_color,disciplines,traits,tournament_potential,exterior_genetics,exterior_descriptive,temperament,genetic_diseases';
 
 let horses = [];
 let currentMode = 'db';
@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
   wireModeTabs();
   wireSortableHeaders();
+  document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   document.querySelector('#horse-select').addEventListener('change', onHorseSelect);
   document.querySelector('#parse-btn').addEventListener('click', onParse);
   await loadHorses();
@@ -27,14 +28,38 @@ async function loadHorses() {
     return;
   }
   horses = data || [];
+
+  const ownerSel = document.querySelector('#owner-select');
+  const owners = [...new Set(horses.map((h) => h.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+  ownerSel.innerHTML = '<option value="">Alle</option>';
+  for (const owner of owners) {
+    const opt = document.createElement('option');
+    opt.value = owner;
+    opt.textContent = owner;
+    ownerSel.appendChild(opt);
+  }
+
+  populateHorseSelect();
+}
+
+function populateHorseSelect() {
+  const owner = document.querySelector('#owner-select').value;
+  const filtered = owner ? horses.filter((h) => h.owner === owner) : horses;
   const sel = document.querySelector('#horse-select');
   sel.innerHTML = '<option value="">– bitte wählen –</option>';
-  for (const h of horses) {
+  for (const h of filtered) {
     const opt = document.createElement('option');
     opt.value = h.id;
     opt.textContent = h.name || '(ohne Name)';
     sel.appendChild(opt);
   }
+}
+
+function onOwnerChange() {
+  populateHorseSelect();
+  currentProfile = null;
+  document.querySelector('#profile-result').innerHTML = '';
+  document.querySelector('#tournament-wrap').hidden = true;
 }
 
 function wireModeTabs() {
