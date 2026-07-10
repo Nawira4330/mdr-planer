@@ -1,5 +1,5 @@
 const TOURNAMENT_SELECT_FIELDS =
-  'id,name,gender,coat_color,disciplines,traits,tournament_potential,exterior_genetics,temperament';
+  'id,name,gender,coat_color,disciplines,traits,tournament_potential,exterior_genetics,exterior_descriptive,temperament,genetic_diseases';
 
 let horses = [];
 let currentMode = 'db';
@@ -81,18 +81,20 @@ function renderProfile() {
   }
 
   const values = computeTournamentValues(currentProfile);
-  const praemierung = checkPraemierung(currentProfile);
+  const lp = checkLP(currentProfile);
 
+  const gp = currentProfile.tournament_potential?.['Gesamtpotenzial'];
   const extPct = currentProfile.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(currentProfile.temperament, scoreTemperamentTerm);
 
   let html = `<div class="result-card">`;
   html += `<h2>${escapeHtml(currentProfile.name || '(ohne Name)')}</h2>`;
   html += `<p class="small muted">`;
-  html += `Ext (Körperbau): <strong>${extPct != null ? extPct + '%' : '–'}</strong>`;
+  html += `GP: <strong>${gp != null ? gp : '–'}</strong>`;
+  html += ` &nbsp;·&nbsp; Ext: <strong>${extPct != null ? extPct + '%' : '–'}</strong>`;
   html += ` &nbsp;·&nbsp; Int: <strong>${intAvg != null ? intAvg.toFixed(2) : '–'}</strong>`;
   html += `</p>`;
-  html += `<p class="small muted">Prämierung: <strong>${escapeHtml(praemierung.status)}</strong> – ${escapeHtml(praemierung.hint)}</p>`;
+  html += lpResultHtml(lp);
   html += '</div>';
   container.innerHTML = html;
 
@@ -103,6 +105,25 @@ function renderProfile() {
 
   wrap.hidden = false;
   tbody.innerHTML = applySort(values).map(rowHtml).join('');
+}
+
+function lpResultHtml(lp) {
+  let html = '<div style="margin-top:0.5rem;">';
+  if (lp.possible === true) {
+    html += '<div class="pill yes">Leistungsprüfung (LP): voraussichtlich bestanden</div>';
+  } else if (lp.possible === false) {
+    html += '<div class="pill no">Leistungsprüfung (LP): voraussichtlich NICHT bestanden</div>';
+  } else {
+    html += '<div class="pill">Leistungsprüfung (LP): nicht sicher prüfbar (zu wenig Daten)</div>';
+  }
+  if (lp.reasons.length) {
+    html += '<ul class="small">' + lp.reasons.map((r) => `<li>${escapeHtml(r)}</li>`).join('') + '</ul>';
+  }
+  if (lp.warnings.length) {
+    html += '<p class="small muted">' + lp.warnings.map(escapeHtml).join('<br>') + '</p>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function rowHtml(v) {

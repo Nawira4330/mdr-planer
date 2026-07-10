@@ -288,10 +288,12 @@ const EXTERIOR_TERM_SCORES = [
   [/\bgut/i, 2],
 ];
 
-// Interieur: Exzellent=1, Gut=2, In Ordnung=3, Schlecht=4 (vom Nutzer vorgegeben).
+// Interieur: Exzellent=1, Gut=2, In Ordnung=3, Schlecht=4, Miserabel=5
+// (vom Nutzer vorgegeben).
 const TEMPERAMENT_TERM_SCORES = [
   [/exzellent/i, 1],
   [/ordnung/i, 3],
+  [/miserabel/i, 5],
   [/schlecht/i, 4],
   [/\bgut/i, 2],
 ];

@@ -20,8 +20,10 @@
 //   Sozialverhalten, Temperament, Leistungsbereitschaft, Siegeswille,
 //   Furchtlosigkeit.
 //
-// Prämierungs-Kriterien sind weiterhin nicht bekannt und bleiben ein
-// Platzhalter.
+// Leistungsprüfung (LP, vormals "Prämierung" genannt): Bestehens-Prüfung
+// nach inoffiziellen, von der Community ermittelten Kriterien (siehe
+// checkLP unten) - keine offiziellen MDR-Regeln, daher keine Garantie auf
+// Richtigkeit.
 
 const DISCIPLINE_REQUIREMENTS = {
   'Dressur': { grundlagen: ['Schritt', 'Trab', 'Galopp', 'Kraft', 'Präzision', 'Ausdruck'], interieur: ['Gelehrigkeit', 'Aufmerksamkeit', 'Intelligenz'] },
@@ -128,14 +130,127 @@ function computeTournamentValues(profile) {
   return results;
 }
 
-// Platzhalter: die genauen Prämierungs-Kriterien sind noch unbekannt.
-function checkPraemierung(profile) {
-  return {
-    status: 'unbekannt',
-    hint: 'Prämierungs-Kriterien werden vom Nutzer noch ergänzt - noch keine echte Prüfung möglich.',
-  };
+// Leistungsprüfung (LP) - Bestehens-Prüfung nach inoffiziellen,
+// community-ermittelten Kriterien (nicht von MDR selbst, siehe Hinweis in
+// der UI). Ein Genotyp gilt als "ausgeprägt betroffen" (nicht erlaubt),
+// wenn er ausschließlich aus Kleinbuchstaben besteht (kein Trägerallel als
+// Großbuchstabe mehr vorhanden) - Träger (gemischte Groß-/Kleinschreibung)
+// sind laut Kriterien erlaubt.
+function isDiseaseAusgepraegt(value) {
+  if (!value) return false;
+  return /[a-z]/.test(value) && !/[A-Z]/.test(value);
+}
+
+// Kriterien:
+// - Krankheiten: keine ausgeprägten Erbkrankheiten (Träger erlaubt)
+// - Interieur (Skala 1=exzellent...5=miserabel): kein miserabler Wert,
+//   max. 2 schlechte Werte, mind. 5x gut oder exzellent
+// - Exterieur/Körperbau (Skala 1=exzellent...5=viel zu X, hier als
+//   "grün"=1-2, "gelb"=3, "sehr schlecht"=5 interpretiert): max. 2 sehr
+//   schlechte Werte, mind. 5x gelb oder grün, mind. 1x grün
+// - Disziplinen: mind. 20% in allen Disziplinen, mind. 1x 25%
+// - Eigenschaften (Grundlagen+Gangarten): mind. 15% in allen, mind. 6x
+//   20%+ insgesamt, davon mind. 4x in Grundlagen und mind. 1x in Gangarten
+//
+// Rückgabe: { possible: true/false/null, reasons: [...Gründe für
+// voraussichtliches Nichtbestehen...], warnings: [...fehlende Daten...] }.
+// possible=null nur, wenn gar keine der benötigten Datenblöcke vorhanden
+// sind (Prüfung nicht möglich).
+function checkLP(profile) {
+  const reasons = [];
+  const warnings = [];
+  if (!profile) return { possible: null, reasons, warnings: ['Kein Pferd ausgewählt.'] };
+
+  // Krankheiten
+  if (profile.genetic_diseases && profile.genetic_diseases.length) {
+    const affected = profile.genetic_diseases.filter((d) => isDiseaseAusgepraegt(d.value));
+    if (affected.length) {
+      reasons.push(`Ausgeprägte Erbkrankheit(en): ${affected.map((d) => d.label).join(', ')} (Träger sind erlaubt, homozygot betroffen nicht)`);
+    }
+  } else {
+    warnings.push('Erbkrankheiten: keine Daten vorhanden, Kriterium nicht geprüft.');
+  }
+
+  // Interieur
+  if (profile.temperament && profile.temperament.length) {
+    const scored = profile.temperament
+      .map((r) => ({ label: r.label, score: scoreTemperamentTerm(r.value) }))
+      .filter((r) => r.score != null);
+    const miserabel = scored.filter((r) => r.score === 5);
+    const schlecht = scored.filter((r) => r.score === 4);
+    const gutPlus = scored.filter((r) => r.score <= 2);
+    if (miserabel.length) {
+      reasons.push(`Interieur: miserabler Wert vorhanden (${miserabel.map((r) => r.label).join(', ')})`);
+    }
+    if (schlecht.length > 2) {
+      reasons.push(`Interieur: ${schlecht.length} schlechte Werte, max. 2 erlaubt (${schlecht.map((r) => r.label).join(', ')})`);
+    }
+    if (gutPlus.length < 5) {
+      reasons.push(`Interieur: nur ${gutPlus.length}x gut/exzellent, mind. 5 nötig`);
+    }
+  } else {
+    warnings.push('Interieur: keine Daten vorhanden, Kriterium nicht geprüft.');
+  }
+
+  // Exterieur (Körperbau)
+  if (profile.exterior_descriptive && profile.exterior_descriptive.length) {
+    const scored = profile.exterior_descriptive
+      .map((r) => ({ label: r.label, score: scoreExteriorTerm(r.value) }))
+      .filter((r) => r.score != null);
+    const sehrSchlecht = scored.filter((r) => r.score === 5);
+    const gelbGruen = scored.filter((r) => r.score <= 3);
+    const gruen = scored.filter((r) => r.score <= 2);
+    if (sehrSchlecht.length > 2) {
+      reasons.push(`Exterieur: ${sehrSchlecht.length} sehr schlechte Werte, max. 2 erlaubt (${sehrSchlecht.map((r) => r.label).join(', ')})`);
+    }
+    if (gelbGruen.length < 5) {
+      reasons.push(`Exterieur: nur ${gelbGruen.length}x gelb/grün, mind. 5 nötig`);
+    }
+    if (gruen.length < 1) {
+      reasons.push('Exterieur: kein grüner Wert vorhanden, mind. 1 nötig');
+    }
+  } else {
+    warnings.push('Exterieur: keine Daten vorhanden, Kriterium nicht geprüft.');
+  }
+
+  // Disziplinen
+  const allDisciplines = Object.values(profile.disciplines || {}).flat();
+  if (allDisciplines.length) {
+    const under20 = allDisciplines.filter((e) => e.potential != null && e.potential < 20);
+    const ab25 = allDisciplines.filter((e) => e.potential != null && e.potential >= 25);
+    if (under20.length) {
+      reasons.push(`Disziplinen unter 20% Potenzial: ${under20.map((e) => `${e.name} (${e.potential}%)`).join(', ')}`);
+    }
+    if (ab25.length < 1) {
+      reasons.push('Keine Disziplin mit mind. 25% Potenzial vorhanden');
+    }
+  } else {
+    warnings.push('Disziplinen: keine Daten vorhanden, Kriterium nicht geprüft.');
+  }
+
+  // Eigenschaften (Grundlagen + Gangarten)
+  const grundlagen = profile.traits?.['Grundlagen'] || [];
+  const gangarten = profile.traits?.['Gangarten'] || [];
+  if (grundlagen.length || gangarten.length) {
+    const alle = [...grundlagen, ...gangarten];
+    const under15 = alle.filter((e) => e.potential != null && e.potential < 15);
+    const grundlagenAb20 = grundlagen.filter((e) => e.potential != null && e.potential >= 20);
+    const gangartenAb20 = gangarten.filter((e) => e.potential != null && e.potential >= 20);
+    const totalAb20 = grundlagenAb20.length + gangartenAb20.length;
+    if (under15.length) {
+      reasons.push(`Eigenschaften unter 15% Potenzial: ${under15.map((e) => `${e.name} (${e.potential}%)`).join(', ')}`);
+    }
+    if (totalAb20 < 6 || grundlagenAb20.length < 4 || gangartenAb20.length < 1) {
+      reasons.push(`Nur ${totalAb20}x ≥20% in den Eigenschaften (${grundlagenAb20.length}x Grundlagen, ${gangartenAb20.length}x Gangarten) - nötig: mind. 6 gesamt, davon mind. 4x Grundlagen und mind. 1x Gangarten`);
+    }
+  } else {
+    warnings.push('Eigenschaften: keine Daten vorhanden, Kriterium nicht geprüft.');
+  }
+
+  if (warnings.length === 5) return { possible: null, reasons, warnings };
+  return { possible: reasons.length === 0, reasons, warnings };
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { DISCIPLINE_REQUIREMENTS, lkFromPercent, computeTournamentValues, checkPraemierung };
+  module.exports = { DISCIPLINE_REQUIREMENTS, lkFromPercent, computeTournamentValues, isDiseaseAusgepraegt, checkLP };
 }
