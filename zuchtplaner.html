@@ -30,6 +30,10 @@
       <legend>Stute</legend>
       <div class="form-grid">
         <div>
+          <label for="mare-owner-select">Besitzer</label>
+          <select id="mare-owner-select"><option value="">Alle</option></select>
+        </div>
+        <div>
           <label for="mare-select">Stute auswählen</label>
           <select id="mare-select"><option value="">– bitte wählen –</option></select>
         </div>
@@ -46,11 +50,31 @@
         <legend>Hengst</legend>
         <div class="form-grid">
           <div>
+            <label for="stallion-owner-select">Besitzer</label>
+            <select id="stallion-owner-select"><option value="">Alle</option></select>
+          </div>
+          <div>
             <label for="stallion-select">Hengst auswählen</label>
             <select id="stallion-select"><option value="">– bitte wählen –</option></select>
           </div>
         </div>
       </fieldset>
+
+      <fieldset class="paste-box">
+        <legend>Fremder Hengst (Freitext)</legend>
+        <p class="muted small">
+          Für Hengste, die nicht in der Datenbank stehen: Pferdeseite im Spiel
+          markieren (Strg+A), kopieren (Strg+C) und hier einfügen – funktioniert
+          sowohl mit der Desktop- als auch der Handy-Ansicht des Spiels. Es wird
+          nichts gespeichert.
+        </p>
+        <textarea id="stallion-raw-text" placeholder="Hier den kopierten Seitentext des Hengstes einfügen…"></textarea>
+        <div class="paste-actions">
+          <button type="button" id="stallion-parse-btn">Auslesen</button>
+          <span id="stallion-parse-status" class="muted small"></span>
+        </div>
+      </fieldset>
+
       <div id="inzucht-result"></div>
     </section>
 
