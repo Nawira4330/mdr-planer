@@ -5,22 +5,30 @@
 // Benötigt js/parser.js (für presentGenesSummary), muss also nach diesem
 // Script eingebunden werden.
 
-// pedigree[0] ist laut Parser (siehe js/parser.js parsePedigree) immer das
-// Pferd selbst, danach folgen die Vorfahren in der Reihenfolge Eltern (2) →
-// Großeltern (4) → Urgroßeltern (8) - siehe auch pedigreeHtml in
-// js/horseForm.js, die dieselbe Aufteilung für die Anzeige nutzt. Nur diese
-// ersten 14 Vorfahren gelten als "sichtbar" im Sinn der Inzuchtprüfung;
-// eventuell weitere vom Parser gefundene Namen werden ignoriert.
+// In der Datenbank kommen zwei "pedigree"-Formate vor (je nachdem, wann
+// bzw. mit welcher Parser-Version das Pferd zuletzt gespeichert wurde):
+//
+// 1. Altes Format: flaches Array, Index 0 ist das Pferd selbst, danach
+//    folgen die Vorfahren in der Reihenfolge Eltern (2) → Großeltern (4)
+//    → Urgroßeltern (8) - siehe auch pedigreeHtml in js/horseForm.js.
+// 2. Neues Format: Objekt "{ sections, ancestors }", wobei "ancestors"
+//    bereits die reine 14-köpfige Vorfahrenliste in derselben Reihenfolge
+//    ist - OHNE das Pferd selbst als erstes Element.
+//
+// Nur diese 14 Vorfahren gelten als "sichtbar" im Sinn der
+// Inzuchtprüfung; eventuell weitere vom Parser gefundene Namen werden
+// ignoriert.
 function pedigreeAncestorNames(horse) {
-  // In der Datenbank steht "pedigree" nicht bei jedem Pferd garantiert als
-  // Array (z.B. leeres Objekt "{}" statt "[]" bei manuell/älter
-  // angelegten Einträgen) - Array.isArray() schützt davor, dass .slice()
-  // dann mit einem Laufzeitfehler abbricht.
-  const list = Array.isArray(horse?.pedigree) ? horse.pedigree : [];
-  // list[0] ist das Pferd selbst, list[1..14] sind die 14 sichtbaren
-  // Vorfahren (Eltern 2 + Großeltern 4 + Urgroßeltern 8) - slice(1, 15),
-  // nicht slice(1, 14), sonst fehlt der letzte Urgroßelternteil.
-  return list.slice(1, 15).map((p) => p.name).filter(Boolean);
+  const pedigree = horse?.pedigree;
+  if (Array.isArray(pedigree)) {
+    // Altes Format: slice(1, 15), nicht slice(1, 14), sonst fehlt der
+    // letzte Urgroßelternteil.
+    return pedigree.slice(1, 15).map((p) => p.name).filter(Boolean);
+  }
+  if (pedigree && Array.isArray(pedigree.ancestors)) {
+    return pedigree.ancestors.slice(0, 14).map((p) => p.name).filter(Boolean);
+  }
+  return [];
 }
 
 // Wie viele der maximal 14 sichtbaren Vorfahren-Plätze tatsächlich einen
