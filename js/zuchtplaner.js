@@ -2,7 +2,7 @@
 // Kennzahlen und die kleine Anzeige in "Beste Hengstauswahl" gebraucht
 // werden.
 const HORSE_SELECT_FIELDS =
-  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+  'id,name,owner,gender,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
 
 let mares = [];
 let stallions = [];
@@ -43,8 +43,12 @@ async function loadHorses() {
     return;
   }
 
-  mares = mareRes.data || [];
-  stallions = stallionRes.data || [];
+  // Nur Pferde mit ZZL (Zuchtzulassung) - der Zuchtplaner soll bei der
+  // tatsächlichen Zuchtplanung helfen, das setzt eine bereits erteilte
+  // Zuchtzulassung voraus (Gegenteil vom Turnierplaner, der bewusst nur
+  // Pferde OHNE ZZL zeigt).
+  mares = (mareRes.data || []).filter((h) => h.breeding_allowed === true);
+  stallions = (stallionRes.data || []).filter((h) => h.breeding_allowed === true);
   fillOwnerSelect('#mare-owner-select', mares);
   fillOwnerSelect('#stallion-owner-select', stallions);
   fillHorseSelect(mareSelect, mares, '#mare-owner-select');
