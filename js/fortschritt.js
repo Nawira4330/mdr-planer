@@ -8,11 +8,105 @@ const PROGRESS = [
   { label: 'Verpaarungsratgeber', percent: 20 },
 ];
 
-const REPO = 'Nawira4330/mdr-planer';
+// Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
+// Bestehendem), 'bugfix' (Fehlerbehebung) - bestimmt Farbe und Label.
+const TYPE_META = {
+  feature: { label: 'Neu', color: 'var(--accent)' },
+  update: { label: 'Update', color: 'var(--info)' },
+  bugfix: { label: 'Bugfix', color: 'var(--warning)' },
+};
+
+// Änderungsverlauf - von Hand gepflegt, in einfacher Sprache. Bei jeder
+// neuen Änderung oben (oder irgendwo, die Sortierung erfolgt automatisch
+// nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
+// (lokale Zeit, kein Zeitzonen-Suffix).
+const CHANGELOG = [
+  {
+    date: '2026-07-12T00:18', type: 'update', title: 'Änderungsverlauf übersichtlicher',
+    points: ['Einträge jetzt farbig nach Art markiert: Neu / Update / Bugfix', 'Kürzere, einfachere Beschreibungen statt technischer Details'],
+  },
+  {
+    date: '2026-07-11T23:22', type: 'feature', title: 'Neue Seite: Fortschritt & Änderungen',
+    points: ['Zeigt den Fortschritt der einzelnen Werkzeuge', 'Listet alle bisherigen Änderungen mit Datum auf'],
+  },
+  {
+    date: '2026-07-11T23:06', type: 'update', title: 'Nur Pferde mit ZZL im Zuchtplaner wählbar',
+    points: ['Stute und Hengst lassen sich nur noch aus Pferden mit Zuchtzulassung auswählen'],
+  },
+  {
+    date: '2026-07-10T22:54', type: 'feature', title: 'Suche in der Pferde-Auswahl verbessert',
+    points: ['Findet jetzt auch Namen, bei denen der Suchtext nicht ganz am Anfang steht'],
+  },
+  {
+    date: '2026-07-10T22:45', type: 'update', title: 'ZZL-Filter im Turnierplaner + klarere Inzucht-Anzeige',
+    points: ['Turnierplaner zeigt nur noch Pferde ohne ZZL', 'Zuchtplaner zeigt jetzt deutlich "KEINE Inzucht" (grün) oder "INZUCHT!!!" (rot)'],
+  },
+  {
+    date: '2026-07-10T22:32', type: 'update', title: 'Platzhaltertext beim Fohlen entfernt',
+    points: ['"Mögliche Werte des Fohlens" (noch ohne Inhalt) vorerst entfernt'],
+  },
+  {
+    date: '2026-07-10T22:28', type: 'bugfix', title: 'Fehler im Stammbaum behoben',
+    points: ['Manche Pferde zeigten einen leeren oder falschen Stammbaum', 'Betraf z.B. die Erkennung von Vater-Tochter-Verpaarungen'],
+  },
+  {
+    date: '2026-07-10T22:12', type: 'bugfix', title: '"Unbekannt" löste fälschlich Inzucht-Alarm aus',
+    points: ['Behoben: "Unbekannt" im Stammbaum zählt nicht mehr als Namensdopplung', 'Neu: Warnung, wenn beide Elterntiere Overo tragen'],
+  },
+  {
+    date: '2026-07-10T20:54', type: 'feature', title: 'Zuchtplaner komplett überarbeitet',
+    points: [
+      'Zeigt Mutter und Vater sofort nach Auswahl an (nicht erst beide zusammen)',
+      'Besitzer-Filter für Stute und Hengst',
+      'Fremde Hengste (nicht in der Datenbank) per Freitext möglich',
+      'Stammbaum des Fohlens wird angezeigt',
+    ],
+  },
+  {
+    date: '2026-07-10T16:53', type: 'feature', title: 'Besitzer-Filter im Turnierplaner',
+    points: ['Pferde lassen sich jetzt nach Besitzer filtern'],
+  },
+  {
+    date: '2026-07-10T16:49', type: 'update', title: 'Erklärtext im Turnierplaner entfernt',
+    points: [],
+  },
+  {
+    date: '2026-07-10T16:47', type: 'update', title: 'Turnierplaner-Tabs umbenannt',
+    points: ['"Pferd aus Datenbank" heißt jetzt "Pferd aus ZG"', '"Freitext" heißt jetzt "Fremdes Pferd"'],
+  },
+  {
+    date: '2026-07-10T16:42', type: 'bugfix', title: 'Ext und Ext% wurden vermischt',
+    points: ['Werden jetzt korrekt als zwei getrennte Werte angezeigt'],
+  },
+  {
+    date: '2026-07-10T16:38', type: 'bugfix', title: 'LP-Prüfung genauer',
+    points: ['Nur noch die Hauptdisziplin zählt, nicht alle 28 Disziplinen', 'Nur die 4 normalen Gangarten zählen, nicht die Gangpferd-Gangarten'],
+  },
+  {
+    date: '2026-07-10T16:33', type: 'bugfix', title: 'Handy-Texte werden jetzt richtig gelesen',
+    points: ['Kopierter Text von der Handy-Ansicht des Spiels wird jetzt korrekt erkannt'],
+  },
+  {
+    date: '2026-07-10T16:23', type: 'feature', title: 'Leistungsprüfung (LP) eingeführt',
+    points: ['"Prämierung" heißt jetzt "Leistungsprüfung (LP)" und prüft echte Kriterien', 'GP wird jetzt zusätzlich oben angezeigt'],
+  },
+  {
+    date: '2026-07-10T16:13', type: 'bugfix', title: 'Punkte-Formel korrigiert',
+    points: ['Anhand eines echten Pferdes überprüft', 'Fehler bei "Gelassenheit" behoben (zählte an der falschen Stelle)'],
+  },
+  {
+    date: '2026-07-10T16:02', type: 'feature', title: 'Echte Turnierwert-Berechnung',
+    points: ['Wert, LK und Interieur werden jetzt nach den echten Spielregeln berechnet (alle 28 Disziplinen)'],
+  },
+  {
+    date: '2026-07-09T12:10', type: 'feature', title: 'Zuchtplaner & Turnierplaner gestartet',
+    points: ['Neue, eigene Webseite - getrennt von der Pferdedatenbank', 'Kein Login nötig, nur lesender Zugriff'],
+  },
+];
 
 document.addEventListener('DOMContentLoaded', () => {
   renderProgress();
-  loadChangelog();
+  renderChangelog();
 });
 
 function renderProgress() {
@@ -30,41 +124,34 @@ function renderProgress() {
   `).join('');
 }
 
-async function loadChangelog() {
+function renderChangelog() {
   const container = document.querySelector('#changelog-list');
-  try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=100`);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const commits = await res.json();
-    if (!Array.isArray(commits) || !commits.length) {
-      container.innerHTML = '<p class="muted small">Noch keine Änderungen erfasst.</p>';
-      return;
-    }
-    // GitHub liefert Commits zwar bereits neueste zuerst, wird hier aber
-    // zusätzlich explizit erzwungen (nicht nur implizit auf die API
-    // verlassen) - die neueste Aktualisierung soll garantiert ganz oben stehen.
-    commits.sort((a, b) => new Date(b.commit.author.date) - new Date(a.commit.author.date));
-    container.innerHTML = commits.map(commitHtml).join('');
-  } catch (err) {
-    container.innerHTML =
-      `<p class="error">Änderungsliste konnte nicht geladen werden (${escapeHtml(err.message)}). ` +
-      `Direkt auf <a href="https://github.com/${REPO}/commits/main" target="_blank" rel="noopener">GitHub ansehen ↗</a>.</p>`;
+  if (!CHANGELOG.length) {
+    container.innerHTML = '<p class="muted small">Noch keine Änderungen erfasst.</p>';
+    return;
   }
+  // Neueste Aktualisierung immer ganz oben, unabhängig von der
+  // Reihenfolge im Array.
+  const sorted = [...CHANGELOG].sort((a, b) => new Date(b.date) - new Date(a.date));
+  container.innerHTML = sorted.map(entryHtml).join('');
 }
 
-function commitHtml(commit) {
-  const date = new Date(commit.commit.author.date);
+function entryHtml(entry) {
+  const meta = TYPE_META[entry.type] || TYPE_META.update;
+  const date = new Date(entry.date);
   const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  const lines = commit.commit.message.split('\n').map((l) => l.trim()).filter(Boolean);
-  const title = lines[0] || '(ohne Beschreibung)';
-  const bodyLines = lines.slice(1).filter((l) => !l.startsWith('Co-Authored-By'));
-  const bodyHtml = bodyLines.map((l) => escapeHtml(l)).join('<br>');
+  const pointsHtml = entry.points && entry.points.length
+    ? `<ul class="small muted changelog-points">${entry.points.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul>`
+    : '';
 
-  return `<div class="changelog-entry">
+  return `<div class="changelog-entry ${entry.type}">
     <div class="changelog-date">${dateStr} · ${timeStr} Uhr</div>
-    <p class="changelog-title"><strong>${escapeHtml(title)}</strong></p>
-    ${bodyHtml ? `<p class="small muted">${bodyHtml}</p>` : ''}
+    <p class="changelog-title">
+      <span class="changelog-badge ${entry.type}">${meta.label}</span>
+      <strong>${escapeHtml(entry.title)}</strong>
+    </p>
+    ${pointsHtml}
   </div>`;
 }
 
