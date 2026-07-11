@@ -50,8 +50,12 @@ const CHANGELOG = [
     points: ['Manche Pferde zeigten einen leeren oder falschen Stammbaum', 'Betraf z.B. die Erkennung von Vater-Tochter-Verpaarungen'],
   },
   {
+    date: '2026-07-10T22:13', type: 'feature', title: 'Warnung bei Overo × Overo',
+    points: ['Neue Warnung, wenn sowohl Stute als auch Hengst Overo tragen'],
+  },
+  {
     date: '2026-07-10T22:12', type: 'bugfix', title: '"Unbekannt" löste fälschlich Inzucht-Alarm aus',
-    points: ['Behoben: "Unbekannt" im Stammbaum zählt nicht mehr als Namensdopplung', 'Neu: Warnung, wenn beide Elterntiere Overo tragen'],
+    points: ['"Unbekannt" im Stammbaum zählt jetzt nicht mehr als Namensdopplung'],
   },
   {
     date: '2026-07-10T20:54', type: 'feature', title: 'Zuchtplaner komplett überarbeitet',
