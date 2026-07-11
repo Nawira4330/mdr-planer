@@ -40,6 +40,10 @@ async function loadChangelog() {
       container.innerHTML = '<p class="muted small">Noch keine Änderungen erfasst.</p>';
       return;
     }
+    // GitHub liefert Commits zwar bereits neueste zuerst, wird hier aber
+    // zusätzlich explizit erzwungen (nicht nur implizit auf die API
+    // verlassen) - die neueste Aktualisierung soll garantiert ganz oben stehen.
+    commits.sort((a, b) => new Date(b.commit.author.date) - new Date(a.commit.author.date));
     container.innerHTML = commits.map(commitHtml).join('');
   } catch (err) {
     container.innerHTML =
