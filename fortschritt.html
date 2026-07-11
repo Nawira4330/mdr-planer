@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Fortschritt &amp; Änderungen – MDR Zucht- &amp; Turnierplaner</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>📋 Fortschritt &amp; Änderungen</h1>
+    <nav>
+      <a class="btn secondary" href="index.html">← Zur Übersicht</a>
+      <a class="btn secondary" href="zuchtplaner.html">Zuchtplaner</a>
+      <a class="btn secondary" href="turnierplaner.html">Turnierplaner</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <fieldset>
+      <legend>Fortschritt der Werkzeuge</legend>
+      <div id="progress-list"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Änderungsverlauf</legend>
+      <p class="muted small">
+        Wird automatisch aus der Commit-Historie des
+        <a href="https://github.com/Nawira4330/mdr-planer" target="_blank" rel="noopener">mdr-planer</a>-Repositories
+        geladen – jede hier gelistete Änderung ist bereits live.
+      </p>
+      <div id="changelog-list">Lade…</div>
+    </fieldset>
+  </main>
+
+  <script src="js/fortschritt.js"></script>
+</body>
+</html>
