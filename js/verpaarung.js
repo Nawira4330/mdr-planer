@@ -127,34 +127,38 @@ function exteriorFoalRange(mare, stallion) {
 //
 // Kategorie -> Bandbreite "Anzahl hh-Loci von 8" (Komplement der
 // H-Präsenz-Bandbreite Exzellent=8H, Gut=6-7H, In Ordnung=4-5H,
-// Schlecht=2-3H, Miserabel=0-1H).
-const INTERIEUR_HH_RANGE = { 1: [0, 0], 2: [1, 2], 3: [3, 4], 4: [5, 6], 5: [7, 8] };
+// Schlecht=4, Miserabel=5). Best-/Worst-Case je Elternpaar direkt aus
+// einer Tabelle (mit dem Nutzer abgestimmt): schlechte Werte des einen
+// Elters werden vom guten Partner tendenziell ausgeglichen, gute/exzellente
+// Werte werden unterstützt. Ausgangspunkt sind immer die Eltern-Werte
+// selbst - sie verbessern sich im besten Fall bzw. verschlechtern sich im
+// schlechtesten Fall um 1-2 Punkte (oder bleiben gleich), nie darüber
+// hinaus. Bei gleichen Eltern-Werten (z.B. 3+3) gilt dasselbe Muster wie
+// bei den vom Nutzer vorgegebenen Fällen 1+1 und 2+2: Best Case bleibt
+// gleich, Worst Case verschlechtert sich um 1 (bei 5+5 an der Skala
+// gedeckelt).
+const INTERIEUR_WORST_CASE_TABLE = {
+  '1-1': 2, '1-2': 3, '1-3': 3, '1-4': 4, '1-5': 5,
+  '2-2': 3, '2-3': 4, '2-4': 4, '2-5': 5,
+  '3-3': 4, '3-4': 4, '3-5': 5,
+  '4-4': 5, '4-5': 5,
+  '5-5': 5,
+};
 
-function hhRangeForScore(score) {
-  return INTERIEUR_HH_RANGE[score] || null;
+function interieurBestWorstForTrait(scoreA, scoreB) {
+  const lo = Math.min(scoreA, scoreB);
+  const hi = Math.max(scoreA, scoreB);
+  return {
+    best: Math.floor((lo + hi) / 2),
+    worst: INTERIEUR_WORST_CASE_TABLE[`${lo}-${hi}`],
+  };
 }
 
-function interieurCategoryFromHHCount(hhCount) {
-  if (hhCount <= 0) return 1;
-  if (hhCount <= 2) return 2;
-  if (hhCount <= 4) return 3;
-  if (hhCount <= 6) return 4;
-  return 5;
-}
-
-// Best Case: optimistischste (niedrigste) hh-Zahl je Elter annehmen, dann
-// per Pigeonhole-Prinzip die minimal erzwungene Überlappung berechnen
-// (max(0, A_low + B_low - 8)) - das ist die Mindestzahl an Loci, die beim
-// Fohlen zwangsläufig hh werden. Worst Case: aus einer Phänotyp-Kategorie
-// ist echte Homozygotie (HH) nie nachweisbar, daher ist "Miserabel" für
-// JEDE Anpaarung als schlechtmöglichster Fall erreichbar (mit dem Nutzer
-// abgestimmt).
 function interieurFoalRange(mare, stallion) {
   const mareRows = mare?.temperament || [];
   const stallionByLabel = new Map((stallion?.temperament || []).map((r) => [r.label, r]));
 
-  const bestScores = [];
-  let worstCount = 0;
+  const bestScores = [], worstScores = [];
 
   for (const mareRow of mareRows) {
     const stallionRow = stallionByLabel.get(mareRow.label);
@@ -163,17 +167,15 @@ function interieurFoalRange(mare, stallion) {
     const scoreB = scoreTemperamentTerm(stallionRow.value);
     if (scoreA == null || scoreB == null) continue;
 
-    const rangeA = hhRangeForScore(scoreA);
-    const rangeB = hhRangeForScore(scoreB);
-    const overlap = Math.max(0, rangeA[0] + rangeB[0] - 8);
-    bestScores.push(interieurCategoryFromHHCount(overlap));
-    worstCount++;
+    const { best, worst } = interieurBestWorstForTrait(scoreA, scoreB);
+    bestScores.push(best);
+    worstScores.push(worst);
   }
 
   if (!bestScores.length) return { intBest: null, intWorst: null };
   return {
     intBest: bestScores.reduce((a, b) => a + b, 0) / bestScores.length,
-    intWorst: 5, // Miserabel - siehe Erklärung oben
+    intWorst: worstScores.reduce((a, b) => a + b, 0) / worstScores.length,
   };
 }
 
@@ -309,7 +311,7 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche }) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     parseExteriorLocus, exteriorBestWorstForTrait, exteriorFoalRange,
-    hhRangeForScore, interieurFoalRange, estimateFoalGP,
+    interieurBestWorstForTrait, interieurFoalRange, estimateFoalGP,
     COLOR_WISH_OPTIONS, colorWishPossible, rankStallions,
   };
 }
