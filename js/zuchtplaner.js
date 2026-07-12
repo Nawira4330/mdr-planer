@@ -303,7 +303,7 @@ function renderBestMatches() {
   }
 
   html += '<div class="notice">';
-  html += 'Hinweise zur Fohlen-Vorhersage: <strong>Int</strong> ist eine Näherung, da nur die Phänotyp-Kategorie der Eltern bekannt ist (kein Gencode) - ';
+  html += 'Erklärung zur Fohlen-Vorhersage: <strong>Int</strong> ist eine Näherung, da nur die Phänotyp-Kategorie der Eltern bekannt ist (kein Gencode) - ';
   html += 'sie geht von den Eltern-Werten aus, die sich je nach Partner im besten Fall um 1-2 Punkte verbessern, gleich bleiben oder im schlechtesten Fall um 1-2 Punkte verschlechtern. ';
   html += '<strong>GP</strong> ist eine Schätzung aus den Grenzwerten der Eltern-Einzelwerte (Grundlagen/Gangarten/Disziplinen), keine echte Vererbungssimulation.';
   html += '</div>';

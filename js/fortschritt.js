@@ -5,7 +5,7 @@ const PROGRESS = [
   { label: 'Turnierplaner', percent: 100 },
   { label: 'LP-Prognose', percent: 100 },
   { label: 'Zuchtbuch', percent: 20 },
-  { label: 'Verpaarungsratgeber', percent: 100 },
+  { label: 'Verpaarungsratgeber', percent: 80 },
 ];
 
 // Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
