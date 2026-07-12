@@ -22,6 +22,10 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-12T19:36', type: 'feature', title: 'Turniertabelle im Handyformat',
+    points: ['Zeigt auf schmalen Bildschirmen jede Disziplin als eigene Karte statt einer breiten Tabelle', 'Kein seitliches Scrollen mehr nötig'],
+  },
+  {
     date: '2026-07-12T08:28', type: 'bugfix', title: 'Handylayout repariert',
     points: ['Menüleiste lief auf schmalen Bildschirmen über den Rand hinaus - umbricht jetzt korrekt', 'Alle Seiten auf Handy-Breite geprüft'],
   },

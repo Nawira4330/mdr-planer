@@ -153,12 +153,15 @@ function lpResultHtml(lp) {
 }
 
 function rowHtml(v) {
+  // data-label wird auf schmalen Bildschirmen als Spaltenbeschriftung vor
+  // jedem Wert eingeblendet (siehe #tournament-table in css/style.css) -
+  // die Tabelle wird dort zu einer Kartenliste statt seitlich zu scrollen.
   return `<tr>
-    <td>${escapeHtml(v.category)}</td>
-    <td>${escapeHtml(v.name)}</td>
-    <td>${v.wert != null ? v.wert : '–'}</td>
-    <td>${v.interieur != null ? v.interieur.toFixed(2) : '–'}</td>
-    <td>${v.complete && v.lk != null ? 'LK' + v.lk : '–'}</td>
+    <td data-label="Kategorie">${escapeHtml(v.category)}</td>
+    <td data-label="Disziplin">${escapeHtml(v.name)}</td>
+    <td data-label="Wert">${v.wert != null ? v.wert : '–'}</td>
+    <td data-label="Interieur">${v.interieur != null ? v.interieur.toFixed(2) : '–'}</td>
+    <td data-label="LK">${v.complete && v.lk != null ? 'LK' + v.lk : '–'}</td>
   </tr>`;
 }
 
