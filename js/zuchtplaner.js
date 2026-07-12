@@ -1,14 +1,15 @@
 // Felder, die für Inzuchtprüfung, Overo-Erkennung, die Mutter/Vater-
-// Kennzahlen und die kleine Anzeige in "Beste Hengstauswahl" gebraucht
-// werden.
+// Kennzahlen und den Verpaarungsratgeber (inkl. GP-Formel und
+// Genotyp-basierter Fohlen-Vorhersage) gebraucht werden.
 const HORSE_SELECT_FIELDS =
-  'id,name,owner,gender,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+  'id,name,owner,gender,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases';
 
 let mares = [];
 let stallions = [];
 let foreignStallion = null; // per Freitext eingelesener, nicht gespeicherter Hengst
 let activeTab = 'inzucht';
 let mareSelect, stallionSelect;
+let schwerpunkt = 'gp';
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -25,7 +26,41 @@ async function init() {
   document.querySelector('#mare-owner-select').addEventListener('change', onMareOwnerChange);
   document.querySelector('#stallion-owner-select').addEventListener('change', onStallionOwnerChange);
   document.querySelector('#stallion-parse-btn').addEventListener('click', onStallionParse);
+  document.querySelector('#schwerpunkt-select').addEventListener('change', (e) => {
+    schwerpunkt = e.target.value;
+    renderBestMatches();
+  });
+  wireFarbwunschDropdown();
   await loadHorses();
+}
+
+function wireFarbwunschDropdown() {
+  const root = document.querySelector('#farbwunsch-drop');
+  const toggle = root.querySelector('.checkdrop-toggle');
+  const panel = root.querySelector('.checkdrop-panel');
+  panel.innerHTML = COLOR_WISH_OPTIONS.map((o) => `
+    <label class="checkdrop-item">
+      <input type="checkbox" value="${escapeHtml(o.label)}" />
+      <span>${escapeHtml(o.label)}</span>
+    </label>
+  `).join('');
+
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    panel.hidden = !panel.hidden;
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#farbwunsch-drop')) panel.hidden = true;
+  });
+  panel.addEventListener('change', () => {
+    const checked = [...panel.querySelectorAll('input:checked')];
+    toggle.textContent = checked.length ? `${checked.length} ausgewählt` : 'Alle';
+    renderBestMatches();
+  });
+}
+
+function selectedFarbwuensche() {
+  return [...document.querySelectorAll('#farbwunsch-drop input:checked')].map((cb) => cb.value);
 }
 
 async function loadHorses() {
@@ -232,47 +267,91 @@ function foalPedigreeHtml(nodes, dupNames) {
     ${list(greatVater)}`;
 }
 
-// --- Tab 2: Beste Hengstauswahl ---
+// --- Tab 2: Verpaarungsratgeber ---
 
 function renderBestMatches() {
-  const tbody = document.querySelector('#auswahl-table tbody');
+  const container = document.querySelector('#auswahl-result');
   const hintEl = document.querySelector('#auswahl-hint');
   const mare = selectedMare();
 
   if (!mare) {
-    tbody.innerHTML = '<tr><td colspan="5" class="muted">Bitte zuerst eine Stute auswählen.</td></tr>';
+    container.innerHTML = '<p class="muted small">Bitte zuerst eine Stute auswählen.</p>';
     hintEl.textContent = '';
     return;
   }
 
-  const mareHasOvero = hasOveroGene(mare);
-  const candidates = stallions.filter((stallion) => {
-    if (findSharedNames(mare, stallion).length > 0) return false;
-    if (mareHasOvero && hasOveroGene(stallion)) return false;
-    return true;
+  const { total, candidateCount, top } = rankStallions(mare, stallions, {
+    schwerpunkt, farbwuensche: selectedFarbwuensche(),
   });
 
+  const mareHasOvero = hasOveroGene(mare);
   hintEl.textContent = mareHasOvero
-    ? `Stute trägt Overo – Overo-Hengste werden ausgeschlossen. ${candidates.length} von ${stallions.length} Hengsten passen.`
-    : `${candidates.length} von ${stallions.length} Hengsten passen.`;
+    ? `Stute trägt Overo – Overo-Hengste werden ausgeschlossen. ${candidateCount} von ${total} Hengsten passen, Top ${top.length} angezeigt.`
+    : `${candidateCount} von ${total} Hengsten passen, Top ${top.length} angezeigt.`;
 
-  if (!candidates.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="muted">Keine passenden Hengste gefunden.</td></tr>';
+  let html = parentSummaryHtml('Stute', mare);
+
+  if (!top.length) {
+    html += '<p class="muted small">Keine passenden Hengste gefunden.</p>';
+    container.innerHTML = html;
     return;
   }
 
-  tbody.innerHTML = candidates.map((h) => {
-    const gp = h.tournament_potential?.['Gesamtpotenzial'] ?? '';
-    const extPct = h.exterior_genetics?.overall?.percent;
-    const intAvg = averageScore(h.temperament, scoreTemperamentTerm);
-    return `<tr>
-      <td>${escapeHtml(h.name || '(ohne Name)')}</td>
-      <td>${escapeHtml(h.coat_color || '')}</td>
-      <td>${escapeHtml(String(gp))}</td>
-      <td>${extPct != null ? extPct + '%' : ''}</td>
-      <td>${intAvg != null ? intAvg.toFixed(2) : ''}</td>
-    </tr>`;
-  }).join('');
+  html += '<div class="notice">';
+  html += 'Hinweise zur Fohlen-Vorhersage: <strong>Int-Worst-Case</strong> ist rechnerisch für jede Anpaarung "Miserabel", ';
+  html += 'da aus der Interieur-Kategorie allein nie ausgeschlossen werden kann, dass beide Eltern das ungünstige Gen tragen. ';
+  html += '<strong>GP</strong> ist eine Schätzung aus den Grenzwerten der Eltern-Einzelwerte (Grundlagen/Gangarten/Disziplinen), keine echte Vererbungssimulation.';
+  html += '</div>';
+
+  html += '<div class="group-heading">Hengste</div>';
+  html += top.map((c, i) => stallionCandidateHtml(i + 1, c)).join('');
+
+  container.innerHTML = html;
+}
+
+function fmtScore(v) {
+  return v != null ? v.toFixed(2) : '–';
+}
+function fmtPct(v) {
+  return v != null ? v.toFixed(1) + '%' : '–';
+}
+function fmtGp(v) {
+  return v != null ? Math.round(v) : '–';
+}
+
+function stallionCandidateHtml(rank, c) {
+  const h = c.stallion;
+  const gp = h.tournament_potential?.['Gesamtpotenzial'] ?? '–';
+  const extAvg = averageScore(h.exterior_descriptive, scoreExteriorTerm);
+  const extPct = h.exterior_genetics?.overall?.percent;
+  const intAvg = averageScore(h.temperament, scoreTemperamentTerm);
+  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes);
+  const genetik = genes.map((g) => g.alleles).join(' ');
+
+  return `<div class="result-card">
+    <h2>${rank}. ${escapeHtml(h.name || '(ohne Name)')}</h2>
+    <p class="small muted">
+      GP: <strong>${escapeHtml(String(gp))}</strong>
+      &nbsp;·&nbsp; Ext: <strong>${fmtScore(extAvg)}</strong>
+      &nbsp;·&nbsp; Ext%: <strong>${extPct != null ? extPct + '%' : '–'}</strong>
+      &nbsp;·&nbsp; Int: <strong>${fmtScore(intAvg)}</strong>
+      &nbsp;·&nbsp; Fellfarbe: <strong>${h.coat_color ? escapeHtml(h.coat_color) : '–'}</strong>
+      &nbsp;·&nbsp; Genetik: <strong>${genetik ? escapeHtml(genetik) : '–'}</strong>
+      &nbsp;·&nbsp; Besitzer: <strong>${h.owner ? escapeHtml(h.owner) : '–'}</strong>
+    </p>
+    <p class="small">
+      Fohlen best case: GP <strong>${fmtGp(c.gpBest)}</strong>
+      &nbsp;·&nbsp; Ext <strong>${fmtScore(c.extBest)}</strong>
+      &nbsp;·&nbsp; Ext% <strong>${fmtPct(c.extPctBest)}</strong>
+      &nbsp;·&nbsp; Int <strong>${fmtScore(c.intBest)}</strong>
+    </p>
+    <p class="small muted">
+      Fohlen worst case: GP <strong>${fmtGp(c.gpWorst)}</strong>
+      &nbsp;·&nbsp; Ext <strong>${fmtScore(c.extWorst)}</strong>
+      &nbsp;·&nbsp; Ext% <strong>${fmtPct(c.extPctWorst)}</strong>
+      &nbsp;·&nbsp; Int <strong>${fmtScore(c.intWorst)}</strong>
+    </p>
+  </div>`;
 }
 
 function escapeHtml(str) {

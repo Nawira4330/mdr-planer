@@ -5,7 +5,7 @@ const PROGRESS = [
   { label: 'Turnierplaner', percent: 100 },
   { label: 'LP-Prognose', percent: 100 },
   { label: 'Zuchtbuch', percent: 20 },
-  { label: 'Verpaarungsratgeber', percent: 20 },
+  { label: 'Verpaarungsratgeber', percent: 100 },
 ];
 
 // Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
@@ -21,6 +21,15 @@ const TYPE_META = {
 // nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
+  {
+    date: '2026-07-12T21:15', type: 'feature', title: '"Beste Hengstauswahl" wird zum Verpaarungsratgeber',
+    points: [
+      'Stute wählen und die Top 10 passenden Hengste sehen, mit wählbarem Schwerpunkt (GP, Ext, Ext%, Int)',
+      'Optionale Farbwünsche-Auswahl (Overo, Tobiano, Roan, Champagne, ...)',
+      'Echte Fohlen-Vorhersage (Best-/Worst-Case) statt nur der Ist-Werte des Hengstes - basiert bei Ext/Ext% auf dem echten Gencode, bei GP auf den echten Grundlagen-/Gangarten-/Disziplin-Werten',
+      'Weiterhin: keine Anzeige bei Inzucht oder möglichem doppeltem Overo',
+    ],
+  },
   {
     date: '2026-07-12T19:36', type: 'feature', title: 'Turniertabelle im Handyformat',
     points: ['Zeigt auf schmalen Bildschirmen jede Disziplin als eigene Karte statt einer breiten Tabelle', 'Kein seitliches Scrollen mehr nötig'],

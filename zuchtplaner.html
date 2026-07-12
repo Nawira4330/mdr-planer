@@ -47,7 +47,7 @@
 
     <div class="tabs">
       <button type="button" class="tab-btn active" data-tab="inzucht">Inzuchtprüfung</button>
-      <button type="button" class="tab-btn" data-tab="auswahl">Beste Hengstauswahl</button>
+      <button type="button" class="tab-btn" data-tab="auswahl">Verpaarungsratgeber</button>
     </div>
 
     <section id="tab-inzucht" class="tab-panel">
@@ -88,28 +88,34 @@
 
     <section id="tab-auswahl" class="tab-panel" hidden>
       <p class="small muted">
-        Zeigt alle Hengste, die (nach sichtbarem Stammbaum) nicht mit der
-        gewählten Stute verwandt sind und – falls die Stute Overo trägt –
-        selbst kein Overo tragen. Weitere Auswahlkriterien werden später
-        ergänzt.
+        Zeigt die Top 10 Hengste für die gewählte Stute, mit einer
+        Fohlen-Vorhersage (Best-/Worst-Case). Hengste, die (nach sichtbarem
+        Stammbaum) mit der Stute verwandt sind oder bei denen das Fohlen
+        doppelt Overo erben könnte, werden ausgeschlossen.
       </p>
+      <fieldset>
+        <legend>Schwerpunkt &amp; Farbwünsche</legend>
+        <div class="form-grid">
+          <div>
+            <label for="schwerpunkt-select">Schwerpunkt</label>
+            <select id="schwerpunkt-select">
+              <option value="gp">GP (Gesamtpotenzial)</option>
+              <option value="ext">Ext (Körperbau)</option>
+              <option value="extpct">Ext% (genetisch)</option>
+              <option value="int">Int (Interieur)</option>
+            </select>
+          </div>
+          <div>
+            <label>Farbwünsche (optional)</label>
+            <div class="checkdrop" id="farbwunsch-drop">
+              <button type="button" class="checkdrop-toggle">Alle</button>
+              <div class="checkdrop-panel" hidden></div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
       <div id="auswahl-hint" class="muted small"></div>
-      <div class="table-wrap">
-        <table id="auswahl-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Fellfarbe</th>
-              <th>GP</th>
-              <th>Ext%</th>
-              <th>Int</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td colspan="5" class="muted">Bitte zuerst eine Stute auswählen.</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <div id="auswahl-result"></div>
     </section>
 
     <p id="load-error" class="error"></p>
@@ -119,6 +125,8 @@
   <script src="js/supabaseClient.js"></script>
   <script src="js/parser.js"></script>
   <script src="js/breeding.js"></script>
+  <script src="js/tournamentScoring.js"></script>
+  <script src="js/verpaarung.js"></script>
   <script src="js/searchableSelect.js"></script>
   <script src="js/zuchtplaner.js"></script>
 </body>
