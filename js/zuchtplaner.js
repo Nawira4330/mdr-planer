@@ -235,10 +235,34 @@ function foalSectionHtml(mare, stallion) {
     html += '<div class="notice notice-warning">⚠️ Beide Elterntiere tragen Overo – bei Overo × Overo besteht ein erhöhtes Risiko für das Overo Lethal White Syndrome (OLWS) bei homozygoten Fohlen.</div>';
   }
 
+  html += foalRangeHtml(mare, stallion);
+
   html += foalPedigreeHtml(nodes, dupNames);
 
   html += '</div>';
   return html;
+}
+
+// Fohlen-Vorhersage (Best-/Worst-Case) für die konkret gewählte Anpaarung -
+// dieselbe Berechnung wie im Verpaarungsratgeber (js/verpaarung.js).
+function foalRangeHtml(mare, stallion) {
+  const ext = exteriorFoalRange(mare, stallion);
+  const int = interieurFoalRange(mare, stallion);
+  const gp = estimateFoalGP(mare, stallion);
+
+  return `<p class="small">
+      Fohlen best case: GP <strong>${fmtGp(gp.gpBest)}</strong>
+      &nbsp;·&nbsp; Ext <strong>${fmtScore(ext.extBest)}</strong>
+      &nbsp;·&nbsp; Ext% <strong>${fmtPct(ext.extPctBest)}</strong>
+      &nbsp;·&nbsp; Int <strong>${fmtScore(int.intBest)}</strong>
+    </p>
+    <p class="small muted">
+      Fohlen worst case: GP <strong>${fmtGp(gp.gpWorst)}</strong>
+      &nbsp;·&nbsp; Ext <strong>${fmtScore(ext.extWorst)}</strong>
+      &nbsp;·&nbsp; Ext% <strong>${fmtPct(ext.extPctWorst)}</strong>
+      &nbsp;·&nbsp; Int <strong>${fmtScore(int.intWorst)}</strong>
+    </p>
+    <p class="small muted">⚠️ GP und Int sind noch grobe Schätzwerte – verlasst euch für diese beiden Werte noch nicht auf ihre Richtigkeit.</p>`;
 }
 
 function nameColorSpan(name, dupNames) {
