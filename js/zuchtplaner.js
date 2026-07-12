@@ -10,6 +10,7 @@ let foreignStallion = null; // per Freitext eingelesener, nicht gespeicherter He
 let activeTab = 'inzucht';
 let mareSelect, stallionSelect;
 let schwerpunkt = 'gp';
+let sortMode = 'best';
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -28,6 +29,10 @@ async function init() {
   document.querySelector('#stallion-parse-btn').addEventListener('click', onStallionParse);
   document.querySelector('#schwerpunkt-select').addEventListener('change', (e) => {
     schwerpunkt = e.target.value;
+    renderBestMatches();
+  });
+  document.querySelector('#sortierung-select').addEventListener('change', (e) => {
+    sortMode = e.target.value;
     renderBestMatches();
   });
   wireFarbwunschDropdown();
@@ -281,7 +286,7 @@ function renderBestMatches() {
   }
 
   const { total, candidateCount, top } = rankStallions(mare, stallions, {
-    schwerpunkt, farbwuensche: selectedFarbwuensche(),
+    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(),
   });
 
   const mareHasOvero = hasOveroGene(mare);

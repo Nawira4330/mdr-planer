@@ -272,12 +272,33 @@ function colorWishPossible(mare, stallion, wish) {
 // Höher = besser für GP/Ext%, niedriger = besser für Ext/Int (1=exzellent
 // ... 5=miserabel-Skala) - siehe Plan.
 const SCHWERPUNKT_HIGHER_IS_BETTER = { gp: true, ext: false, extpct: true, int: false };
-const SCHWERPUNKT_FIELD = { gp: 'gpBest', ext: 'extBest', extpct: 'extPctBest', int: 'intBest' };
+const SCHWERPUNKT_BEST_FIELD = { gp: 'gpBest', ext: 'extBest', extpct: 'extPctBest', int: 'intBest' };
+const SCHWERPUNKT_WORST_FIELD = { gp: 'gpWorst', ext: 'extWorst', extpct: 'extPctWorst', int: 'intWorst' };
+
+// Sortierung ist unabhängig vom Schwerpunkt wählbar:
+// - "best"/"worst": der jeweilige Fohlen-Wert (Best-/Worst-Case) des
+//   gewählten Schwerpunkts, in dessen eigener Richtung (höher/niedriger =
+//   besser je nach Schwerpunkt).
+// - "diff-asc"/"diff-desc": Abstand zwischen Best- und Worst-Case
+//   (unabhängig von der Richtung) - klein = verlässliches Ergebnis, groß =
+//   große Schwankungsbreite (Risiko/Chance).
+function sortKey(candidate, schwerpunkt, sortMode) {
+  const bestField = SCHWERPUNKT_BEST_FIELD[schwerpunkt] || 'gpBest';
+  const worstField = SCHWERPUNKT_WORST_FIELD[schwerpunkt] || 'gpWorst';
+  const best = candidate[bestField];
+  const worst = candidate[worstField];
+
+  if (sortMode === 'diff-asc' || sortMode === 'diff-desc') {
+    if (best == null || worst == null) return null;
+    return Math.abs(best - worst);
+  }
+  return sortMode === 'worst' ? worst : best;
+}
 
 // Harte Ausschlüsse zuerst (Inzucht, doppeltes Overo, nicht erfüllbare
-// Farbwünsche), danach Sortierung nach dem Fohlen-Best-Case-Wert des
-// gewählten Schwerpunkts, Top 10.
-function rankStallions(mare, stallions, { schwerpunkt, farbwuensche }) {
+// Farbwünsche), danach Sortierung nach dem gewählten Schwerpunkt +
+// Sortiermodus, Top 10.
+function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode }) {
   const mareHasOvero = hasOveroGene(mare);
   const wishes = (farbwuensche || []).map((label) => COLOR_WISH_OPTIONS.find((o) => o.label === label)).filter(Boolean);
 
@@ -295,14 +316,23 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche }) {
     return { stallion, ...ext, ...int, ...gp };
   });
 
-  const field = SCHWERPUNKT_FIELD[schwerpunkt] || 'gpBest';
-  const higherIsBetter = SCHWERPUNKT_HIGHER_IS_BETTER[schwerpunkt] !== false;
+  const mode = sortMode || 'best';
+  // Bei "diff": größere Differenz zuerst bei diff-desc, kleinere zuerst bei
+  // diff-asc. Bei "best"/"worst": Richtung folgt dem Schwerpunkt selbst
+  // (z.B. bei Int ist niedriger immer besser, ob Best- oder Worst-Case).
+  const ascending = mode === 'diff-asc'
+    ? true
+    : mode === 'diff-desc'
+      ? false
+      : SCHWERPUNKT_HIGHER_IS_BETTER[schwerpunkt] === false;
+
   scored.sort((a, b) => {
-    const va = a[field], vb = b[field];
+    const va = sortKey(a, schwerpunkt, mode);
+    const vb = sortKey(b, schwerpunkt, mode);
     if (va == null && vb == null) return 0;
     if (va == null) return 1;
     if (vb == null) return -1;
-    return higherIsBetter ? vb - va : va - vb;
+    return ascending ? va - vb : vb - va;
   });
 
   return { total: stallions.length, candidateCount: candidates.length, top: scored.slice(0, 10) };
