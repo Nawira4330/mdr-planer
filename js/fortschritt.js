@@ -22,6 +22,10 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-12T08:28', type: 'bugfix', title: 'Handylayout repariert',
+    points: ['Menüleiste lief auf schmalen Bildschirmen über den Rand hinaus - umbricht jetzt korrekt', 'Alle Seiten auf Handy-Breite geprüft'],
+  },
+  {
     date: '2026-07-12T00:18', type: 'update', title: 'Änderungsverlauf übersichtlicher',
     points: ['Einträge jetzt farbig nach Art markiert: Neu / Update / Bugfix', 'Kürzere, einfachere Beschreibungen statt technischer Details'],
   },
