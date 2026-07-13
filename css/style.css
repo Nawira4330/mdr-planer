@@ -109,6 +109,9 @@ button.secondary, .btn.secondary {
 }
 button.secondary:hover, .btn.secondary:hover { background: var(--border); }
 
+button:disabled, .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+button:disabled:hover, .btn:disabled:hover { background: transparent; }
+
 button.danger { background: var(--danger); border-color: var(--danger); }
 button.danger:hover { filter: brightness(0.9); }
 

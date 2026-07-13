@@ -4,6 +4,12 @@
 const HORSE_SELECT_FIELDS =
   'id,name,owner,gender,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases';
 
+// Leichtere Feldauswahl für die Datenbank-Schätzung (computeEmpiricalDeviations):
+// braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
+// die für GP/Ext/Ext%/Int und den Stammbaum nötig sind.
+const STATS_SELECT_FIELDS =
+  'id,name,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+
 let mares = [];
 let stallions = [];
 let foreignStallion = null; // per Freitext eingelesener, nicht gespeicherter Hengst
@@ -11,6 +17,7 @@ let activeTab = 'inzucht';
 let mareSelect, stallionSelect;
 let schwerpunkt = 'gp';
 let sortMode = 'best';
+let empiricalDeviations = null; // wird nach loadHorses() befüllt, siehe loadEmpiricalDeviations()
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -37,6 +44,20 @@ async function init() {
   });
   wireFarbwunschDropdown();
   await loadHorses();
+  loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert die Seite nicht
+}
+
+// Lädt ALLE Pferde (unabhängig von ZZL/Geschlecht) einmalig, um daraus die
+// Datenbank-Schätzung (3. Version neben Best-/Worst-Case) zu berechnen -
+// siehe computeEmpiricalDeviations in js/verpaarung.js. Läuft im Hintergrund
+// und rendert bei Erfolg neu, damit die Seite nicht auf diesen Extra-Request
+// warten muss.
+async function loadEmpiricalDeviations() {
+  const { data, error } = await supabaseClient.from('horses').select(STATS_SELECT_FIELDS);
+  if (error || !data) return;
+  empiricalDeviations = computeEmpiricalDeviations(data);
+  renderInzuchtResult();
+  if (activeTab === 'auswahl') renderBestMatches();
 }
 
 function wireFarbwunschDropdown() {
@@ -252,8 +273,9 @@ function foalSectionHtml(mare, stallion) {
   return html;
 }
 
-// Fohlen-Vorhersage (Best-/Worst-Case) für die konkret gewählte Anpaarung -
-// dieselbe Berechnung wie im Verpaarungsratgeber (js/verpaarung.js).
+// Fohlen-Vorhersage (Best-/Worst-Case + Datenbank-Schätzung) für die
+// konkret gewählte Anpaarung - dieselbe Berechnung wie im
+// Verpaarungsratgeber (js/verpaarung.js).
 function foalRangeHtml(mare, stallion) {
   const ext = exteriorFoalRange(mare, stallion);
   const int = interieurFoalRange(mare, stallion);
@@ -271,7 +293,34 @@ function foalRangeHtml(mare, stallion) {
       &nbsp;·&nbsp; Ext% <strong>${fmtPct(ext.extPctWorst)}</strong>
       &nbsp;·&nbsp; Int <strong>${fmtScore(int.intWorst)}</strong>
     </p>
-    <p class="small muted">⚠️ GP und Int sind noch grobe Schätzwerte – verlasst euch für diese beiden Werte noch nicht auf ihre Richtigkeit.</p>`;
+    ${empiricalRowHtml(mare, stallion)}
+    <p class="small muted">⚠️ GP und Int sind noch grobe Schätzwerte – verlasst euch für diese beiden Werte noch nicht auf ihre Richtigkeit.</p>
+    ${decksprungButtonHtml()}`;
+}
+
+// Dritte, realistischere Einschätzung neben Best-/Worst-Case: Eltern-
+// Mittelwert + die aktuell in der Datenbank beobachtete Durchschnitts-
+// Abweichung echter Fohlen (siehe computeEmpiricalDeviations in
+// js/verpaarung.js). empiricalDeviations wird asynchron nachgeladen
+// (loadEmpiricalDeviations) - vor dem ersten Laden leere Zeile.
+function empiricalRowHtml(mare, stallion) {
+  if (!empiricalDeviations) return '';
+  const est = estimateFoalEmpirical(mare, stallion, empiricalDeviations);
+  const ns = Object.entries(empiricalDeviations).map(([k, v]) => `${k}: n=${v.n}`).join(', ');
+  return `<p class="small muted">
+      Datenbank-Schätzung: GP <strong>${fmtGp(est.gp)}</strong>
+      &nbsp;·&nbsp; Ext <strong>${fmtScore(est.ext)}</strong>
+      &nbsp;·&nbsp; Ext% <strong>${fmtPct(est.extPct)}</strong>
+      &nbsp;·&nbsp; Int <strong>${fmtScore(est.int)}</strong>
+      <br><span class="muted" style="font-size:0.85em;">Eltern-Mittelwert + Ø-Abweichung echter Fohlen in der Datenbank (${escapeHtml(ns)}) - wird mit mehr eingetragenen Fohlen automatisch genauer.</span>
+    </p>`;
+}
+
+// Platzhalter-Button, siehe Plan "Decksprung-Button": Speichern folgt
+// später als eigene Seite in der MDR-Datenbank (anderes Repo/Login) -
+// hier bewusst noch ohne Funktion.
+function decksprungButtonHtml() {
+  return `<button type="button" class="btn secondary" disabled title="Verpaarungs-Log folgt - kommt bald" style="margin-top:0.4rem;">Decksprung nutzen (kommt bald)</button>`;
 }
 
 function nameColorSpan(name, dupNames) {
@@ -342,7 +391,7 @@ function renderBestMatches() {
   html += '</div>';
 
   html += '<div class="group-heading">Hengste</div>';
-  html += top.map((c, i) => stallionCandidateHtml(i + 1, c)).join('');
+  html += top.map((c, i) => stallionCandidateHtml(i + 1, c, mare)).join('');
 
   container.innerHTML = html;
 }
@@ -357,7 +406,7 @@ function fmtGp(v) {
   return v != null ? Math.round(v) : '–';
 }
 
-function stallionCandidateHtml(rank, c) {
+function stallionCandidateHtml(rank, c, mare) {
   const h = c.stallion;
   const gp = h.tournament_potential?.['Gesamtpotenzial'] ?? '–';
   const extAvg = averageScore(h.exterior_descriptive, scoreExteriorTerm);
@@ -389,6 +438,8 @@ function stallionCandidateHtml(rank, c) {
       &nbsp;·&nbsp; Ext% <strong>${fmtPct(c.extPctWorst)}</strong>
       &nbsp;·&nbsp; Int <strong>${fmtScore(c.intWorst)}</strong>
     </p>
+    ${empiricalRowHtml(mare, h)}
+    ${decksprungButtonHtml()}
   </div>`;
 }
 

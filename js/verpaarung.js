@@ -241,6 +241,95 @@ function estimateFoalGP(mare, stallion) {
   return { gpBest, gpWorst };
 }
 
+// --- Datenbank-Schätzung (3. Version, neben Best-/Worst-Case) ---
+//
+// Best-/Worst-Case sind theoretische Extreme - selten das tatsächliche
+// Ergebnis. Als dritte, realistischere Einschätzung wird der
+// Eltern-Mittelwert um die tatsächlich in der Datenbank beobachtete
+// Durchschnitts-Abweichung echter Fohlen von ihrem eigenen
+// Eltern-Mittelwert korrigiert. Wird bei jedem Laden live aus dem
+// aktuellen Datenbestand neu berechnet (keine feste Zahl im Code) -
+// mit steigender Anzahl eingetragener Fohlen wird die Schätzung von
+// selbst genauer. Anhand einer echten Abfrage (298 Pferde, Stand der
+// Herleitung) wurden 28 Eltern-Fohlen-Trios gefunden (23 mit Ext%-
+// Daten) - genug für eine einfache additive Korrektur, aber zu wenig
+// für ein komplexeres Modell (würde überanpassen).
+function horseGP(h) {
+  const v = h?.tournament_potential?.['Gesamtpotenzial'];
+  return v != null && v !== '' ? Number(v) : null;
+}
+function horseExt(h) {
+  return averageScore(h?.exterior_descriptive, scoreExteriorTerm);
+}
+function horseExtPct(h) {
+  return h?.exterior_genetics?.overall?.percent ?? null;
+}
+function horseInt(h) {
+  return averageScore(h?.temperament, scoreTemperamentTerm);
+}
+
+const EMPIRICAL_METRICS = { gp: horseGP, ext: horseExt, extPct: horseExtPct, int: horseInt };
+
+// Baut aus allen geladenen Pferden die echten Eltern-Fohlen-Trios (beide
+// Eltern UND das Fohlen selbst als eigener Datensatz vorhanden, per Name
+// aufgelöst wie überall sonst in diesem Modul) und liefert je Metrik die
+// durchschnittliche Abweichung des Fohlens vom Eltern-Mittelwert.
+function computeEmpiricalDeviations(allHorses) {
+  const byName = new Map();
+  for (const h of allHorses) {
+    const key = normalizeName(h.name);
+    if (key && !byName.has(key)) byName.set(key, h);
+  }
+
+  const diffs = { gp: [], ext: [], extPct: [], int: [] };
+  for (const child of allHorses) {
+    const anc = pedigreeAncestorNames(child);
+    const fatherName = anc[0] && normalizeName(anc[0]) !== 'unbekannt' ? anc[0] : null;
+    const motherName = anc[1] && normalizeName(anc[1]) !== 'unbekannt' ? anc[1] : null;
+    if (!fatherName || !motherName) continue;
+    const father = byName.get(normalizeName(fatherName));
+    const mother = byName.get(normalizeName(motherName));
+    if (!father || !mother) continue;
+
+    for (const [metric, getValue] of Object.entries(EMPIRICAL_METRICS)) {
+      const childVal = getValue(child);
+      const fatherVal = getValue(father);
+      const motherVal = getValue(mother);
+      if (childVal == null || fatherVal == null || motherVal == null) continue;
+      diffs[metric].push(childVal - (fatherVal + motherVal) / 2);
+    }
+  }
+
+  const result = {};
+  for (const metric of Object.keys(EMPIRICAL_METRICS)) {
+    const values = diffs[metric];
+    result[metric] = {
+      n: values.length,
+      meanDiff: values.length ? values.reduce((a, b) => a + b, 0) / values.length : null,
+    };
+  }
+  return result;
+}
+
+// Eltern-Mittelwert der zwei ausgewählten Pferde + die passende
+// Durchschnitts-Abweichung aus computeEmpiricalDeviations. Liefert je
+// Metrik null, wenn einem Elternteil der Wert fehlt oder keine
+// Eltern-Fohlen-Trios für diese Metrik gefunden wurden (n=0).
+function estimateFoalEmpirical(mare, stallion, deviations) {
+  const result = {};
+  for (const [metric, getValue] of Object.entries(EMPIRICAL_METRICS)) {
+    const a = getValue(mare);
+    const b = getValue(stallion);
+    const dev = deviations?.[metric];
+    if (a == null || b == null || !dev || !dev.n) {
+      result[metric] = null;
+    } else {
+      result[metric] = (a + b) / 2 + dev.meanDiff;
+    }
+  }
+  return result;
+}
+
 // --- Farbwünsche ---
 
 const COLOR_WISH_OPTIONS = [
@@ -342,6 +431,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     parseExteriorLocus, exteriorBestWorstForTrait, exteriorFoalRange,
     interieurBestWorstForTrait, interieurFoalRange, estimateFoalGP,
+    horseGP, horseExt, horseExtPct, horseInt,
+    computeEmpiricalDeviations, estimateFoalEmpirical,
     COLOR_WISH_OPTIONS, colorWishPossible, rankStallions,
   };
 }
