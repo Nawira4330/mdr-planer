@@ -353,11 +353,16 @@ async function onDecksprungClick(e) {
   btn.disabled = true;
   statusEl.textContent = 'Speichert…';
 
+  // "pairing_date" ist das erwartete Abfohldatum, nicht der Decksprung-
+  // Tag selbst - Decksprung heute + 30 Tage (Spielmechanik).
+  const foalingDate = new Date();
+  foalingDate.setDate(foalingDate.getDate() + 30);
+
   const payload = {
     owner: btn.dataset.owner || null,
     stallion: stallionName,
     mare: mareName,
-    pairing_date: new Date().toISOString().slice(0, 10),
+    pairing_date: foalingDate.toISOString().slice(0, 10),
     keep_foal: null,
     notes: null,
   };
