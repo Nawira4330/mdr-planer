@@ -22,7 +22,7 @@ let empiricalDeviations = null; // wird nach loadHorses() befüllt, siehe loadEm
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-  wireTabs();
+  wireTabButtons();
   mareSelect = createSearchableSelect(
     document.querySelector('#mare-search'), document.querySelector('#mare-panel'),
     { onChange: onMareChange },
@@ -45,6 +45,12 @@ async function init() {
   wireFarbwunschDropdown();
   await loadHorses();
   loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert die Seite nicht
+  // Erst NACH mareSelect/stallionSelect + loadHorses() aktivieren, da
+  // activateTab('auswahl') sonst renderBestMatches() aufruft, bevor
+  // mareSelect existiert bzw. Pferde geladen sind (führte zu einem
+  // Fehler, der die komplette init()-Funktion abbrach - Suchfelder
+  // blieben dann funktionslos, z.B. via "zuchtplaner.html?tab=auswahl").
+  activateTabFromUrl();
 }
 
 // Lädt ALLE Pferde (unabhängig von ZZL/Geschlecht) einmalig, um daraus die
@@ -144,13 +150,18 @@ function onStallionOwnerChange() {
   stallionSelect.clear(); // löst onStallionChange('') aus
 }
 
-function wireTabs() {
+function wireTabButtons() {
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+}
 
-  // Erlaubt einen Direktlink auf einen bestimmten Tab, z.B. von der
-  // Startseite auf "zuchtplaner.html?tab=auswahl" (Verpaarungsratgeber).
+// Erlaubt einen Direktlink auf einen bestimmten Tab, z.B. von der
+// Startseite auf "zuchtplaner.html?tab=auswahl" (Verpaarungsratgeber).
+// Wird erst am Ende von init() aufgerufen (siehe dort) - activateTab()
+// rendert bei "auswahl" sofort über renderBestMatches(), das braucht
+// mareSelect/stallionSelect und geladene Pferde.
+function activateTabFromUrl() {
   const requestedTab = new URLSearchParams(window.location.search).get('tab');
   if (requestedTab && document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`)) {
     activateTab(requestedTab);
