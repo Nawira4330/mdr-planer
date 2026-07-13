@@ -244,6 +244,19 @@ td.actions-cell { display: flex; gap: 0.4rem; }
   gap: 0 1rem;
 }
 
+/* Index-Karten (direkte fieldset-Kinder von .form-grid, nicht die
+   Label/Select-Zeilen innerhalb anderer Fieldsets): Grid streckt alle
+   Karten einer Zeile bereits auf dieselbe Höhe - hier zusätzlich die
+   Beschreibung wachsen lassen, damit Button und Anleitung trotz
+   unterschiedlich langer Texte auf gleicher Höhe stehen. */
+.form-grid > fieldset {
+  display: flex;
+  flex-direction: column;
+}
+.form-grid > fieldset > p {
+  flex: 1 0 auto;
+}
+
 fieldset {
   border: 1px solid var(--border);
   border-radius: var(--radius);
