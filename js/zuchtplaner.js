@@ -125,14 +125,23 @@ function onStallionOwnerChange() {
 
 function wireTabs() {
   document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      activeTab = btn.dataset.tab;
-      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
-      document.querySelector('#tab-inzucht').hidden = activeTab !== 'inzucht';
-      document.querySelector('#tab-auswahl').hidden = activeTab !== 'auswahl';
-      if (activeTab === 'auswahl') renderBestMatches();
-    });
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+
+  // Erlaubt einen Direktlink auf einen bestimmten Tab, z.B. von der
+  // Startseite auf "zuchtplaner.html?tab=auswahl" (Verpaarungsratgeber).
+  const requestedTab = new URLSearchParams(window.location.search).get('tab');
+  if (requestedTab && document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`)) {
+    activateTab(requestedTab);
+  }
+}
+
+function activateTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelector('#tab-inzucht').hidden = activeTab !== 'inzucht';
+  document.querySelector('#tab-auswahl').hidden = activeTab !== 'auswahl';
+  if (activeTab === 'auswahl') renderBestMatches();
 }
 
 function onMareChange() {

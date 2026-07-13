@@ -270,7 +270,19 @@ details.collapsible {
   background: var(--surface);
 }
 details.collapsible:not([open]) { padding-bottom: 0.8rem; }
-details.collapsible > summary {
+
+/* Leichtere Variante ohne eigenen Rahmen, fuer eine Anleitung unterhalb
+   einer bereits umrahmten Karte (siehe index.html). */
+details.howto {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+details.howto ol { margin: 0; padding-left: 1.1rem; }
+details.howto ol li { margin-bottom: 0.3rem; }
+details.howto ol li:last-child { margin-bottom: 0; }
+
+details.collapsible > summary, details.howto > summary {
   cursor: pointer;
   font-weight: 600;
   color: var(--accent-dark);
@@ -280,15 +292,16 @@ details.collapsible > summary {
   gap: 0.4rem;
   user-select: none;
 }
-details.collapsible > summary::-webkit-details-marker { display: none; }
-details.collapsible > summary::before {
+details.howto > summary { font-size: 0.85rem; }
+details.collapsible > summary::-webkit-details-marker, details.howto > summary::-webkit-details-marker { display: none; }
+details.collapsible > summary::before, details.howto > summary::before {
   content: '▶';
   font-size: 0.7em;
   display: inline-block;
   transition: transform 0.15s ease;
 }
-details.collapsible[open] > summary::before { transform: rotate(90deg); }
-details.collapsible[open] > summary { margin-bottom: 0.6rem; }
+details.collapsible[open] > summary::before, details.howto[open] > summary::before { transform: rotate(90deg); }
+details.collapsible[open] > summary, details.howto[open] > summary { margin-bottom: 0.6rem; }
 
 .detail-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .detail-table th, .detail-table td { padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); text-align: left; }
