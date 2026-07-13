@@ -24,16 +24,39 @@ async function init() {
   ['filter-vater', 'filter-mutter', 'filter-kinder', 'filter-nachkommen'].forEach((id) => {
     document.querySelector(`#${id}`).addEventListener('change', render);
   });
+  document.querySelector('#filter-alle').addEventListener('change', onFilterAlleChange);
+  applyFilterAlleState(); // Einzel-Häkchen passend zum Startzustand (an) deaktivieren
   wireSortableHeaders();
   await loadHorses();
 }
 
+// "Alle Verwandtschaft" ist ein Master-Häkchen: aktiviert zeigt es
+// unabhängig von den anderen vier Häkchen wirklich alle Kategorien und
+// deaktiviert diese (rein visuell, ihr Zustand bleibt für später
+// erhalten) - deaktiviert gibt es wieder die Feinauswahl frei.
+function onFilterAlleChange() {
+  applyFilterAlleState();
+  render();
+}
+
+function applyFilterAlleState() {
+  const alle = document.querySelector('#filter-alle').checked;
+  ['filter-vater', 'filter-mutter', 'filter-kinder', 'filter-nachkommen'].forEach((id) => {
+    document.querySelector(`#${id}`).disabled = alle;
+  });
+}
+
 function selectedRelativeFilters() {
+  const alle = document.querySelector('#filter-alle').checked;
+  if (alle) {
+    return { vater: true, mutter: true, kinder: true, nachkommen: true, alle: true };
+  }
   return {
     vater: document.querySelector('#filter-vater').checked,
     mutter: document.querySelector('#filter-mutter').checked,
     kinder: document.querySelector('#filter-kinder').checked,
     nachkommen: document.querySelector('#filter-nachkommen').checked,
+    alle: false,
   };
 }
 
@@ -51,6 +74,29 @@ function filterRelatives(relatives, filters) {
     if (r.beziehung === 'Kind') return filters.kinder || filters.nachkommen;
     return filters.nachkommen; // Enkelkind, Urenkelkind, Nachkomme (Generation N)
   });
+}
+
+// Nur bei "Alle Verwandtschaft" aktiv: darüber hinaus auch entferntere
+// Verwandtschaft (Onkel, Tanten, Cousin, Cousine, ...) - operational
+// definiert wie vom Nutzer vorgegeben als "jedes Pferd, das mindestens
+// einen Namen mit dem sichtbaren Stammbaum des gewählten Pferds teilt".
+// Stammbaum = das Pferd selbst + seine 14 sichtbaren Vorfahren. Pferde,
+// die schon über Eltern/Geschwister/Nachkommen gefunden wurden, werden
+// über excludeIds nicht doppelt aufgeführt.
+function findExtendedRelatives(horse, horses, excludeIds) {
+  const ownNames = [horse.name, ...pedigreeAncestorNames(horse)].filter((n) => n && normalizeName(n) !== 'unbekannt');
+  const ownNormalized = new Set(ownNames.map(normalizeName));
+
+  const results = [];
+  for (const other of horses) {
+    if (other.id === horse.id || excludeIds.has(other.id)) continue;
+    const otherNames = [other.name, ...pedigreeAncestorNames(other)].filter((n) => n && normalizeName(n) !== 'unbekannt');
+    const sharedName = otherNames.find((n) => ownNormalized.has(normalizeName(n)));
+    if (sharedName) {
+      results.push({ horse: other, beziehung: `Weitere Verwandtschaft (gemeinsam: ${sharedName})`, sortRank: 50 });
+    }
+  }
+  return results;
 }
 
 async function loadHorses() {
@@ -310,8 +356,15 @@ function horseSummaryHtml(h) {
 }
 
 function relativesTableHtml(horse) {
+  const filters = selectedRelativeFilters();
   const allRelatives = findRelatives(horse, allHorses);
-  const relatives = applySort(filterRelatives(allRelatives, selectedRelativeFilters()));
+  let relatives = filterRelatives(allRelatives, filters);
+  if (filters.alle) {
+    const excludeIds = new Set([horse.id, ...allRelatives.map((r) => r.horse.id)]);
+    relatives = relatives.concat(findExtendedRelatives(horse, allHorses, excludeIds));
+  }
+  relatives = applySort(relatives);
+
   let html = '<div class="group-heading">Verwandtschaftsübersicht</div>';
   if (!relatives.length) {
     html += allRelatives.length
