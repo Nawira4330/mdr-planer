@@ -11,7 +11,7 @@ const PROGRESS = [
   { label: 'Zuchtbuch', percent: 20 },
   { label: 'Verpaarungsratgeber', percent: 80 },
   { label: 'Fohlen-Tracker', percent: 70 },
-  { label: 'Verpaarungs-Log (Datenbank)', percent: 10 },
+  { label: 'Verpaarungs-Log (Datenbank)', percent: 90 },
 ];
 
 // Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
@@ -27,6 +27,13 @@ const TYPE_META = {
 // nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
+  {
+    date: '2026-07-13T20:15', type: 'feature', title: 'Decksprung-Button speichert echt im Verpaarungs-Log',
+    points: [
+      '"Decksprung nutzen" in Inzuchtprüfung und Verpaarungsratgeber trägt die Anpaarung jetzt direkt in das Verpaarungs-Log der Pferdedatenbank ein',
+      'Kein Login nötig - der Eintrag lässt sich später dort mit Datum, "Fohlen behalten?" und Notizen ergänzen',
+    ],
+  },
   {
     date: '2026-07-13T10:20', type: 'feature', title: 'Neues Werkzeug: Zuchtbuch',
     points: [
