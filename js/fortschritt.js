@@ -22,6 +22,43 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-13T10:20', type: 'feature', title: 'Neues Werkzeug: Zuchtbuch',
+    points: [
+      'Zu einem beliebigen Pferd alle im Stammbaum auffindbaren Verwandten anzeigen: Eltern, Geschwister, Nachkommen über alle Generationen',
+      'Übersichtstabelle mit denselben Werten wie in der Pferdedatenbank, sortierbar',
+      'Wenn beide Eltern bekannt sind: Vergleich der Fohlen-Vorhersage (GP/Int) mit den tatsächlichen Werten',
+    ],
+  },
+  {
+    date: '2026-07-13T10:00', type: 'feature', title: 'Datenbank-Schätzung als dritter Wert bei der Fohlen-Vorhersage',
+    points: [
+      'Neben Best Case und Worst Case jetzt zusätzlich eine realistischere Schätzung, berechnet aus echten Eltern-Fohlen-Paaren in der Datenbank',
+      'Wird automatisch genauer, je mehr Fohlen eingetragen werden',
+      '"Decksprung nutzen"-Button als Vorschau ergänzt (noch ohne Funktion, kommt später)',
+    ],
+  },
+  {
+    date: '2026-07-13T09:40', type: 'update', title: 'Verpaarungsratgeber: Sortierung wählbar, Interieur-Vorhersage überarbeitet',
+    points: [
+      'Ergebnisse lassen sich jetzt nach bestem Best Case, bestem Worst Case oder kleinster/größter Schwankungsbreite sortieren',
+      'Interieur-Vorhersage folgt jetzt einer klareren Tabelle statt einer groben Schätzung',
+    ],
+  },
+  {
+    date: '2026-07-13T09:20', type: 'update', title: 'Startseite übersichtlicher',
+    points: [
+      'Verpaarungsratgeber und Zuchtbuch haben jetzt eigene Karten mit Direktlink',
+      'Jede Karte hat eine kurze, einklappbare Anleitung',
+    ],
+  },
+  {
+    date: '2026-07-13T09:00', type: 'bugfix', title: 'Kleinere Bedienbarkeits-Verbesserungen',
+    points: [
+      'Klick in ein Suchfeld öffnet die Auswahl wieder und markiert den bisherigen Text - kein manuelles Löschen mehr nötig',
+      '"Fremder Hengst"-Feld in der Inzuchtprüfung ist jetzt standardmäßig eingeklappt',
+    ],
+  },
+  {
     date: '2026-07-12T21:15', type: 'feature', title: '"Beste Hengstauswahl" wird zum Verpaarungsratgeber',
     points: [
       'Stute wählen und die Top 10 passenden Hengste sehen, mit wählbarem Schwerpunkt (GP, Ext, Ext%, Int)',
