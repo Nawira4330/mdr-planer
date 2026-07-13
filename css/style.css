@@ -364,24 +364,26 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
 @media (max-width: 640px) {
   .topbar { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
 
-  /* Turniertabelle: statt seitlichem Scrollen wird jede Zeile zu einer
-     Karte mit beschrifteten Werten (Beschriftung aus data-label je <td>,
-     siehe rowHtml() in js/turnierplaner.js). */
-  #tournament-table { min-width: 0; }
-  #tournament-table thead { display: none; }
-  #tournament-table, #tournament-table tbody, #tournament-table tr, #tournament-table td {
+  /* Turniertabelle/Zuchtbuch-Verwandtentabelle: statt seitlichem Scrollen
+     wird jede Zeile zu einer Karte mit beschrifteten Werten (Beschriftung
+     aus data-label je <td>, siehe rowHtml() in js/turnierplaner.js bzw.
+     relativeRowHtml() in js/zuchtbuch.js). */
+  #tournament-table, #relatives-table { min-width: 0; }
+  #tournament-table thead, #relatives-table thead { display: none; }
+  #tournament-table, #tournament-table tbody, #tournament-table tr, #tournament-table td,
+  #relatives-table, #relatives-table tbody, #relatives-table tr, #relatives-table td {
     display: block;
     width: 100%;
   }
-  #tournament-table tr {
+  #tournament-table tr, #relatives-table tr {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     margin-bottom: 0.6rem;
     padding: 0.4rem 0.7rem;
     background: var(--surface);
   }
-  #tournament-table tr:last-child { margin-bottom: 0; }
-  #tournament-table td {
+  #tournament-table tr:last-child, #relatives-table tr:last-child { margin-bottom: 0; }
+  #tournament-table td, #relatives-table td {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -390,8 +392,8 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
     border-bottom: 1px dashed var(--border);
     white-space: normal;
   }
-  #tournament-table td:last-child { border-bottom: none; }
-  #tournament-table td::before {
+  #tournament-table td:last-child, #relatives-table td:last-child { border-bottom: none; }
+  #tournament-table td::before, #relatives-table td::before {
     content: attr(data-label);
     font-weight: 600;
     color: var(--muted);
