@@ -1,11 +1,17 @@
 // Fortschritt je Werkzeug - von Hand gepflegt (subjektive Einschätzung,
 // nicht aus der Commit-Historie ableitbar). Bei Bedarf hier anpassen.
+// WICHTIG (Vorgabe des Nutzers): 100% erst eintragen, wenn der Nutzer
+// ausdrücklich sagt, dass ein Werkzeug fertig ist - nie eigenständig auf
+// 100% setzen, auch wenn eine Funktion bereits vollständig implementiert
+// und verifiziert wirkt.
 const PROGRESS = [
   { label: 'Inzuchtprüfer', percent: 100 },
   { label: 'Turnierplaner', percent: 100 },
   { label: 'LP-Prognose', percent: 100 },
   { label: 'Zuchtbuch', percent: 20 },
   { label: 'Verpaarungsratgeber', percent: 80 },
+  { label: 'Fohlen-Tracker', percent: 70 },
+  { label: 'Verpaarungs-Log (Datenbank)', percent: 10 },
 ];
 
 // Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
