@@ -63,7 +63,18 @@ function createSearchableSelect(inputEl, panelEl, { onChange } = {}) {
     selectedId = '';
     renderPanel();
   });
-  inputEl.addEventListener('focus', renderPanel);
+  // Öffnet das Dropdown und markiert den kompletten Text, damit ein bereits
+  // ausgewählter Name nicht erst manuell gelöscht werden muss - der nächste
+  // Tastendruck ersetzt ihn direkt und startet eine neue Suche. Das
+  // Markieren geschieht per setTimeout(0), da der Browser die Cursor-
+  // Position beim Klick sonst NACH unserem focus-Handler neu setzt und die
+  // Markierung damit wieder aufheben würde.
+  function openAndSelectAll() {
+    renderPanel();
+    setTimeout(() => inputEl.select(), 0);
+  }
+  inputEl.addEventListener('focus', openAndSelectAll);
+  inputEl.addEventListener('click', openAndSelectAll);
   inputEl.addEventListener('blur', () => {
     setTimeout(() => { panelEl.hidden = true; }, 150);
   });
