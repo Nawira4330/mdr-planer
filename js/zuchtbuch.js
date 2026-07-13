@@ -31,9 +31,10 @@ async function init() {
 }
 
 // "Alle Verwandtschaft" ist ein Master-Häkchen: aktiviert zeigt es
-// unabhängig von den anderen vier Häkchen wirklich alle Kategorien und
-// deaktiviert diese (rein visuell, ihr Zustand bleibt für später
-// erhalten) - deaktiviert gibt es wieder die Feinauswahl frei.
+// unabhängig von den anderen vier Häkchen wirklich alle Kategorien -
+// die vier Einzel-Häkchen werden dabei sichtbar entfernt (nicht nur
+// deaktiviert) und beim Ausschalten wieder gesetzt, damit die
+// Feinauswahl direkt wieder etwas anzeigt.
 function onFilterAlleChange() {
   applyFilterAlleState();
   render();
@@ -42,7 +43,9 @@ function onFilterAlleChange() {
 function applyFilterAlleState() {
   const alle = document.querySelector('#filter-alle').checked;
   ['filter-vater', 'filter-mutter', 'filter-kinder', 'filter-nachkommen'].forEach((id) => {
-    document.querySelector(`#${id}`).disabled = alle;
+    const cb = document.querySelector(`#${id}`);
+    cb.disabled = alle;
+    cb.checked = !alle;
   });
 }
 
@@ -60,14 +63,14 @@ function selectedRelativeFilters() {
   };
 }
 
-// Eltern werden immer gezeigt (kleine, immer relevante Basisinfo). Voll-
-// geschwister zählen für "Gleicher Vater" UND "Gleiche Mutter" (sie
-// erfüllen ja beide Kriterien) - daher sichtbar, sobald mindestens eines
-// der beiden Häkchen gesetzt ist. "Kinder" zeigt nur Generation 1,
-// "Alle Nachkommen" zeigt jede Generation (schließt Kinder mit ein).
+// Eltern stehen in einer eigenen Karte oberhalb der Tabelle (siehe
+// parentsCardHtml) und sind hier nicht mehr enthalten. Vollgeschwister
+// zählen für "Gleicher Vater" UND "Gleiche Mutter" (sie erfüllen ja
+// beide Kriterien) - daher sichtbar, sobald mindestens eines der beiden
+// Häkchen gesetzt ist. "Kinder" zeigt nur Generation 1, "Alle
+// Nachkommen" zeigt jede Generation (schließt Kinder mit ein).
 function filterRelatives(relatives, filters) {
   return relatives.filter((r) => {
-    if (r.sortRank === 0) return true;
     if (r.beziehung === 'Vollgeschwister') return filters.vater || filters.mutter;
     if (r.beziehung === 'Halbgeschwister (väterlicherseits)') return filters.vater;
     if (r.beziehung === 'Halbgeschwister (mütterlicherseits)') return filters.mutter;
@@ -205,19 +208,8 @@ function generationLabel(n) {
 // (keine mother_id/father_id in der DB) - Treffer daher immer per
 // normalizeName() gegen alle anderen geladenen Pferde.
 function findRelatives(horse, horses) {
-  const byName = new Map();
-  for (const h of horses) {
-    const key = normalizeName(h.name);
-    if (key && !byName.has(key)) byName.set(key, h);
-  }
-
   const results = [];
   const { father, mother } = parentNames(horse);
-
-  const fatherHorse = father ? byName.get(normalizeName(father)) : null;
-  const motherHorse = mother ? byName.get(normalizeName(mother)) : null;
-  if (fatherHorse) results.push({ horse: fatherHorse, beziehung: 'Vater', sortRank: 0 });
-  if (motherHorse) results.push({ horse: motherHorse, beziehung: 'Mutter', sortRank: 0 });
 
   // Voll-/Halbgeschwister: Vollgeschwister-Treffer schließen die
   // Halbgeschwister-Kategorien aus (keine Doppel-Einträge).
@@ -327,16 +319,43 @@ function render() {
     return;
   }
   let html = horseSummaryHtml(currentHorse);
+  html += parentsCardHtml(currentHorse);
   html += relativesTableHtml(currentHorse);
   html += foalTrackingHtml(currentHorse);
   container.innerHTML = html;
 }
 
-function horseSummaryHtml(h) {
+function findHorseByName(name) {
+  if (!name) return null;
+  const key = normalizeName(name);
+  return allHorses.find((h) => normalizeName(h.name) === key) || null;
+}
+
+// Vater/Mutter stehen in einer eigenen Karte oberhalb der Tabelle (auf
+// Wunsch des Nutzers nicht mehr als immer sichtbare Tabellenzeilen),
+// jeweils mit denselben Werten wie die Pferdekarte selbst.
+function parentsCardHtml(horse) {
+  const { father, mother } = parentNames(horse);
+  return parentCardHtml('Vater', father) + parentCardHtml('Mutter', mother);
+}
+
+function parentCardHtml(label, name) {
+  if (!name) {
+    return `<div class="result-card"><h2>${escapeHtml(label)}</h2><p class="small muted">Unbekannt.</p></div>`;
+  }
+  const horse = findHorseByName(name);
+  if (!horse) {
+    return `<div class="result-card"><h2>${escapeHtml(label)}: ${escapeHtml(name)}</h2><p class="small muted">Nicht in der Datenbank.</p></div>`;
+  }
+  return horseSummaryHtml(horse, label);
+}
+
+function horseSummaryHtml(h, label) {
   const d = computeDerived(h);
   const ekh = affectedDiseaseLabels(h);
+  const heading = label ? `${escapeHtml(label)}: ${escapeHtml(h.name || '(ohne Name)')}` : escapeHtml(h.name || '(ohne Name)');
   return `<div class="result-card">
-    <h2>${escapeHtml(h.name || '(ohne Name)')}</h2>
+    <h2>${heading}</h2>
     <p class="small muted">
       GP: <strong>${d.gp != null ? d.gp : '–'}</strong>
       &nbsp;·&nbsp; Ext: <strong>${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</strong>
@@ -360,7 +379,9 @@ function relativesTableHtml(horse) {
   const allRelatives = findRelatives(horse, allHorses);
   let relatives = filterRelatives(allRelatives, filters);
   if (filters.alle) {
-    const excludeIds = new Set([horse.id, ...allRelatives.map((r) => r.horse.id)]);
+    const { father, mother } = parentNames(horse);
+    const parentIds = [findHorseByName(father), findHorseByName(mother)].filter(Boolean).map((h) => h.id);
+    const excludeIds = new Set([horse.id, ...parentIds, ...allRelatives.map((r) => r.horse.id)]);
     relatives = relatives.concat(findExtendedRelatives(horse, allHorses, excludeIds));
   }
   relatives = applySort(relatives);
