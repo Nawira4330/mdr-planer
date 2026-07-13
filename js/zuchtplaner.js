@@ -43,6 +43,7 @@ async function init() {
     renderBestMatches();
   });
   wireFarbwunschDropdown();
+  document.addEventListener('click', onDecksprungClick);
   await loadHorses();
   loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert die Seite nicht
   // Erst NACH mareSelect/stallionSelect + loadHorses() aktivieren, da
@@ -306,7 +307,7 @@ function foalRangeHtml(mare, stallion) {
     </p>
     ${empiricalRowHtml(mare, stallion)}
     <p class="small muted">⚠️ GP und Int sind noch grobe Schätzwerte – verlasst euch für diese beiden Werte noch nicht auf ihre Richtigkeit.</p>
-    ${decksprungButtonHtml()}`;
+    ${decksprungButtonHtml(mare, stallion)}`;
 }
 
 // Dritte, realistischere Einschätzung neben Best-/Worst-Case: Eltern-
@@ -327,11 +328,46 @@ function empiricalRowHtml(mare, stallion) {
     </p>`;
 }
 
-// Platzhalter-Button, siehe Plan "Decksprung-Button": Speichern folgt
-// später als eigene Seite in der MDR-Datenbank (anderes Repo/Login) -
-// hier bewusst noch ohne Funktion.
-function decksprungButtonHtml() {
-  return `<button type="button" class="btn secondary" disabled title="Verpaarungs-Log folgt - kommt bald" style="margin-top:0.4rem;">Decksprung nutzen (kommt bald)</button>`;
+// Speichert die Anpaarung direkt in der "pairings"-Tabelle der
+// MDR-Datenbank (anonymer Insert dort extra dafür freigeschaltet, siehe
+// migration_010 - kein Login in MDR-Planer nötig). Das eigentliche
+// Verpaarungs-Log samt "Fohlen behalten?"-Auswahl lebt weiterhin in
+// verpaarung.html der MDR-Datenbank (siehe Klick-Handler in init()).
+function decksprungButtonHtml(mare, stallion) {
+  if (!mare?.name || !stallion?.name) return '';
+  return `<div class="decksprung-wrap">
+    <button type="button" class="btn secondary decksprung-btn" data-mare="${escapeHtml(mare.name)}" data-stallion="${escapeHtml(stallion.name)}" data-owner="${escapeHtml(mare.owner || '')}" style="margin-top:0.4rem;">Decksprung nutzen</button>
+    <span class="small muted decksprung-status"></span>
+  </div>`;
+}
+
+// Delegierter Klick-Handler (Buttons entstehen dynamisch bei jedem
+// Neu-Rendern, daher auf document statt einzeln pro Button verdrahtet).
+async function onDecksprungClick(e) {
+  const btn = e.target.closest('.decksprung-btn');
+  if (!btn) return;
+  const statusEl = btn.nextElementSibling;
+  const mareName = btn.dataset.mare;
+  const stallionName = btn.dataset.stallion;
+
+  btn.disabled = true;
+  statusEl.textContent = 'Speichert…';
+
+  const payload = {
+    owner: btn.dataset.owner || null,
+    stallion: stallionName,
+    mare: mareName,
+    pairing_date: new Date().toISOString().slice(0, 10),
+    keep_foal: null,
+    notes: null,
+  };
+  const { error } = await supabaseClient.from('pairings').insert(payload);
+  if (error) {
+    statusEl.textContent = 'Fehler beim Speichern: ' + error.message;
+    btn.disabled = false;
+    return;
+  }
+  statusEl.textContent = '✓ Im Verpaarungs-Log gespeichert';
 }
 
 function nameColorSpan(name, dupNames) {
@@ -450,7 +486,7 @@ function stallionCandidateHtml(rank, c, mare) {
       &nbsp;·&nbsp; Int <strong>${fmtScore(c.intWorst)}</strong>
     </p>
     ${empiricalRowHtml(mare, h)}
-    ${decksprungButtonHtml()}
+    ${decksprungButtonHtml(mare, h)}
   </div>`;
 }
 
