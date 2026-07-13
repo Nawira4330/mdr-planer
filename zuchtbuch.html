@@ -47,6 +47,25 @@
       </div>
     </fieldset>
 
+    <fieldset>
+      <legend>Angezeigte Verwandte</legend>
+      <div style="display:flex; flex-wrap:wrap; gap:1rem;">
+        <label style="display:flex; align-items:center; gap:0.4rem; font-weight:400;">
+          <input type="checkbox" id="filter-vater" checked style="width:auto;" /> Gleicher Vater
+        </label>
+        <label style="display:flex; align-items:center; gap:0.4rem; font-weight:400;">
+          <input type="checkbox" id="filter-mutter" checked style="width:auto;" /> Gleiche Mutter
+        </label>
+        <label style="display:flex; align-items:center; gap:0.4rem; font-weight:400;">
+          <input type="checkbox" id="filter-kinder" checked style="width:auto;" /> Kinder
+        </label>
+        <label style="display:flex; align-items:center; gap:0.4rem; font-weight:400;">
+          <input type="checkbox" id="filter-nachkommen" checked style="width:auto;" /> Alle Nachkommen
+        </label>
+      </div>
+      <p class="muted small" style="margin-top:0.5rem; margin-bottom:0;">Eltern werden immer angezeigt.</p>
+    </fieldset>
+
     <p id="load-error" class="error"></p>
 
     <div id="zuchtbuch-result">

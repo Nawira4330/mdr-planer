@@ -21,8 +21,36 @@ async function init() {
     { onChange: onHorseSelect },
   );
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
+  ['filter-vater', 'filter-mutter', 'filter-kinder', 'filter-nachkommen'].forEach((id) => {
+    document.querySelector(`#${id}`).addEventListener('change', render);
+  });
   wireSortableHeaders();
   await loadHorses();
+}
+
+function selectedRelativeFilters() {
+  return {
+    vater: document.querySelector('#filter-vater').checked,
+    mutter: document.querySelector('#filter-mutter').checked,
+    kinder: document.querySelector('#filter-kinder').checked,
+    nachkommen: document.querySelector('#filter-nachkommen').checked,
+  };
+}
+
+// Eltern werden immer gezeigt (kleine, immer relevante Basisinfo). Voll-
+// geschwister zählen für "Gleicher Vater" UND "Gleiche Mutter" (sie
+// erfüllen ja beide Kriterien) - daher sichtbar, sobald mindestens eines
+// der beiden Häkchen gesetzt ist. "Kinder" zeigt nur Generation 1,
+// "Alle Nachkommen" zeigt jede Generation (schließt Kinder mit ein).
+function filterRelatives(relatives, filters) {
+  return relatives.filter((r) => {
+    if (r.sortRank === 0) return true;
+    if (r.beziehung === 'Vollgeschwister') return filters.vater || filters.mutter;
+    if (r.beziehung === 'Halbgeschwister (väterlicherseits)') return filters.vater;
+    if (r.beziehung === 'Halbgeschwister (mütterlicherseits)') return filters.mutter;
+    if (r.beziehung === 'Kind') return filters.kinder || filters.nachkommen;
+    return filters.nachkommen; // Enkelkind, Urenkelkind, Nachkomme (Generation N)
+  });
 }
 
 async function loadHorses() {
@@ -282,10 +310,13 @@ function horseSummaryHtml(h) {
 }
 
 function relativesTableHtml(horse) {
-  const relatives = applySort(findRelatives(horse, allHorses));
+  const allRelatives = findRelatives(horse, allHorses);
+  const relatives = applySort(filterRelatives(allRelatives, selectedRelativeFilters()));
   let html = '<div class="group-heading">Verwandtschaftsübersicht</div>';
   if (!relatives.length) {
-    html += '<p class="small muted">Keine Verwandten im sichtbaren Stammbaum gefunden.</p>';
+    html += allRelatives.length
+      ? '<p class="small muted">Keine Verwandten mit den aktuell aktivierten Kategorien - oben weitere Häkchen setzen.</p>'
+      : '<p class="small muted">Keine Verwandten im sichtbaren Stammbaum gefunden.</p>';
     return html;
   }
   html += `<div class="table-wrap"><table id="relatives-table">
