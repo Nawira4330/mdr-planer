@@ -8,7 +8,7 @@ const HORSE_SELECT_FIELDS =
 // braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
 // die für GP/Ext/Ext%/Int und den Stammbaum nötig sind.
 const STATS_SELECT_FIELDS =
-  'id,name,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+  'id,name,breed,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
 
 let mares = [];
 let stallions = [];

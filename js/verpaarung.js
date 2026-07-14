@@ -291,7 +291,13 @@ function computeEmpiricalDeviations(allHorses) {
     const mother = byName.get(normalizeName(motherName));
     if (!father || !mother) continue;
 
+    // GP von Rasselosen ist nicht mit "normalen" Rassen vergleichbar (andere
+    // Berechnungsgrundlage im Spiel) - Trios mit einem Rasselosen Elternteil
+    // oder Fohlen fließen daher nur bei GP nicht in den Durchschnitt ein
+    // (Ext/Ext%/Int sind davon nicht betroffen).
+    const involvesRasselos = child.breed === 'Rasselos' || father.breed === 'Rasselos' || mother.breed === 'Rasselos';
     for (const [metric, getValue] of Object.entries(EMPIRICAL_METRICS)) {
+      if (metric === 'gp' && involvesRasselos) continue;
       const childVal = getValue(child);
       const fatherVal = getValue(father);
       const motherVal = getValue(mother);
@@ -314,14 +320,17 @@ function computeEmpiricalDeviations(allHorses) {
 // Eltern-Mittelwert der zwei ausgewählten Pferde + die passende
 // Durchschnitts-Abweichung aus computeEmpiricalDeviations. Liefert je
 // Metrik null, wenn einem Elternteil der Wert fehlt oder keine
-// Eltern-Fohlen-Trios für diese Metrik gefunden wurden (n=0).
+// Eltern-Fohlen-Trios für diese Metrik gefunden wurden (n=0). GP wird bei
+// Rasselosen Eltern grundsätzlich nicht geschätzt (siehe
+// computeEmpiricalDeviations - nicht vergleichbare Berechnungsgrundlage).
 function estimateFoalEmpirical(mare, stallion, deviations) {
   const result = {};
+  const involvesRasselos = mare?.breed === 'Rasselos' || stallion?.breed === 'Rasselos';
   for (const [metric, getValue] of Object.entries(EMPIRICAL_METRICS)) {
     const a = getValue(mare);
     const b = getValue(stallion);
     const dev = deviations?.[metric];
-    if (a == null || b == null || !dev || !dev.n) {
+    if ((metric === 'gp' && involvesRasselos) || a == null || b == null || !dev || !dev.n) {
       result[metric] = null;
     } else {
       result[metric] = (a + b) / 2 + dev.meanDiff;
