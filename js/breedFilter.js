@@ -41,7 +41,13 @@ function escapeHtmlBreed(str) {
 //   <button class="checkdrop-toggle">Alle</button>
 //   <div class="checkdrop-panel" hidden></div>
 // </div>
-function createBreedFilter(rootEl, { onChange } = {}) {
+// initialSelection (optional): Array von Rassen ODER eine Funktion, die ein
+// solches Array liefert (wird erst beim ersten setHorses()-Aufruf
+// ausgewertet, z.B. um von einem anderen, bereits initialisierten
+// Rassen-Filter zu übernehmen) - überschreibt dann die sonst übliche
+// APH-Standardauswahl. Nur die Erstbefüllung wird davon beeinflusst, spätere
+// manuelle Änderungen bleiben unangetastet.
+function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
   const toggle = rootEl.querySelector('.checkdrop-toggle');
   const panel = rootEl.querySelector('.checkdrop-panel');
   let breeds = [];
@@ -108,7 +114,12 @@ function createBreedFilter(rootEl, { onChange } = {}) {
     setHorses(horses) {
       breeds = [...new Set((horses || []).map((h) => h.breed).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
       if (!initialized) {
-        breeds.forEach((b) => { if (isDefaultBreedSelection(b)) selected.add(b); });
+        const seed = typeof initialSelection === 'function' ? initialSelection() : initialSelection;
+        if (seed && seed.length) {
+          breeds.forEach((b) => { if (seed.includes(b)) selected.add(b); });
+        } else {
+          breeds.forEach((b) => { if (isDefaultBreedSelection(b)) selected.add(b); });
+        }
         initialized = true;
       } else {
         selected = new Set([...selected].filter((b) => breeds.includes(b)));
@@ -121,6 +132,9 @@ function createBreedFilter(rootEl, { onChange } = {}) {
       if (!breed || !selected.has(breed)) return false;
       if (breed === RASSELOS_LABEL) return matchesRasselosThreshold(horse.purebred_pct, rasselosThreshold);
       return true;
+    },
+    getSelected() {
+      return [...selected];
     },
   };
 }

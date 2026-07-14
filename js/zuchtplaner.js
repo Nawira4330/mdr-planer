@@ -15,7 +15,7 @@ let stallions = [];
 let foreignStallion = null; // per Freitext eingelesener, nicht gespeicherter Hengst
 let activeTab = 'inzucht';
 let mareSelect, stallionSelect;
-let mareBreedFilter, stallionBreedFilter;
+let mareBreedFilter, stallionBreedFilter, auswahlStallionBreedFilter;
 let schwerpunkt = 'gp';
 let sortMode = 'best';
 let empiricalDeviations = null; // wird nach loadHorses() befüllt, siehe loadEmpiricalDeviations()
@@ -35,7 +35,19 @@ async function init() {
   document.querySelector('#mare-owner-select').addEventListener('change', onMareOwnerChange);
   document.querySelector('#stallion-owner-select').addEventListener('change', onStallionOwnerChange);
   mareBreedFilter = createBreedFilter(document.querySelector('#mare-breed-drop'), { onChange: onMareOwnerChange });
-  stallionBreedFilter = createBreedFilter(document.querySelector('#stallion-breed-drop'), { onChange: onStallionOwnerChange });
+  // Standardauswahl übernimmt einmalig die Rasse(n) der Stute (Kreuzungen
+  // sind möglich, aber standardmäßig geht man von derselben Rasse aus) -
+  // danach frei manuell änderbar, siehe createBreedFilter/initialSelection.
+  stallionBreedFilter = createBreedFilter(document.querySelector('#stallion-breed-drop'), {
+    onChange: onStallionOwnerChange,
+    initialSelection: () => mareBreedFilter.getSelected(),
+  });
+  // Eigener, unabhängiger Rassen-Filter für den Hengst-Pool im
+  // Verpaarungsratgeber (Top-10-Ranking) - Standard bleibt APH, unabhängig
+  // von der Stuten-Auswahl (manuelles Umschalten nötig für z.B. Rasselos).
+  auswahlStallionBreedFilter = createBreedFilter(document.querySelector('#auswahl-stallion-breed-drop'), {
+    onChange: renderBestMatches,
+  });
   document.querySelector('#stallion-parse-btn').addEventListener('click', onStallionParse);
   document.querySelector('#schwerpunkt-select').addEventListener('change', (e) => {
     schwerpunkt = e.target.value;
@@ -124,6 +136,7 @@ async function loadHorses() {
   fillOwnerSelect('#stallion-owner-select', stallions);
   mareBreedFilter.setHorses(mares);
   stallionBreedFilter.setHorses(stallions);
+  auswahlStallionBreedFilter.setHorses(stallions);
   fillHorseSelect(mareSelect, mares, '#mare-owner-select', mareBreedFilter);
   fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select', stallionBreedFilter);
 }
@@ -425,7 +438,8 @@ function renderBestMatches() {
     return;
   }
 
-  const { total, candidateCount, top } = rankStallions(mare, stallions, {
+  const breedFilteredStallions = stallions.filter((h) => auswahlStallionBreedFilter.matches(h));
+  const { total, candidateCount, top } = rankStallions(mare, breedFilteredStallions, {
     schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(),
   });
 

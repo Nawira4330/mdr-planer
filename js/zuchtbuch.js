@@ -28,6 +28,7 @@ async function init() {
   });
   document.querySelector('#filter-alle').addEventListener('change', onFilterAlleChange);
   applyFilterAlleState(); // Einzel-Häkchen passend zum Startzustand (an) deaktivieren
+  document.querySelector('#rassefremde-select').addEventListener('change', render);
   wireSortableHeaders();
   await loadHorses();
 }
@@ -378,6 +379,20 @@ function horseSummaryHtml(h, label) {
   </div>`;
 }
 
+// Vergleicht die Rasse jedes Verwandten mit der Rasse des ausgewählten
+// Pferds (#rassefremde-select): "alle" zeigt unverändert alles, "ausblenden"
+// lässt nur gleiche Rasse übrig, "nur" kehrt das um (nur rassefremde). Ohne
+// bekannte Rasse des Pferds selbst lässt sich das nicht sinnvoll auswerten -
+// dann bleibt die Liste unverändert.
+function applyRassefremdeFilter(relatives, horse) {
+  const mode = document.querySelector('#rassefremde-select').value;
+  if (mode === 'alle' || !horse.breed) return relatives;
+  return relatives.filter((r) => {
+    const sameBreed = r.horse.breed === horse.breed;
+    return mode === 'ausblenden' ? sameBreed : !sameBreed;
+  });
+}
+
 function relativesTableHtml(horse) {
   const filters = selectedRelativeFilters();
   const allRelatives = findRelatives(horse, allHorses);
@@ -388,6 +403,7 @@ function relativesTableHtml(horse) {
     const excludeIds = new Set([horse.id, ...parentIds, ...allRelatives.map((r) => r.horse.id)]);
     relatives = relatives.concat(findExtendedRelatives(horse, allHorses, excludeIds));
   }
+  relatives = applyRassefremdeFilter(relatives, horse);
   relatives = applySort(relatives);
 
   let html = '<div class="group-heading">Verwandtschaftsübersicht</div>';
