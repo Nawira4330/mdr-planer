@@ -6,10 +6,11 @@
 // werden.
 
 const ZUCHTBUCH_FIELDS =
-  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed';
+  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct';
 
 let allHorses = [];
 let horseSelect;
+let breedFilter;
 let currentHorse = null;
 let currentSort = { field: 'beziehung', dir: 'asc' };
 
@@ -20,6 +21,7 @@ async function init() {
     document.querySelector('#horse-search'), document.querySelector('#horse-panel'),
     { onChange: onHorseSelect },
   );
+  breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect });
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   ['filter-vater', 'filter-mutter', 'filter-kinder', 'filter-nachkommen'].forEach((id) => {
     document.querySelector(`#${id}`).addEventListener('change', render);
@@ -127,12 +129,13 @@ async function loadHorses() {
     opt.textContent = owner;
     ownerSel.appendChild(opt);
   }
+  breedFilter.setHorses(allHorses);
   populateHorseSelect();
 }
 
 function populateHorseSelect() {
   const owner = document.querySelector('#owner-select').value;
-  const filtered = owner ? allHorses.filter((h) => h.owner === owner) : allHorses;
+  const filtered = allHorses.filter((h) => (!owner || h.owner === owner) && breedFilter.matches(h));
   horseSelect.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
 }
 

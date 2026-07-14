@@ -2,7 +2,7 @@
 // Kennzahlen und den Verpaarungsratgeber (inkl. GP-Formel und
 // Genotyp-basierter Fohlen-Vorhersage) gebraucht werden.
 const HORSE_SELECT_FIELDS =
-  'id,name,owner,gender,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases';
+  'id,name,owner,gender,breed,purebred_pct,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases';
 
 // Leichtere Feldauswahl für die Datenbank-Schätzung (computeEmpiricalDeviations):
 // braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
@@ -15,6 +15,7 @@ let stallions = [];
 let foreignStallion = null; // per Freitext eingelesener, nicht gespeicherter Hengst
 let activeTab = 'inzucht';
 let mareSelect, stallionSelect;
+let mareBreedFilter, stallionBreedFilter;
 let schwerpunkt = 'gp';
 let sortMode = 'best';
 let empiricalDeviations = null; // wird nach loadHorses() befüllt, siehe loadEmpiricalDeviations()
@@ -33,6 +34,8 @@ async function init() {
   );
   document.querySelector('#mare-owner-select').addEventListener('change', onMareOwnerChange);
   document.querySelector('#stallion-owner-select').addEventListener('change', onStallionOwnerChange);
+  mareBreedFilter = createBreedFilter(document.querySelector('#mare-breed-drop'), { onChange: onMareOwnerChange });
+  stallionBreedFilter = createBreedFilter(document.querySelector('#stallion-breed-drop'), { onChange: onStallionOwnerChange });
   document.querySelector('#stallion-parse-btn').addEventListener('click', onStallionParse);
   document.querySelector('#schwerpunkt-select').addEventListener('change', (e) => {
     schwerpunkt = e.target.value;
@@ -119,8 +122,10 @@ async function loadHorses() {
   stallions = (stallionRes.data || []).filter((h) => h.breeding_allowed === true);
   fillOwnerSelect('#mare-owner-select', mares);
   fillOwnerSelect('#stallion-owner-select', stallions);
-  fillHorseSelect(mareSelect, mares, '#mare-owner-select');
-  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select');
+  mareBreedFilter.setHorses(mares);
+  stallionBreedFilter.setHorses(stallions);
+  fillHorseSelect(mareSelect, mares, '#mare-owner-select', mareBreedFilter);
+  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select', stallionBreedFilter);
 }
 
 function fillOwnerSelect(selector, horses) {
@@ -135,19 +140,20 @@ function fillOwnerSelect(selector, horses) {
   }
 }
 
-function fillHorseSelect(select, horses, ownerSelector) {
+function fillHorseSelect(select, horses, ownerSelector, breedFilter) {
   const owner = document.querySelector(ownerSelector).value;
-  const filtered = owner ? horses.filter((h) => h.owner === owner) : horses;
+  let filtered = owner ? horses.filter((h) => h.owner === owner) : horses;
+  if (breedFilter) filtered = filtered.filter((h) => breedFilter.matches(h));
   select.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
 }
 
 function onMareOwnerChange() {
-  fillHorseSelect(mareSelect, mares, '#mare-owner-select');
+  fillHorseSelect(mareSelect, mares, '#mare-owner-select', mareBreedFilter);
   mareSelect.clear(); // löst onMareChange('') aus und rendert damit die geleerte Auswahl
 }
 
 function onStallionOwnerChange() {
-  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select');
+  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select', stallionBreedFilter);
   stallionSelect.clear(); // löst onStallionChange('') aus
 }
 
