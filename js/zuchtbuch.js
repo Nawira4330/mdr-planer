@@ -31,10 +31,11 @@ async function init() {
 }
 
 // "Alle Verwandtschaft" ist ein Master-Häkchen: aktiviert zeigt es
-// unabhängig von den anderen vier Häkchen wirklich alle Kategorien -
-// die vier Einzel-Häkchen werden dabei sichtbar entfernt (nicht nur
-// deaktiviert) und beim Ausschalten wieder gesetzt, damit die
-// Feinauswahl direkt wieder etwas anzeigt.
+// unabhängig von den anderen vier Häkchen wirklich alle Kategorien und
+// graut die vier Einzel-Häkchen aus. Bei jeder Umschaltung (an ODER
+// aus) werden die vier Einzel-Häkchen geleert - beim Ausschalten startet
+// man also bewusst mit einer leeren Feinauswahl (nur Eltern weiterhin
+// sichtbar) statt automatisch wieder alles zu zeigen.
 function onFilterAlleChange() {
   applyFilterAlleState();
   render();
@@ -45,7 +46,7 @@ function applyFilterAlleState() {
   ['filter-vater', 'filter-mutter', 'filter-kinder', 'filter-nachkommen'].forEach((id) => {
     const cb = document.querySelector(`#${id}`);
     cb.disabled = alle;
-    cb.checked = !alle;
+    cb.checked = false;
   });
 }
 
