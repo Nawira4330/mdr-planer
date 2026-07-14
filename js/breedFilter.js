@@ -94,7 +94,15 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
   }
 
   function updateToggleLabel() {
-    toggle.textContent = selected.size ? `${selected.size} ausgewählt` : 'Alle';
+    if (!selected.size) {
+      toggle.textContent = 'Alle';
+      toggle.removeAttribute('title');
+      return;
+    }
+    // Reihenfolge wie in "breeds" (alphabetisch), nicht wie angeklickt.
+    const label = breeds.filter((b) => selected.has(b)).join(', ');
+    toggle.textContent = label;
+    toggle.title = label; // volle Liste per Hover, falls der Button die Namen abschneidet
   }
 
   toggle.addEventListener('click', (e) => {

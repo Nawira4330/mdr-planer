@@ -180,6 +180,9 @@ label {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .checkdrop-toggle:hover { background: var(--border); }
 .checkdrop-panel {
