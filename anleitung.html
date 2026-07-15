@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Anleitung – MDR Zucht- &amp; Turnierplaner</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>🧭 Anleitung</h1>
+    <nav>
+      <a class="btn secondary" href="index.html">← Zur Übersicht</a>
+      <a class="btn secondary" href="zuchtplaner.html">Zuchtplaner</a>
+      <a class="btn secondary" href="turnierplaner.html">Turnierplaner</a>
+      <a class="btn secondary" href="zuchtbuch.html">Zuchtbuch</a>
+      <a class="btn secondary" href="update-log.html">Update-Log</a>
+      <a class="btn secondary" href="https://nawira4330.github.io/mdr-datenbank/" target="_blank" rel="noopener">Pferdedatenbank ↗</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p class="muted small">
+      Vier Werkzeuge, ein gemeinsamer Datenbestand: Diese Seite geht jedes
+      Werkzeug einzeln durch – Schritt für Schritt, mit jeder Funktion im
+      Detail und den Datenfeldern, auf die sie zurückgreift. Gespeichert oder
+      verändert wird dabei nirgends etwas (einzige Ausnahme: „Decksprung
+      nutzen“, siehe Verpaarungsratgeber).
+    </p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin: 1rem 0 1.5rem;">
+      <a class="btn secondary" href="#inzucht">Inzuchtprüfung</a>
+      <a class="btn secondary" href="#ratgeber">Verpaarungsratgeber</a>
+      <a class="btn secondary" href="#turnier">Turnierplaner</a>
+      <a class="btn secondary" href="#zuchtbuch-anleitung">Zuchtbuch</a>
+      <a class="btn secondary" href="#bausteine">Gemeinsame Bedienelemente</a>
+      <a class="btn secondary" href="#technik">Woher die Daten kommen</a>
+    </div>
+
+    <fieldset id="inzucht">
+      <legend>Zuchtplaner → Inzuchtprüfung</legend>
+      <p class="small">
+        Prüft eine konkrete Stute/Hengst-Kombination auf Namensdopplungen im
+        sichtbaren Stammbaum und gibt eine erste Einschätzung der
+        Fohlenwerte.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Oben im Feld „Stute“ einen Besitzer eingrenzen (optional) und die Stute über das Suchfeld auswählen. Angezeigt werden nur Pferde mit ZZL (Zuchtzulassung).</li>
+        <li>Bei Bedarf über „Rasse“ die Rassenauswahl anpassen – standardmäßig sind nur American-Paint-Horse-Stuten zu sehen.</li>
+        <li>Im Tab „Inzuchtprüfung“ auf dieselbe Art einen Hengst auswählen – oder unter „Fremder Hengst (Freitext)“ den aus dem Spiel kopierten Seitentext einfügen, falls der Hengst nicht in der Datenbank steht.</li>
+        <li>Ergebnis unterhalb durchsehen: Inzucht-Status, Warnhinweise, Fohlen-Vorhersage und Stammbaum des Fohlens.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Rassenauswahl (Stute &amp; Hengst)</th>
+          <td>
+            Ankreuzbare Rassenliste, die nur Rassen zeigt, die tatsächlich im
+            Bestand vorkommen. Startet bei der Stute mit „American Paint
+            Horse“ angehakt; die Hengst-Rassenauswahl übernimmt beim ersten
+            Laden dieselbe Auswahl wie die Stute (Kreuzungszucht ist möglich),
+            lässt sich danach aber unabhängig umstellen. Die Rasse
+            „Rasselos“ hat zusätzlich ein Dropdown für einen
+            Reinrassigkeits-Schwellenwert (&gt;/&lt; 25 %, 50 %, 75 %).
+          </td>
+        </tr>
+        <tr>
+          <th>Elternkarten (Mutter / Vater)</th>
+          <td>Zeigen GP, Ext, Ext%, Int, die aktuell bekannte Genetik (Allel-Kürzel) und den Besitzer.</td>
+        </tr>
+        <tr>
+          <th>Inzucht-Status</th>
+          <td>
+            Baut aus den sichtbaren Stammbäumen beider Elterntiere den
+            Stammbaum des <em>Fohlens</em> (14 Positionen: 2 Eltern, 4
+            Großeltern, 8 Urgroßeltern) und prüft, ob ein Name darin mehr als
+            einmal vorkommt – eine vereinfachte Namensdopplungs-Prüfung, kein
+            berechneter Inzuchtkoeffizient. „Unbekannt“ löst dabei nie einen
+            Alarm aus. Ist der Stammbaum eines Elternteils nicht vollständig
+            erfasst, erscheint zusätzlich ein Hinweis, dass eine
+            Verwandtschaft dadurch nicht sicher ausgeschlossen werden kann.
+          </td>
+        </tr>
+        <tr>
+          <th>Overo-Warnung</th>
+          <td>Erscheint, wenn beide Elterntiere das Overo-Merkmal tragen – bei Overo × Overo besteht ein erhöhtes Risiko für das Overo Lethal White Syndrome (OLWS) bei homozygoten Fohlen.</td>
+        </tr>
+        <tr>
+          <th>Fohlen best/worst case (GP, Ext, Ext%, Int)</th>
+          <td>
+            Zwei rein theoretische Grenzwerte je Kennzahl. Ext/Ext% werden
+            Locus für Locus aus dem genauen Genotyp beider Eltern berechnet
+            (gegen eine unabhängige Community-Quelle verifiziert). Int kennt
+            nur die Phänotyp-Kategorie der Eltern (kein Gencode) und schätzt
+            anhand einer Tabelle die Auswirkung des jeweils anderen
+            Elternteils. GP summiert die Grenzwerte der einzelnen
+            Grundlagen-, Gangarten- und Disziplin-Potenziale beider Eltern.
+            GP und Int sind noch grobe Schätzwerte.
+          </td>
+        </tr>
+        <tr>
+          <th>Datenbank-Schätzung</th>
+          <td>
+            Eine dritte, realistischere Einschätzung: Eltern-Mittelwert der
+            gewählten Stute/Hengst, korrigiert um die tatsächlich in der
+            Datenbank beobachtete Durchschnitts-Abweichung echter Fohlen von
+            ihrem eigenen Eltern-Mittelwert (aus allen auffindbaren
+            Eltern-Fohlen-Trios im Bestand) – wird bei jedem Seitenaufruf
+            live neu berechnet, die Fallzahl steht als „n=…“ daneben.
+            Rasselose GP-Werte fließen dabei nicht in die GP-Schätzung ein
+            (andere Berechnungsgrundlage im Spiel) – Ext/Ext%/Int sind davon
+            nicht betroffen.
+          </td>
+        </tr>
+        <tr>
+          <th>„Decksprung nutzen“</th>
+          <td>Trägt die Anpaarung direkt in das Verpaarungs-Log der Pferdedatenbank ein (Abfohldatum = heute + 30 Tage) – die einzige Stelle im MDR-Planer, an der tatsächlich etwas gespeichert wird.</td>
+        </tr>
+        <tr>
+          <th>Stammbaum des Fohlens</th>
+          <td>Listet Eltern, Großeltern und Urgroßeltern mütter- und väterlicherseits einzeln auf; doppelt vorkommende Namen sind rot hervorgehoben.</td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> Tabelle <em>horses</em>, gefiltert auf
+        Geschlecht Stute/Hengst und ZZL (<em>breeding_allowed = true</em>).
+        Genutzte Felder: Name, Besitzer, Rasse, Reinrassigkeit, Fellfarbe,
+        Genetik, Stammbaum, Turnierpotenzial, Exterieur-Genetik,
+        Exterieur-Beschreibung, Temperament, Grundlagen/Gangarten,
+        Disziplinen, Erbkrankheiten. Für die Datenbank-Schätzung wird
+        zusätzlich der <em>gesamte</em> Pferdebestand (ohne ZZL-/
+        Geschlechtsfilter) geladen, um echte Eltern-Fohlen-Trios per
+        Namensabgleich zu finden. „Decksprung nutzen“ schreibt einen neuen
+        Eintrag in die Tabelle <em>pairings</em>.
+      </div>
+    </fieldset>
+
+    <fieldset id="ratgeber">
+      <legend>Zuchtplaner → Verpaarungsratgeber</legend>
+      <p class="small">
+        Sucht statt eines einzelnen Hengstes automatisch die zehn
+        vielversprechendsten Hengste im Bestand für eine gewählte Stute.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Oben eine Stute auswählen (wie bei der Inzuchtprüfung).</li>
+        <li>Zum Tab „Verpaarungsratgeber“ wechseln.</li>
+        <li>Schwerpunkt, Sortierung, optional Farbwünsche und die anzuzeigenden Hengst-Rassen einstellen.</li>
+        <li>Die Top 10 passenden Hengste mit Fohlen-Vorhersage durchsehen.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Schwerpunkt</th>
+          <td>Legt fest, nach welcher Kennzahl sortiert wird: GP, Ext, Ext% oder Int.</td>
+        </tr>
+        <tr>
+          <th>Sortierung</th>
+          <td>
+            Unabhängig vom Schwerpunkt wählbar: „Bester Best Case“ / „Bester
+            Worst Case“ sortiert nach dem jeweiligen Grenzwert des
+            Schwerpunkts; „Kleinste Differenz“ bringt die verlässlichsten
+            Kandidaten (kleiner Abstand zwischen Best- und Worst-Case) nach
+            oben, „Größte Differenz“ die mit der größten Schwankungsbreite.
+          </td>
+        </tr>
+        <tr>
+          <th>Farbwünsche (optional, mehrfach wählbar)</th>
+          <td>
+            Overo, Tobiano, Sabino, Roan, Champagne, Dun, Cream, Grey,
+            Splashed, Leopard/Appaloosa. Ein Hengst bleibt nur in der Liste,
+            wenn für jeden angehakten Wunsch mindestens eines der beiden
+            Elterntiere das passende Allel trägt.
+          </td>
+        </tr>
+        <tr>
+          <th>Hengst-Rasse</th>
+          <td>
+            Eigene, von der Stute unabhängige Rassenauswahl (z. B. um
+            gezielt Rasselose oder andere Rassen als Kandidaten zuzulassen) –
+            startet standardmäßig bei „American Paint Horse“, muss für
+            andere Rassen manuell umgestellt werden.
+          </td>
+        </tr>
+        <tr>
+          <th>Automatischer Ausschluss</th>
+          <td>Verwandte Hengste (Namensdopplung im Stammbaum) fallen komplett aus der Liste. Trägt die Stute Overo, werden zusätzlich alle Overo-Hengste ausgeschlossen.</td>
+        </tr>
+        <tr>
+          <th>Ergebniskarten</th>
+          <td>Pro Hengst dieselben Angaben wie in der Inzuchtprüfung: aktuelle Werte, Best-/Worst-Case-Vorhersage, Datenbank-Schätzung und der „Decksprung nutzen“-Button.</td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> Dieselbe Stuten-/Hengst-Ladung wie bei
+        der Inzuchtprüfung (Tabelle <em>horses</em>, ZZL-Hengste), zusätzlich
+        gefiltert nach dem gewählten Hengst-Rassefilter. Farbwünsche werden
+        aus Genetik, Fellfarbe und Notizen abgeleitet.
+      </div>
+    </fieldset>
+
+    <fieldset id="turnier">
+      <legend>Turnierplaner</legend>
+      <p class="small">
+        Rechnet die Turnierwerte aller 28 Disziplinen aus und schätzt, ob ein
+        Pferd die Leistungsprüfung (LP) voraussichtlich besteht.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Tab „Pferd aus ZG“: Besitzer und Rasse eingrenzen (optional), Pferd über das Suchfeld wählen. Es werden nur Pferde <em>ohne</em> ZZL angezeigt.</li>
+        <li>Alternativ Tab „Fremdes Pferd“: die komplette Pferdeseite im Spiel markieren (Strg+A), kopieren (Strg+C) und den Text einfügen – funktioniert mit Desktop- und Handy-Ansicht.</li>
+        <li>Oben GP/Ext/Ext%/Int und die LP-Einschätzung ansehen.</li>
+        <li>Darunter die Tabelle aller 28 Disziplinen durchsehen, per Klick auf eine Spaltenüberschrift sortierbar.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Rassenauswahl</th>
+          <td>Wie überall: nur vorhandene Rassen, startet bei „American Paint Horse“.</td>
+        </tr>
+        <tr>
+          <th>Disziplinen-Tabelle (Wert, Interieur, LK)</th>
+          <td>
+            „Wert“ (im Spiel „Punkte“ genannt) = 3 × Disziplin-Potenzial +
+            Summe der 6 dafür benötigten Grundlagen-/Gangarten-Potenziale.
+            „LK“ (Leistungsklasse) ergibt sich aus dem niedrigsten der 7
+            Einzelwerte (LK10 = 0–9 %, …, LK1 = 90–100 %). „Interieur“ ist
+            der Mittelwert der 3 dafür relevanten Interieur-Eigenschaften.
+            Die Formel ist an einem echten Spielbeispiel exakt nachgerechnet.
+          </td>
+        </tr>
+        <tr>
+          <th>Leistungsprüfung (LP)</th>
+          <td>
+            Bestehens-Prognose nach inoffiziellen, community-ermittelten
+            Kriterien: keine ausgeprägten Erbkrankheiten; höchstens 2
+            schlechte und mindestens 5 gute/exzellente Interieur-Werte;
+            höchstens 2 sehr schlechte und mindestens 5 gelb/grüne,
+            mindestens 1 grüner Exterieur-Wert; alle Disziplinen der
+            Hauptdisziplin-Kategorie mit mindestens 20 % Potenzial und
+            mindestens eine davon mit 25 %+; alle Grundlagen und die 4
+            „normalen“ Gangarten mit mindestens 15 %, davon mindestens 6
+            insgesamt mit 20 %+ (mindestens 4 Grundlagen, mindestens 1
+            Gangart). Fehlt eine Datengrundlage komplett, erscheint dafür ein
+            Warnhinweis statt eines Ausschlussgrunds.
+          </td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> Tabelle <em>horses</em>, gefiltert auf
+        „ohne ZZL“ – oder ein per Freitext geparstes, nicht gespeichertes
+        Profil. Genutzte Felder: Name, Besitzer, Rasse, Reinrassigkeit,
+        Fellfarbe, Disziplinen, Grundlagen/Gangarten, Turnierpotenzial,
+        Exterieur-Genetik, Exterieur-Beschreibung, Temperament,
+        Erbkrankheiten.
+      </div>
+    </fieldset>
+
+    <fieldset id="zuchtbuch-anleitung">
+      <legend>Zuchtbuch</legend>
+      <p class="small">
+        Zeigt zu einem beliebigen Pferd die komplette im sichtbaren
+        Stammbaum auffindbare Verwandtschaft und vergleicht – falls möglich
+        – die eigene Fohlen-Vorhersage mit der Realität.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Ein beliebiges Pferd auswählen (auch ohne ZZL – hier sind alle Pferde sichtbar, auch Fohlen).</li>
+        <li>Unter „Angezeigte Verwandte“ die gewünschten Kategorien anhaken.</li>
+        <li>Bei Bedarf „Rassefremde Verwandte“ einstellen.</li>
+        <li>Verwandtschaftsübersicht durchsehen – per Spaltenklick sortierbar.</li>
+        <li>Falls beide Eltern selbst in der Datenbank stehen: unten den Vergleich „Fohlen-Vorhersage vs. Realität“ ansehen.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Vater-/Mutter-Karte</th>
+          <td>Stehen immer oberhalb der Tabelle, unabhängig von den Häkchen. Ist der Elternname nicht bekannt, steht dort „Unbekannt“; ist er bekannt, aber das Pferd nicht in der Datenbank, „Nicht in der Datenbank“.</td>
+        </tr>
+        <tr>
+          <th>Angezeigte Verwandte (Häkchen)</th>
+          <td>
+            „Gleicher Vater“ zeigt Voll- und väterliche Halbgeschwister,
+            „Gleiche Mutter“ entsprechend mütterlicherseits, „Kinder“ nur die
+            direkte nächste Generation, „Alle Nachkommen“ rekursiv jede
+            weitere Generation. „Alle Verwandtschaft“ ist ein
+            Master-Schalter: aktiviert zeigt er unabhängig von den anderen
+            vier Häkchen wirklich alles – zusätzlich auch entferntere
+            Verwandtschaft (Onkel, Tanten, Cousins, …), definiert als jedes
+            Pferd, das mindestens einen Namen mit dem sichtbaren Stammbaum
+            des gewählten Pferds teilt – und graut dafür die vier
+            Einzel-Häkchen aus. Wird er wieder ausgeschaltet, sind die vier
+            Häkchen leer und müssen bei Bedarf neu gesetzt werden.
+          </td>
+        </tr>
+        <tr>
+          <th>Rassefremde Verwandte</th>
+          <td>Vergleicht die Rasse jedes gefundenen Verwandten mit der Rasse des ausgewählten Pferds: „Alle anzeigen“, „Ausblenden“ (nur gleichrassige) oder „Nur rassefremde anzeigen“.</td>
+        </tr>
+        <tr>
+          <th>Verwandtschaftstabelle</th>
+          <td>Beziehung, Name, Geschlecht, Farbe, Genetik, GP, Ext, Ext%, Int, HLP/SLP, ZZL, EKH (erbliche Krankheiten – Träger und voll betroffene Tiere), Besitzer – exakt dieselben Werte wie in der Datenbankübersicht, per Spaltenklick sortierbar.</td>
+        </tr>
+        <tr>
+          <th>Fohlen-Vorhersage vs. Realität</th>
+          <td>
+            Erscheint nur, wenn beide Eltern des gewählten Pferds selbst als
+            eigener Datensatz in der Datenbank stehen. Vergleicht den
+            tatsächlichen GP- und Int-Wert mit der Best-/Worst-Case-Spanne
+            aus den echten Eltern: „✓ im vorhergesagten Bereich“ oder „✗
+            außerhalb“. Ext und Ext% sind hier absichtlich nicht Teil des
+            Vergleichs.
+          </td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> Tabelle <em>horses</em>, ohne ZZL- oder
+        Geschlechtsfilter – auch Fohlen ohne ZZL erscheinen hier als „Kind“.
+        Eltern/Geschwister/Nachkommen werden ausschließlich über
+        Namensabgleich im Stammbaum-Feld ermittelt – es gibt keine separate
+        Mutter-/Vater-ID in der Datenbank.
+      </div>
+    </fieldset>
+
+    <fieldset id="bausteine">
+      <legend>Gemeinsame Bedienelemente</legend>
+      <p class="small">Diese Elemente verhalten sich auf allen vier Werkzeugen identisch.</p>
+
+      <div class="group-heading">Durchsuchbares Pferde-Auswahlfeld</div>
+      <p class="small">
+        Tippen filtert die Liste nach jedem Vorkommen der Eingabe im Namen
+        (nicht nur am Anfang). Ein Klick in ein bereits ausgefülltes Feld
+        öffnet die Liste erneut und markiert den vorhandenen Text komplett –
+        der nächste Tastendruck ersetzt ihn direkt.
+      </p>
+
+      <div class="group-heading">Rassenauswahl</div>
+      <p class="small">
+        Ankreuzbare Liste, die nur Rassen zeigt, die im jeweils geladenen
+        Bestand tatsächlich vorkommen. Kein Häkchen gesetzt bedeutet „kein
+        Filter aktiv“ (alle Rassen sichtbar); mehrere Häkchen werden mit
+        ODER verknüpft. Startet standardmäßig mit „American Paint Horse“
+        angehakt – jede Umstellung auf andere Rassen erfolgt bewusst manuell.
+        Die Rasse „Rasselos“ hat zusätzlich ein Dropdown für einen
+        Reinrassigkeits-Schwellenwert (&gt;/&lt; 25 %, 50 %, 75 %).
+      </p>
+
+      <div class="group-heading">Sortierbare Tabellen</div>
+      <p class="small">
+        Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter
+        Klick kehrt die Richtung um. Fehlende Werte landen dabei immer am
+        Ende der Liste, unabhängig von der Sortierrichtung.
+      </p>
+
+      <div class="notice notice-warning">
+        ⚠️ GP und Int sind über die gesamte Seite hinweg noch grobe
+        Schätzwerte – verlasst euch dafür noch nicht auf ihre exakte
+        Richtigkeit. Ext und Ext% basieren dagegen bereits auf dem echten
+        Gencode und wurden gegen eine unabhängige Quelle verifiziert.
+      </div>
+    </fieldset>
+
+    <fieldset id="technik">
+      <legend>Woher die Daten kommen</legend>
+      <p class="small">
+        Alle vier Werkzeuge lesen live aus derselben Datenbank wie die
+        Pferdedatenbank – über einen öffentlichen, nur-lesenden Zugang ohne
+        Login. Es gibt keinen eigenen Datenbestand des MDR-Planers. Neu
+        angelegte oder geänderte Pferde in der Pferdedatenbank erscheinen
+        deshalb ohne weiteres Zutun auch hier – ein Neuladen der jeweiligen
+        Seite genügt. Umgekehrt lässt sich im MDR-Planer selbst nichts an
+        einem Pferd verändern; dafür ist immer die separate Pferdedatenbank
+        (mit Login) zuständig.
+      </p>
+      <p class="small">
+        Den technischen Fortschritt und die Änderungshistorie der einzelnen
+        Werkzeuge gibt es im separaten <a href="update-log.html">Update-Log</a>.
+      </p>
+    </fieldset>
+  </main>
+</body>
+</html>
