@@ -296,12 +296,24 @@ function foalSectionHtml(mare, stallion) {
     html += '<div class="notice notice-warning">⚠️ Beide Elterntiere tragen Overo – bei Overo × Overo besteht ein erhöhtes Risiko für das Overo Lethal White Syndrome (OLWS) bei homozygoten Fohlen.</div>';
   }
 
+  html += ekhWarningHtml(mare, stallion);
+
   html += foalRangeHtml(mare, stallion);
 
   html += foalPedigreeHtml(nodes, dupNames);
 
   html += '</div>';
   return html;
+}
+
+// EKH-Warnung (Erbkrankheiten): erscheint, sobald Stute und Hengst bei
+// mindestens einer Erbkrankheit beide Träger oder ausgeprägt betroffen
+// sind - analog zur Overo-Doppelträger-Warnung, aber für jede in
+// genetic_diseases erfasste Krankheit statt nur Overo.
+function ekhWarningHtml(mare, stallion) {
+  const shared = sharedDiseaseRisks(mare, stallion);
+  if (!shared.length) return '';
+  return `<div class="notice notice-warning">⚠️ Beide Elterntiere sind bei folgender Erbkrankheit (EKH) mindestens Träger: <strong>${shared.map(escapeHtml).join(', ')}</strong> – bei gleicher Erbkrankheit auf beiden Seiten besteht ein erhöhtes Risiko für ein ausgeprägt betroffenes Fohlen.</div>`;
 }
 
 // Fohlen-Vorhersage (Best-/Worst-Case + Datenbank-Schätzung) für die
@@ -498,6 +510,7 @@ function stallionCandidateHtml(rank, c, mare) {
       &nbsp;·&nbsp; Genetik: <strong>${genetik ? escapeHtml(genetik) : '–'}</strong>
       &nbsp;·&nbsp; Besitzer: <strong>${h.owner ? escapeHtml(h.owner) : '–'}</strong>
     </p>
+    ${ekhWarningHtml(mare, h)}
     <p class="small">
       Fohlen best case: GP <strong>${fmtGp(c.gpBest)}</strong>
       &nbsp;·&nbsp; Ext <strong>${fmtScore(c.extBest)}</strong>

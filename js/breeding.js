@@ -120,6 +120,31 @@ function hasOveroGene(horse) {
   return genes.some((g) => g.locus === 'Overo');
 }
 
+// Ein Erbkrankheiten-Wert gilt als "nicht sauber" (Träger ODER ausgeprägt
+// betroffen), sobald mindestens ein Kleinbuchstabe enthalten ist - dasselbe
+// Kriterium wie beim EKH-Wert der Datenbankübersicht (js/zuchtbuch.js:
+// isDiseaseClear), hier nur umgekehrt formuliert.
+function isDiseaseCarrierOrAffected(value) {
+  return /[a-z]/.test(value || '');
+}
+
+// Liefert die Labels aller Erbkrankheiten (EKH), bei denen BEIDE
+// Elterntiere mindestens Träger sind (Abgleich per Label, z.B. "HERDA") -
+// nur dann besteht bei gleicher Krankheit auf beiden Seiten ein erhöhtes
+// Risiko für ein ausgeprägt betroffenes Fohlen (analog zur
+// Overo-Doppelträger-Warnung oben).
+function sharedDiseaseRisks(mare, stallion) {
+  const mareAffected = new Set(
+    (mare?.genetic_diseases || []).filter((d) => isDiseaseCarrierOrAffected(d.value)).map((d) => d.label),
+  );
+  return (stallion?.genetic_diseases || [])
+    .filter((d) => isDiseaseCarrierOrAffected(d.value) && mareAffected.has(d.label))
+    .map((d) => d.label);
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { pedigreeAncestorNames, pedigreeDepth, foalPedigreeNodes, findSharedNames, hasOveroGene };
+  module.exports = {
+    pedigreeAncestorNames, pedigreeDepth, foalPedigreeNodes, findSharedNames, hasOveroGene,
+    isDiseaseCarrierOrAffected, sharedDiseaseRisks,
+  };
 }
