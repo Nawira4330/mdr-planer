@@ -270,19 +270,29 @@ function horseInt(h) {
 
 const EMPIRICAL_METRICS = { gp: horseGP, ext: horseExt, extPct: horseExtPct, int: horseInt };
 
+// Ein Pferd mit einem bekannten, von Null verschiedenen Inzuchtkoeffizienten
+// (COI/"ico") ist selbst schon durch Inzucht beeinflusst - als Trainingsdatum
+// (egal ob als Fohlen oder als Elternteil) würde es die Durchschnitts-
+// Abweichung verfälschen und wird daher komplett ausgeschlossen.
+function hasKnownCoi(horse) {
+  return horse?.ico != null && horse.ico !== 0;
+}
+
 // Baut aus allen geladenen Pferden die echten Eltern-Fohlen-Trios (beide
 // Eltern UND das Fohlen selbst als eigener Datensatz vorhanden, per Name
 // aufgelöst wie überall sonst in diesem Modul) und liefert je Metrik die
 // durchschnittliche Abweichung des Fohlens vom Eltern-Mittelwert.
 function computeEmpiricalDeviations(allHorses) {
+  const cleanHorses = (allHorses || []).filter((h) => !hasKnownCoi(h));
+
   const byName = new Map();
-  for (const h of allHorses) {
+  for (const h of cleanHorses) {
     const key = normalizeName(h.name);
     if (key && !byName.has(key)) byName.set(key, h);
   }
 
   const diffs = { gp: [], ext: [], extPct: [], int: [] };
-  for (const child of allHorses) {
+  for (const child of cleanHorses) {
     const anc = pedigreeAncestorNames(child);
     const fatherName = anc[0] && normalizeName(anc[0]) !== 'unbekannt' ? anc[0] : null;
     const motherName = anc[1] && normalizeName(anc[1]) !== 'unbekannt' ? anc[1] : null;
@@ -291,13 +301,17 @@ function computeEmpiricalDeviations(allHorses) {
     const mother = byName.get(normalizeName(motherName));
     if (!father || !mother) continue;
 
-    // GP von Rasselosen ist nicht mit "normalen" Rassen vergleichbar (andere
-    // Berechnungsgrundlage im Spiel) - Trios mit einem Rasselosen Elternteil
-    // oder Fohlen fließen daher nur bei GP nicht in den Durchschnitt ein
-    // (Ext/Ext%/Int sind davon nicht betroffen).
-    const involvesRasselos = child.breed === 'Rasselos' || father.breed === 'Rasselos' || mother.breed === 'Rasselos';
+    // GP eines Rasselosen Fohlens ist nur dann nicht mit den Eltern
+    // vergleichbar, wenn Vater und Mutter unterschiedliche Hauptdisziplinen
+    // haben (welche Kategorie das Fohlen "erbt", ist dann nicht vorhersagbar)
+    // - Ext/Ext%/Int sind davon nicht betroffen.
+    const fatherCategory = findDisciplineCategory(father.disciplines, father.tournament_potential?.['Begabung']);
+    const motherCategory = findDisciplineCategory(mother.disciplines, mother.tournament_potential?.['Begabung']);
+    const skipGpForRasselos = child.breed === 'Rasselos'
+      && fatherCategory && motherCategory && fatherCategory !== motherCategory;
+
     for (const [metric, getValue] of Object.entries(EMPIRICAL_METRICS)) {
-      if (metric === 'gp' && involvesRasselos) continue;
+      if (metric === 'gp' && skipGpForRasselos) continue;
       const childVal = getValue(child);
       const fatherVal = getValue(father);
       const motherVal = getValue(mother);
@@ -320,17 +334,21 @@ function computeEmpiricalDeviations(allHorses) {
 // Eltern-Mittelwert der zwei ausgewählten Pferde + die passende
 // Durchschnitts-Abweichung aus computeEmpiricalDeviations. Liefert je
 // Metrik null, wenn einem Elternteil der Wert fehlt oder keine
-// Eltern-Fohlen-Trios für diese Metrik gefunden wurden (n=0). GP wird bei
-// Rasselosen Eltern grundsätzlich nicht geschätzt (siehe
-// computeEmpiricalDeviations - nicht vergleichbare Berechnungsgrundlage).
+// Eltern-Fohlen-Trios für diese Metrik gefunden wurden (n=0). GP wird nicht
+// geschätzt, wenn mindestens ein Elternteil Rasselos ist UND Stute/Hengst
+// unterschiedliche Hauptdisziplinen haben (siehe computeEmpiricalDeviations
+// - dieselbe Regel wie beim Aufbau der Trainingsdaten).
 function estimateFoalEmpirical(mare, stallion, deviations) {
   const result = {};
-  const involvesRasselos = mare?.breed === 'Rasselos' || stallion?.breed === 'Rasselos';
+  const eitherRasselos = mare?.breed === 'Rasselos' || stallion?.breed === 'Rasselos';
+  const mareCategory = findDisciplineCategory(mare?.disciplines, mare?.tournament_potential?.['Begabung']);
+  const stallionCategory = findDisciplineCategory(stallion?.disciplines, stallion?.tournament_potential?.['Begabung']);
+  const skipGpForRasselos = eitherRasselos && mareCategory && stallionCategory && mareCategory !== stallionCategory;
   for (const [metric, getValue] of Object.entries(EMPIRICAL_METRICS)) {
     const a = getValue(mare);
     const b = getValue(stallion);
     const dev = deviations?.[metric];
-    if ((metric === 'gp' && involvesRasselos) || a == null || b == null || !dev || !dev.n) {
+    if ((metric === 'gp' && skipGpForRasselos) || a == null || b == null || !dev || !dev.n) {
       result[metric] = null;
     } else {
       result[metric] = (a + b) / 2 + dev.meanDiff;

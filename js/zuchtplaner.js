@@ -6,9 +6,19 @@ const HORSE_SELECT_FIELDS =
 
 // Leichtere Feldauswahl für die Datenbank-Schätzung (computeEmpiricalDeviations):
 // braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
-// die für GP/Ext/Ext%/Int und den Stammbaum nötig sind.
+// die für GP/Ext/Ext%/Int, den Stammbaum, die Rasselos/Hauptdisziplin-Regel
+// und den COI-Ausschluss nötig sind.
 const STATS_SELECT_FIELDS =
-  'id,name,breed,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+  'id,name,breed,ico,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,disciplines';
+
+// Dieselben Felder aus "foal_reference_data" (siehe migration_011 in der
+// MDR-Datenbank) - dort landet über einen DB-Trigger automatisch jedes in
+// "horses" gespeicherte Pferd (kept=true, per horse_id) UND zusätzlich jedes
+// über das Verpaarungs-Log erfasste, nicht behaltene Fohlen (kept=false).
+// "horse_id" bleibt auch nach dem Löschen des zugehörigen "horses"-Datensatzes
+// erhalten - genau die Quelle für "auch nicht mehr vorhandene Pferde".
+const REFERENCE_SELECT_FIELDS =
+  'id,horse_id,name,breed,ico,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,disciplines';
 
 let mares = [];
 let stallions = [];
@@ -75,9 +85,20 @@ async function init() {
 // und rendert bei Erfolg neu, damit die Seite nicht auf diesen Extra-Request
 // warten muss.
 async function loadEmpiricalDeviations() {
-  const { data, error } = await supabaseClient.from('horses').select(STATS_SELECT_FIELDS);
-  if (error || !data) return;
-  empiricalDeviations = computeEmpiricalDeviations(data);
+  const [liveRes, refRes] = await Promise.all([
+    supabaseClient.from('horses').select(STATS_SELECT_FIELDS),
+    supabaseClient.from('foal_reference_data').select(REFERENCE_SELECT_FIELDS),
+  ]);
+  const liveHorses = liveRes.data || [];
+  const liveIds = new Set(liveHorses.map((h) => h.id));
+  // Nur Referenzdatensätze ergänzen, die NICHT schon live in "horses" stehen
+  // (Duplikate über horse_id vermeiden) - das deckt genau die Pferde ab, die
+  // inzwischen gelöscht wurden oder nie als eigenes Pferd behalten wurden
+  // (kept=false).
+  const extraFromReference = (refRes.data || []).filter((r) => !r.horse_id || !liveIds.has(r.horse_id));
+  const combined = [...liveHorses, ...extraFromReference];
+  if (!combined.length) return;
+  empiricalDeviations = computeEmpiricalDeviations(combined);
   renderInzuchtResult();
   if (activeTab === 'auswahl') renderBestMatches();
 }
