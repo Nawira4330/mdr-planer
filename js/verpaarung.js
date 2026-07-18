@@ -390,15 +390,27 @@ function colorWishPossible(mare, stallion, wish) {
 const SCHWERPUNKT_HIGHER_IS_BETTER = { gp: true, ext: false, extpct: true, int: false };
 const SCHWERPUNKT_BEST_FIELD = { gp: 'gpBest', ext: 'extBest', extpct: 'extPctBest', int: 'intBest' };
 const SCHWERPUNKT_WORST_FIELD = { gp: 'gpWorst', ext: 'extWorst', extpct: 'extPctWorst', int: 'intWorst' };
+// Schwerpunkt-Schlüssel ("extpct") -> Metrik-Schlüssel in EMPIRICAL_METRICS
+// bzw. im Rückgabewert von estimateFoalEmpirical ("extPct").
+const SCHWERPUNKT_EMPIRICAL_METRIC = { gp: 'gp', ext: 'ext', extpct: 'extPct', int: 'int' };
 
 // Sortierung ist unabhängig vom Schwerpunkt wählbar:
 // - "best"/"worst": der jeweilige Fohlen-Wert (Best-/Worst-Case) des
 //   gewählten Schwerpunkts, in dessen eigener Richtung (höher/niedriger =
 //   besser je nach Schwerpunkt).
+// - "empirical": die Datenbank-Schätzung des gewählten Schwerpunkts, in
+//   derselben Richtung wie best/worst - Kandidaten ohne Schätzung (z.B.
+//   fehlende Trios oder GP bei Rasselos, siehe estimateFoalEmpirical)
+//   landen wie überall sonst am Ende der Liste.
 // - "diff-asc"/"diff-desc": Abstand zwischen Best- und Worst-Case
 //   (unabhängig von der Richtung) - klein = verlässliches Ergebnis, groß =
 //   große Schwankungsbreite (Risiko/Chance).
 function sortKey(candidate, schwerpunkt, sortMode) {
+  if (sortMode === 'empirical') {
+    const metric = SCHWERPUNKT_EMPIRICAL_METRIC[schwerpunkt] || 'gp';
+    return candidate.emp ? candidate.emp[metric] : null;
+  }
+
   const bestField = SCHWERPUNKT_BEST_FIELD[schwerpunkt] || 'gpBest';
   const worstField = SCHWERPUNKT_WORST_FIELD[schwerpunkt] || 'gpWorst';
   const best = candidate[bestField];
@@ -414,7 +426,7 @@ function sortKey(candidate, schwerpunkt, sortMode) {
 // Harte Ausschlüsse zuerst (Inzucht, doppeltes Overo, nicht erfüllbare
 // Farbwünsche), danach Sortierung nach dem gewählten Schwerpunkt +
 // Sortiermodus, Top 10.
-function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode }) {
+function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, empiricalDeviations }) {
   const mareHasOvero = hasOveroGene(mare);
   const wishes = (farbwuensche || []).map((label) => COLOR_WISH_OPTIONS.find((o) => o.label === label)).filter(Boolean);
 
@@ -429,7 +441,8 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode })
     const ext = exteriorFoalRange(mare, stallion);
     const int = interieurFoalRange(mare, stallion);
     const gp = estimateFoalGP(mare, stallion);
-    return { stallion, ...ext, ...int, ...gp };
+    const emp = empiricalDeviations ? estimateFoalEmpirical(mare, stallion, empiricalDeviations) : null;
+    return { stallion, ...ext, ...int, ...gp, emp };
   });
 
   const mode = sortMode || 'best';

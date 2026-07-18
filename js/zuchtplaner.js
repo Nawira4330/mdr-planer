@@ -473,7 +473,7 @@ function renderBestMatches() {
 
   const breedFilteredStallions = stallions.filter((h) => auswahlStallionBreedFilter.matches(h));
   const { total, candidateCount, top } = rankStallions(mare, breedFilteredStallions, {
-    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(),
+    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations,
   });
 
   const mareHasOvero = hasOveroGene(mare);
