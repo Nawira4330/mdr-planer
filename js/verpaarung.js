@@ -123,6 +123,72 @@ function exteriorFoalRange(mare, stallion) {
   };
 }
 
+// --- Genort-Ausgleich (Exterieur-Komplementarität) ---
+//
+// extBest/extPctBest sind rechnerisch nachweisbar eine reine SUMME der
+// jeweils EIGENEN Zygotie-Beiträge von Stute und Hengst (kein Schwellenwert,
+// keine echte Wechselwirkung) - pointsBest pro Genort vorne = mareContrib +
+// stallionContrib, hinten = (1-mareRed) + (1-stallionRed). Für EINE feste
+// Stute ist ihr Anteil an dieser Summe für jeden Hengst-Kandidaten exakt
+// derselbe konstante Wert - er verschiebt also nur das Gesamtniveau, ändert
+// aber NIE die Rangfolge der Hengste untereinander (mathematisch bewiesen,
+// mit echten Datenbank-Paaren gegengeprüft: "Vorhersage minus Eigenwert der
+// Stute" ergab exakt dieselbe Reihenfolge wie "Bester Best Case"). Dadurch
+// gewinnt bei "Bester Best Case"/"Bester Worst Case"/"Beste Datenbank-
+// Schätzung" für Ext/Ext% praktisch immer derselbe, individuell stärkste
+// Hengst - unabhängig davon, welche Stute gewählt wurde.
+//
+// Dieser Score misst stattdessen gezielt, wie viele der eigenen "Problem-
+// Genorte" DIESER STUTE (Positionen, an denen sie allein das bestmögliche
+// Ergebnis nicht garantieren kann) von GENAU DIESEM Hengst tatsächlich
+// gerettet bzw. nicht verschlechtert werden - dieselbe Zygotie-Logik wie
+// exteriorBestWorstForTrait (vorne: mind. 1x H nötig; hinten: kein HH
+// erlaubt), nur pro Genort statt als Summe ausgewertet, damit die Stute die
+// Rangfolge tatsächlich beeinflusst:
+// - Vorne (Genort 1-4, braucht H): "Problem" der Stute, wenn sie selbst
+//   kein H geben kann (zA=0) - "gerettet", wenn der Hengst H beisteuert.
+// - Hinten (Genort 5-8, braucht hh): unrettbar, wenn die Stute selbst
+//   bereits HH ist (zA=2, kein Hengst kann das ausgleichen) - sonst zählt
+//   der Genort, wenn der Hengst SELBST nicht HH beisteuert ("nicht
+//   verschlechtert").
+// "atStake" (wie viele Problem-Genorte die Stute überhaupt hat) ist für
+// alle Hengst-Kandidaten derselbe Wert, "saved" variiert echt je Hengst -
+// die Rangfolge nach "saved" ist damit tatsächlich stutenspezifisch.
+//
+// Kein vom Spiel selbst angezeigter Wert, sondern eine zusätzliche
+// Heuristik auf Basis derselben verifizierten Zygotie-Mechanik.
+function exteriorComplementarityScore(mare, stallion) {
+  const mareRows = mare?.exterior_genetics?.rows || [];
+  const stallionByLabel = new Map((stallion?.exterior_genetics?.rows || []).map((r) => [r.label, r]));
+
+  let atStake = 0;
+  let saved = 0;
+
+  for (const mareRow of mareRows) {
+    const stallionRow = stallionByLabel.get(mareRow.label);
+    if (!stallionRow) continue;
+    const mareTokens = parseExteriorTokens(mareRow.genotype);
+    const stallionTokens = parseExteriorTokens(stallionRow.genotype);
+    if (!mareTokens || !stallionTokens) continue;
+
+    for (let i = 0; i < 8; i++) {
+      const zA = parseExteriorLocus(mareTokens[i]);
+      const zB = parseExteriorLocus(stallionTokens[i]);
+      if (i < 4) {
+        if (zA === 0) {
+          atStake++;
+          if (zB >= 1) saved++;
+        }
+      } else if (zA !== 2) {
+        atStake++;
+        if (zB !== 2) saved++;
+      }
+    }
+  }
+
+  return { atStake, saved };
+}
+
 // --- Interieur: nur Phänotyp-Kategorie bekannt (kein Gencode) ---
 //
 // Kategorie -> Bandbreite "Anzahl hh-Loci von 8" (Komplement der
@@ -402,6 +468,10 @@ const SCHWERPUNKT_EMPIRICAL_METRIC = { gp: 'gp', ext: 'ext', extpct: 'extPct', i
 //   derselben Richtung wie best/worst - Kandidaten ohne Schätzung (z.B.
 //   fehlende Trios oder GP bei Rasselos, siehe estimateFoalEmpirical)
 //   landen wie überall sonst am Ende der Liste.
+// - "complement": siehe exteriorComplementarityScore - unabhängig vom
+//   gewählten Schwerpunkt immer die Exterieur-Genort-Komplementarität
+//   (einziger Modus, der für Ext/Ext% wirklich stutenspezifisch
+//   unterscheidet, siehe Kommentar dort).
 // - "diff-asc"/"diff-desc": Abstand zwischen Best- und Worst-Case
 //   (unabhängig von der Richtung) - klein = verlässliches Ergebnis, groß =
 //   große Schwankungsbreite (Risiko/Chance).
@@ -409,6 +479,9 @@ function sortKey(candidate, schwerpunkt, sortMode) {
   if (sortMode === 'empirical') {
     const metric = SCHWERPUNKT_EMPIRICAL_METRIC[schwerpunkt] || 'gp';
     return candidate.emp ? candidate.emp[metric] : null;
+  }
+  if (sortMode === 'complement') {
+    return candidate.complement ? candidate.complement.saved : null;
   }
 
   const bestField = SCHWERPUNKT_BEST_FIELD[schwerpunkt] || 'gpBest';
@@ -442,16 +515,19 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, e
     const int = interieurFoalRange(mare, stallion);
     const gp = estimateFoalGP(mare, stallion);
     const emp = empiricalDeviations ? estimateFoalEmpirical(mare, stallion, empiricalDeviations) : null;
-    return { stallion, ...ext, ...int, ...gp, emp };
+    const complement = exteriorComplementarityScore(mare, stallion);
+    return { stallion, ...ext, ...int, ...gp, emp, complement };
   });
 
   const mode = sortMode || 'best';
   // Bei "diff": größere Differenz zuerst bei diff-desc, kleinere zuerst bei
-  // diff-asc. Bei "best"/"worst": Richtung folgt dem Schwerpunkt selbst
+  // diff-asc. Bei "complement": mehr gerettete Problem-Genorte zuerst
+  // (immer "höher = besser", unabhängig vom Schwerpunkt). Bei
+  // "best"/"worst"/"empirical": Richtung folgt dem Schwerpunkt selbst
   // (z.B. bei Int ist niedriger immer besser, ob Best- oder Worst-Case).
   const ascending = mode === 'diff-asc'
     ? true
-    : mode === 'diff-desc'
+    : mode === 'diff-desc' || mode === 'complement'
       ? false
       : SCHWERPUNKT_HIGHER_IS_BETTER[schwerpunkt] === false;
 
@@ -470,6 +546,7 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, e
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     parseExteriorLocus, exteriorBestWorstForTrait, exteriorFoalRange,
+    exteriorComplementarityScore,
     interieurBestWorstForTrait, interieurFoalRange, estimateFoalGP,
     horseGP, horseExt, horseExtPct, horseInt,
     computeEmpiricalDeviations, estimateFoalEmpirical,

@@ -511,6 +511,16 @@ function fmtGp(v) {
   return v != null ? Math.round(v) : '–';
 }
 
+// Zeigt den Genort-Ausgleich (siehe exteriorComplementarityScore in
+// js/verpaarung.js) nur, wenn die Stute überhaupt "Problem-Genorte" hat -
+// bei einer bereits perfekten Stute gäbe es sonst nichts zu unterscheiden.
+function complementRowHtml(c) {
+  const { atStake, saved } = c.complement || {};
+  if (!atStake) return '';
+  const pct = ((saved / atStake) * 100).toFixed(0);
+  return `<p class="small muted">Genort-Ausgleich (Exterieur): <strong>${saved} von ${atStake}</strong> Problem-Genorten der Stute ausgeglichen (${pct}%)</p>`;
+}
+
 function stallionCandidateHtml(rank, c, mare) {
   const h = c.stallion;
   const gp = h.tournament_potential?.['Gesamtpotenzial'] ?? '–';
@@ -545,6 +555,7 @@ function stallionCandidateHtml(rank, c, mare) {
       &nbsp;·&nbsp; Int <strong>${fmtScore(c.intWorst)}</strong>
     </p>
     ${empiricalRowHtml(mare, h)}
+    ${complementRowHtml(c)}
     ${decksprungButtonHtml(mare, h)}
   </div>`;
 }
