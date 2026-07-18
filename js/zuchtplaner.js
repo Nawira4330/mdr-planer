@@ -67,6 +67,7 @@ async function init() {
     sortMode = e.target.value;
     renderBestMatches();
   });
+  document.querySelector('#hengst-besitzer-select').addEventListener('change', renderBestMatches);
   wireFarbwunschDropdown();
   document.addEventListener('click', onDecksprungClick);
   await loadHorses();
@@ -460,6 +461,17 @@ function foalPedigreeHtml(nodes, dupNames) {
 
 // --- Tab 2: Verpaarungsratgeber ---
 
+// Zeigt in den Options-Labels konkret den Besitzernamen der aktuell
+// gewählten Stute an ("Nur eigene (Wilder Wolf)" statt nur "Nur eigene"),
+// damit klar ist, worauf sich "eigene"/"fremde" bezieht - es gibt kein
+// Login auf dieser Seite, "eigene" heißt also "gleicher Besitzer wie die
+// gewählte Stute".
+function updateHengstBesitzerLabels(mare) {
+  const owner = mare.owner || 'unbekannt';
+  document.querySelector('#hengst-besitzer-select option[value="eigene"]').textContent = `Nur eigene (${owner})`;
+  document.querySelector('#hengst-besitzer-select option[value="fremde"]').textContent = `Nur fremde (nicht ${owner})`;
+}
+
 function renderBestMatches() {
   const container = document.querySelector('#auswahl-result');
   const hintEl = document.querySelector('#auswahl-hint');
@@ -471,7 +483,15 @@ function renderBestMatches() {
     return;
   }
 
-  const breedFilteredStallions = stallions.filter((h) => auswahlStallionBreedFilter.matches(h));
+  updateHengstBesitzerLabels(mare);
+  const besitzerMode = document.querySelector('#hengst-besitzer-select').value;
+  const breedFilteredStallions = stallions
+    .filter((h) => auswahlStallionBreedFilter.matches(h))
+    .filter((h) => {
+      if (besitzerMode === 'eigene') return h.owner === mare.owner;
+      if (besitzerMode === 'fremde') return h.owner !== mare.owner;
+      return true;
+    });
   const { total, candidateCount, top } = rankStallions(mare, breedFilteredStallions, {
     schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations,
   });
