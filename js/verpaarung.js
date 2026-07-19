@@ -425,6 +425,17 @@ function estimateFoalEmpirical(mare, stallion, deviations) {
 
 // --- Farbwünsche ---
 
+// Pearl (pl) sitzt am selben Locus wie Cream und ist in der Datenbank ein
+// echter, oft getesteter Wert ("crpl" = 1 Kopie, "plpl" = 2 Kopien) - daher
+// zusätzlich mit "homozygousOnly" als eigene Option für "reinerbig" (plpl).
+// Flaxen (fl) hat dagegen KEINEN eigenen getesteten Genort in der
+// Datenbank (698 Pferde geprüft: kein "Flaxen"-Eintrag in colors, keine
+// Erwähnung in notes) - es taucht nur als Wort in der Fellfarbe auf, wenn
+// es sichtbar ist (= reinerbig, wie im echten Pferde-Vorbild). Eine
+// unsichtbare Trägerschaft lässt sich trotzdem indirekt erkennen, wenn ein
+// ELTERNTEIL sichtbar Flaxen ist (siehe hasFlaxenTrait) - das Pferd selbst
+// muss dann mindestens eine rezessive fl-Kopie geerbt haben, auch wenn es
+// selbst nicht sichtbar Flaxen ist.
 const COLOR_WISH_OPTIONS = [
   { label: 'Overo', locus: 'Overo', allele: 'O' },
   { label: 'Tobiano', locus: 'KIT', allele: 'To' },
@@ -433,18 +444,57 @@ const COLOR_WISH_OPTIONS = [
   { label: 'Champagne', locus: 'Champagne', allele: 'Ch' },
   { label: 'Dun', locus: 'Dun', allele: 'D' },
   { label: 'Cream', locus: 'Cream', allele: 'Cr' },
+  { label: 'Pearl (pl)', locus: 'Cream', allele: 'pl' },
+  { label: 'Pearl reinerbig (plpl)', locus: 'Cream', allele: 'pl', homozygousOnly: true },
   { label: 'Grey', locus: 'Grey', allele: 'G' },
   { label: 'Splashed', locus: 'Splashed', allele: 'SPL' },
   { label: 'Leopard/Appaloosa', locus: 'Appaloosa', allele: 'Lp' },
+  { label: 'Flaxen (sichtbar)', locus: 'Flaxen', allele: 'fl' },
+  { label: 'Flaxen-Träger (auch über Elternteil)', locus: 'Flaxen', allele: 'fl', viaParent: true },
 ];
+
+function isVisiblyFlaxen(horse) {
+  return /\bflaxen\b/i.test(horse?.coat_color || '');
+}
+
+// Flaxen-Trägerschaft: sichtbar am Pferd selbst ODER (da es keinen eigenen
+// getesteten Genort gibt) wenn mindestens ein Elternteil sichtbar Flaxen
+// ist - das Pferd hat dann zwingend mindestens eine rezessive fl-Kopie
+// geerbt, auch wenn selbst nicht sichtbar. byNameMap: Map<normalisierter
+// Name, Pferd mit coat_color> aus einem möglichst breiten Bestand (siehe
+// flaxenLookup in js/zuchtplaner.js), damit auch Elternteile gefunden
+// werden, die selbst nicht (mehr) im ZZL-Kandidatenpool stehen.
+function hasFlaxenTrait(horse, byNameMap) {
+  if (isVisiblyFlaxen(horse)) return true;
+  if (!byNameMap) return false;
+  const anc = pedigreeAncestorNames(horse);
+  for (const name of [anc[0], anc[1]]) {
+    if (!name || normalizeName(name) === 'unbekannt') continue;
+    const parent = byNameMap.get(normalizeName(name));
+    if (parent && isVisiblyFlaxen(parent)) return true;
+  }
+  return false;
+}
 
 // Bewusst vereinfacht (analog zu hasOveroGene): das Merkmal gilt als
 // möglich, wenn Stute ODER Hengst das Gen laut presentGenesSummary trägt -
-// kein vollständiges Dominant-/rezessiv-Modell je Locus.
-function colorWishPossible(mare, stallion, wish) {
+// kein vollständiges Dominant-/rezessiv-Modell je Locus. Ausnahmen:
+// "homozygousOnly" zählt exakte 2-Zeichen-Allel-Token (z.B. "plpl" -> 2x
+// "pl"), statt nur "kommt mindestens einmal vor" zu prüfen - nötig, um
+// Pearl (1 Kopie reicht) von Pearl reinerbig (2 Kopien nötig) zu
+// unterscheiden. "locus === 'Flaxen'" nutzt hasFlaxenTrait statt
+// presentGenesSummary, da Flaxen keinen eigenen Locus hat.
+function colorWishPossible(mare, stallion, wish, flaxenLookup) {
   const hasWish = (horse) => {
+    if (wish.locus === 'Flaxen') {
+      return wish.viaParent ? hasFlaxenTrait(horse, flaxenLookup) : isVisiblyFlaxen(horse);
+    }
     const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes);
-    return genes.some((g) => g.locus === wish.locus && g.alleles.includes(wish.allele));
+    const entry = genes.find((g) => g.locus === wish.locus);
+    if (!entry) return false;
+    if (!wish.homozygousOnly) return entry.alleles.includes(wish.allele);
+    const tokens = entry.alleles.match(/../g) || [];
+    return tokens.filter((t) => t === wish.allele).length >= 2;
   };
   return hasWish(mare) || hasWish(stallion);
 }
@@ -499,14 +549,14 @@ function sortKey(candidate, schwerpunkt, sortMode) {
 // Harte Ausschlüsse zuerst (Inzucht, doppeltes Overo, nicht erfüllbare
 // Farbwünsche), danach Sortierung nach dem gewählten Schwerpunkt +
 // Sortiermodus, Top 10.
-function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, empiricalDeviations }) {
+function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, empiricalDeviations, flaxenLookup }) {
   const mareHasOvero = hasOveroGene(mare);
   const wishes = (farbwuensche || []).map((label) => COLOR_WISH_OPTIONS.find((o) => o.label === label)).filter(Boolean);
 
   const candidates = stallions.filter((stallion) => {
     if (findSharedNames(mare, stallion).length > 0) return false;
     if (mareHasOvero && hasOveroGene(stallion)) return false;
-    if (wishes.length && !wishes.every((wish) => colorWishPossible(mare, stallion, wish))) return false;
+    if (wishes.length && !wishes.every((wish) => colorWishPossible(mare, stallion, wish, flaxenLookup))) return false;
     return true;
   });
 
@@ -551,5 +601,6 @@ if (typeof module !== 'undefined' && module.exports) {
     horseGP, horseExt, horseExtPct, horseInt,
     computeEmpiricalDeviations, estimateFoalEmpirical,
     COLOR_WISH_OPTIONS, colorWishPossible, rankStallions,
+    isVisiblyFlaxen, hasFlaxenTrait,
   };
 }

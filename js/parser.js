@@ -394,6 +394,10 @@ const PHENOTYPE_GENE_HINTS = [
   { pattern: /\bpearl\b/i, locus: 'Cream', allele: 'pl', label: 'Pearl' },
   { pattern: /\bgrey\b/i, locus: 'Grey', allele: 'G', label: 'Grey' },
   { pattern: /\b(leopard|fewspot|blanket|snowcap)\b/i, locus: 'Appaloosa', allele: 'Lp', label: 'Leopard-Musterung' },
+  // Flaxen hat keinen eigenen getesteten Locus in der Datenbank - nur als
+  // Wort in der Fellfarbe erkennbar, wenn sichtbar (siehe COLOR_WISH_OPTIONS
+  // in js/verpaarung.js für die Einschränkung, die daraus folgt).
+  { pattern: /\bflaxen\b/i, locus: 'Flaxen', allele: 'fl', label: 'Flaxen' },
 ];
 
 // Gibt eine Liste { locus, allele, label } aller aus dem Fellfarbe-Namen

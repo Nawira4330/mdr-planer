@@ -6,10 +6,11 @@ const HORSE_SELECT_FIELDS =
 
 // Leichtere Feldauswahl für die Datenbank-Schätzung (computeEmpiricalDeviations):
 // braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
-// die für GP/Ext/Ext%/Int, den Stammbaum, die Rasselos/Hauptdisziplin-Regel
-// und den COI-Ausschluss nötig sind.
+// die für GP/Ext/Ext%/Int, den Stammbaum, die Rasselos/Hauptdisziplin-Regel,
+// den COI-Ausschluss und die Flaxen-Eltern-Erkennung (coat_color, siehe
+// flaxenLookup) nötig sind.
 const STATS_SELECT_FIELDS =
-  'id,name,breed,ico,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,disciplines';
+  'id,name,breed,ico,coat_color,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,disciplines';
 
 // Dieselben Felder aus "foal_reference_data" (siehe migration_011 in der
 // MDR-Datenbank) - dort landet über einen DB-Trigger automatisch jedes in
@@ -18,7 +19,7 @@ const STATS_SELECT_FIELDS =
 // "horse_id" bleibt auch nach dem Löschen des zugehörigen "horses"-Datensatzes
 // erhalten - genau die Quelle für "auch nicht mehr vorhandene Pferde".
 const REFERENCE_SELECT_FIELDS =
-  'id,horse_id,name,breed,ico,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,disciplines';
+  'id,horse_id,name,breed,ico,coat_color,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,disciplines';
 
 let mares = [];
 let stallions = [];
@@ -34,6 +35,12 @@ let sortMode = 'best';
 // vertauschten Rollen (siehe Kommentar dort).
 let richtung = 'stute';
 let empiricalDeviations = null; // wird nach loadHorses() befüllt, siehe loadEmpiricalDeviations()
+// Map<normalisierterName, Pferd> aus demselben breiten Bestand wie
+// empiricalDeviations (horses + foal_reference_data) - für die Flaxen-
+// Trägerschaftsprüfung über Eltern (siehe hasFlaxenTrait in
+// js/verpaarung.js): findet auch Elternteile, die selbst nicht (mehr) im
+// ZZL-Kandidatenpool stehen.
+let flaxenLookup = null;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -109,6 +116,11 @@ async function loadEmpiricalDeviations() {
   const combined = [...liveHorses, ...extraFromReference];
   if (!combined.length) return;
   empiricalDeviations = computeEmpiricalDeviations(combined);
+  flaxenLookup = new Map();
+  for (const h of combined) {
+    const key = normalizeName(h.name);
+    if (key && !flaxenLookup.has(key)) flaxenLookup.set(key, h);
+  }
   renderInzuchtResult();
   if (activeTab === 'auswahl') renderBestMatches();
 }
@@ -530,7 +542,7 @@ function renderBestMatches() {
   // Kandidaten weiterhin "stallion" (auch wenn er hier tatsächlich eine
   // Stute ist), siehe candidateCardHtml unten.
   const { total, candidateCount, top } = rankStallions(primary, filteredCandidates, {
-    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations,
+    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations, flaxenLookup,
   });
 
   const primaryHasOvero = hasOveroGene(primary);
