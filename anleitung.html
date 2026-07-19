@@ -143,20 +143,35 @@
     <fieldset id="ratgeber">
       <legend>Zuchtplaner → Verpaarungsratgeber</legend>
       <p class="small">
-        Sucht statt eines einzelnen Hengstes automatisch die zehn
-        vielversprechendsten Hengste im Bestand für eine gewählte Stute.
+        Sucht statt eines einzelnen Partners automatisch die zehn
+        vielversprechendsten Kandidaten im Bestand - wahlweise die besten
+        Hengste zu einer Stute oder (umgekehrte Richtung) die besten Stuten
+        zu einem Hengst.
       </p>
 
       <div class="group-heading">So gehst du vor</div>
       <ol class="small">
-        <li>Oben eine Stute auswählen (wie bei der Inzuchtprüfung).</li>
+        <li>Oben eine Stute und/oder einen Hengst auswählen (wie bei der Inzuchtprüfung - ein per Freitext eingelesener fremder Hengst funktioniert ebenfalls).</li>
         <li>Zum Tab „Verpaarungsratgeber“ wechseln.</li>
-        <li>Schwerpunkt, Sortierung, optional Farbwünsche und die anzuzeigenden Hengst-Rassen einstellen.</li>
-        <li>Die Top 10 passenden Hengste mit Fohlen-Vorhersage durchsehen.</li>
+        <li>Richtung wählen: „Stute → beste Hengste“ (Standard) oder „Hengst → beste Stuten“.</li>
+        <li>Schwerpunkt, Sortierung, optional Farbwünsche, die anzuzeigenden Rassen und den Besitzer-Filter einstellen.</li>
+        <li>Die Top 10 passenden Kandidaten mit Fohlen-Vorhersage durchsehen.</li>
       </ol>
 
       <div class="group-heading">Funktionen im Detail</div>
       <table class="detail-table">
+        <tr>
+          <th>Richtung</th>
+          <td>
+            Legt fest, welches der beiden oben gewählten Pferde als
+            Ausgangspunkt dient und welcher Pool durchsucht wird. Alle
+            übrigen Funktionen dieser Seite (Schwerpunkt, Sortierung,
+            Farbwünsche, Ausschlüsse, Datenbank-Schätzung, Genort-Ausgleich)
+            funktionieren in beide Richtungen identisch - nur Rassen- und
+            Besitzer-Filter beziehen sich dann auf die Stuten statt auf die
+            Hengste (Beschriftung wechselt automatisch mit).
+          </td>
+        </tr>
         <tr>
           <th>Schwerpunkt</th>
           <td>Legt fest, nach welcher Kennzahl sortiert wird: GP, Ext, Ext% oder Int.</td>
@@ -166,44 +181,59 @@
           <td>
             Unabhängig vom Schwerpunkt wählbar: „Bester Best Case“ / „Bester
             Worst Case“ sortiert nach dem jeweiligen Grenzwert des
-            Schwerpunkts; „Kleinste Differenz“ bringt die verlässlichsten
-            Kandidaten (kleiner Abstand zwischen Best- und Worst-Case) nach
-            oben, „Größte Differenz“ die mit der größten Schwankungsbreite.
+            Schwerpunkts; „Bester Ausgleich der Stuten-/Hengst-Schwächen
+            (Exterieur)“ zählt gezielt, wie viele der eigenen Problem-Genorte
+            des Ausgangspferds vom jeweiligen Kandidaten ausgeglichen werden
+            (einzige Sortierung, die für Ext/Ext% wirklich vom gewählten
+            Ausgangspferd abhängt - alle anderen ranken dafür rechnerisch
+            fast immer denselben, individuell stärksten Kandidaten); „Beste
+            Datenbank-Schätzung“ nutzt den empirischen Schätzwert; „Kleinste
+            Differenz“ bringt die verlässlichsten Kandidaten (kleiner
+            Abstand zwischen Best- und Worst-Case) nach oben, „Größte
+            Differenz“ die mit der größten Schwankungsbreite.
           </td>
         </tr>
         <tr>
           <th>Farbwünsche (optional, mehrfach wählbar)</th>
           <td>
             Overo, Tobiano, Sabino, Roan, Champagne, Dun, Cream, Grey,
-            Splashed, Leopard/Appaloosa. Ein Hengst bleibt nur in der Liste,
+            Splashed, Leopard/Appaloosa. Ein Kandidat bleibt nur in der Liste,
             wenn für jeden angehakten Wunsch mindestens eines der beiden
             Elterntiere das passende Allel trägt.
           </td>
         </tr>
         <tr>
-          <th>Hengst-Rasse</th>
+          <th>Hengst-/Stute-Rasse</th>
           <td>
-            Eigene, von der Stute unabhängige Rassenauswahl (z. B. um
-            gezielt Rasselose oder andere Rassen als Kandidaten zuzulassen) –
-            startet standardmäßig bei „American Paint Horse“, muss für
-            andere Rassen manuell umgestellt werden.
+            Eigene, vom Ausgangspferd unabhängige Rassenauswahl für den
+            Kandidatenpool (z. B. um gezielt Rasselose oder andere Rassen
+            zuzulassen) – startet standardmäßig bei „American Paint Horse“,
+            muss für andere Rassen manuell umgestellt werden.
+          </td>
+        </tr>
+        <tr>
+          <th>Hengst-/Stute-Besitzer</th>
+          <td>
+            Alle / Nur eigene / Nur fremde - bezieht sich auf den Besitzer
+            des oben gewählten Ausgangspferds (kein Login auf der Seite, die
+            Options-Beschriftung zeigt den Namen konkret an). Standard: Alle.
           </td>
         </tr>
         <tr>
           <th>Automatischer Ausschluss</th>
-          <td>Verwandte Hengste (Namensdopplung im Stammbaum) fallen komplett aus der Liste. Trägt die Stute Overo, werden zusätzlich alle Overo-Hengste ausgeschlossen.</td>
+          <td>Verwandte Kandidaten (Namensdopplung im Stammbaum) fallen komplett aus der Liste. Trägt das Ausgangspferd Overo, werden zusätzlich alle Overo-Kandidaten ausgeschlossen.</td>
         </tr>
         <tr>
           <th>Ergebniskarten</th>
-          <td>Pro Hengst dieselben Angaben wie in der Inzuchtprüfung: aktuelle Werte, Best-/Worst-Case-Vorhersage, Datenbank-Schätzung und der „Decksprung nutzen“-Button.</td>
+          <td>Pro Kandidat dieselben Angaben wie in der Inzuchtprüfung: aktuelle Werte, Best-/Worst-Case-Vorhersage, Datenbank-Schätzung, Genort-Ausgleich und der „Decksprung nutzen“-Button.</td>
         </tr>
       </table>
 
       <div class="notice">
         <strong>Datenquelle:</strong> Dieselbe Stuten-/Hengst-Ladung wie bei
-        der Inzuchtprüfung (Tabelle <em>horses</em>, ZZL-Hengste), zusätzlich
-        gefiltert nach dem gewählten Hengst-Rassefilter. Farbwünsche werden
-        aus Genetik, Fellfarbe und Notizen abgeleitet.
+        der Inzuchtprüfung (Tabelle <em>horses</em>, ZZL-Pferde), zusätzlich
+        gefiltert nach Rassen- und Besitzer-Filter. Farbwünsche werden aus
+        Genetik, Fellfarbe und Notizen abgeleitet.
       </div>
     </fieldset>
 

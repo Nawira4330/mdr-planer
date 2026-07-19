@@ -28,6 +28,11 @@ let mareSelect, stallionSelect;
 let mareBreedFilter, stallionBreedFilter, auswahlStallionBreedFilter;
 let schwerpunkt = 'gp';
 let sortMode = 'best';
+// "stute": oben gewählte Stute -> Top-Hengste (Standard). "hengst": oben
+// gewählter Hengst -> Top-Stuten (umgekehrte Richtung) - siehe
+// renderBestMatches, nutzt dieselbe rankStallions()-Logik nur mit
+// vertauschten Rollen (siehe Kommentar dort).
+let richtung = 'stute';
 let empiricalDeviations = null; // wird nach loadHorses() befüllt, siehe loadEmpiricalDeviations()
 
 document.addEventListener('DOMContentLoaded', init);
@@ -68,6 +73,10 @@ async function init() {
     renderBestMatches();
   });
   document.querySelector('#hengst-besitzer-select').addEventListener('change', renderBestMatches);
+  document.querySelector('#richtung-select').addEventListener('change', (e) => {
+    richtung = e.target.value;
+    renderBestMatches();
+  });
   wireFarbwunschDropdown();
   document.addEventListener('click', onDecksprungClick);
   await loadHorses();
@@ -461,50 +470,78 @@ function foalPedigreeHtml(nodes, dupNames) {
 
 // --- Tab 2: Verpaarungsratgeber ---
 
-// Zeigt in den Options-Labels konkret den Besitzernamen der aktuell
-// gewählten Stute an ("Nur eigene (Wilder Wolf)" statt nur "Nur eigene"),
-// damit klar ist, worauf sich "eigene"/"fremde" bezieht - es gibt kein
-// Login auf dieser Seite, "eigene" heißt also "gleicher Besitzer wie die
-// gewählte Stute".
-function updateHengstBesitzerLabels(mare) {
-  const owner = mare.owner || 'unbekannt';
+// Zeigt in den Options-Labels konkret den Besitzernamen des aktuell
+// gewählten "primären" Pferds (Stute bei Richtung "stute", Hengst bei
+// Richtung "hengst") an ("Nur eigene (Wilder Wolf)" statt nur "Nur
+// eigene"), damit klar ist, worauf sich "eigene"/"fremde" bezieht - es
+// gibt kein Login auf dieser Seite, "eigene" heißt also "gleicher
+// Besitzer wie das oben gewählte Pferd".
+function updateHengstBesitzerLabels(primary) {
+  const owner = primary.owner || 'unbekannt';
   document.querySelector('#hengst-besitzer-select option[value="eigene"]').textContent = `Nur eigene (${owner})`;
   document.querySelector('#hengst-besitzer-select option[value="fremde"]').textContent = `Nur fremde (nicht ${owner})`;
+}
+
+// Passt Beschriftungen an, die je nach Richtung von "Hengst" auf "Stute"
+// wechseln müssen - der Filter/die Sortierung selbst bleibt exakt
+// dieselbe Logik, nur bezogen auf den jeweils anderen Kandidatenpool.
+function updateRichtungsLabels() {
+  const isHengstRichtung = richtung === 'hengst';
+  document.querySelector('#candidate-breed-label').textContent = isHengstRichtung ? 'Stute-Rasse' : 'Hengst-Rasse';
+  document.querySelector('#hengst-besitzer-label').textContent = isHengstRichtung ? 'Stute-Besitzer' : 'Hengst-Besitzer';
+  document.querySelector('#complement-sort-option').textContent = isHengstRichtung
+    ? 'Bester Ausgleich der Hengst-Schwächen (Exterieur)'
+    : 'Bester Ausgleich der Stuten-Schwächen (Exterieur)';
 }
 
 function renderBestMatches() {
   const container = document.querySelector('#auswahl-result');
   const hintEl = document.querySelector('#auswahl-hint');
-  const mare = selectedMare();
+  const isHengstRichtung = richtung === 'hengst';
+  const primary = isHengstRichtung ? selectedStallion() : selectedMare();
+  const candidatePool = isHengstRichtung ? mares : stallions;
+  const primaryLabel = isHengstRichtung ? 'Hengst' : 'Stute';
+  const candidateLabelPlural = isHengstRichtung ? 'Stuten' : 'Hengste';
+  const candidateLabelPluralDativ = isHengstRichtung ? 'Stuten' : 'Hengsten'; // "von X Hengsten"/"von X Stuten"
 
-  if (!mare) {
-    container.innerHTML = '<p class="muted small">Bitte zuerst eine Stute auswählen.</p>';
+  updateRichtungsLabels();
+
+  if (!primary) {
+    container.innerHTML = `<p class="muted small">Bitte zuerst ${isHengstRichtung ? 'einen Hengst' : 'eine Stute'} auswählen.</p>`;
     hintEl.textContent = '';
     return;
   }
 
-  updateHengstBesitzerLabels(mare);
+  updateHengstBesitzerLabels(primary);
+  auswahlStallionBreedFilter.setHorses(candidatePool);
   const besitzerMode = document.querySelector('#hengst-besitzer-select').value;
-  const breedFilteredStallions = stallions
+  const filteredCandidates = candidatePool
     .filter((h) => auswahlStallionBreedFilter.matches(h))
     .filter((h) => {
-      if (besitzerMode === 'eigene') return h.owner === mare.owner;
-      if (besitzerMode === 'fremde') return h.owner !== mare.owner;
+      if (besitzerMode === 'eigene') return h.owner === primary.owner;
+      if (besitzerMode === 'fremde') return h.owner !== primary.owner;
       return true;
     });
-  const { total, candidateCount, top } = rankStallions(mare, breedFilteredStallions, {
+  // rankStallions ist bereits vollständig symmetrisch (Ext/Int/GP/
+  // Datenbank-Schätzung/Ausschlüsse rechnen unabhängig davon, welche
+  // Rolle "mare"/"stallion" biologisch tatsächlich hat) - bei Richtung
+  // "hengst" wird hier einfach der Hengst als erstes Argument und die
+  // Stuten-Liste als Kandidatenpool übergeben. Der Rückgabewert nennt den
+  // Kandidaten weiterhin "stallion" (auch wenn er hier tatsächlich eine
+  // Stute ist), siehe candidateCardHtml unten.
+  const { total, candidateCount, top } = rankStallions(primary, filteredCandidates, {
     schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations,
   });
 
-  const mareHasOvero = hasOveroGene(mare);
-  hintEl.textContent = mareHasOvero
-    ? `Stute trägt Overo – Overo-Hengste werden ausgeschlossen. ${candidateCount} von ${total} Hengsten passen, Top ${top.length} angezeigt.`
-    : `${candidateCount} von ${total} Hengsten passen, Top ${top.length} angezeigt.`;
+  const primaryHasOvero = hasOveroGene(primary);
+  hintEl.textContent = primaryHasOvero
+    ? `${primaryLabel} trägt Overo – Overo-Kandidaten werden ausgeschlossen. ${candidateCount} von ${total} ${candidateLabelPluralDativ} passen, Top ${top.length} angezeigt.`
+    : `${candidateCount} von ${total} ${candidateLabelPluralDativ} passen, Top ${top.length} angezeigt.`;
 
-  let html = parentSummaryHtml('Stute', mare);
+  let html = parentSummaryHtml(primaryLabel, primary);
 
   if (!top.length) {
-    html += '<p class="muted small">Keine passenden Hengste gefunden.</p>';
+    html += `<p class="muted small">Keine passenden ${candidateLabelPlural} gefunden.</p>`;
     container.innerHTML = html;
     return;
   }
@@ -515,8 +552,16 @@ function renderBestMatches() {
   html += '<strong>GP</strong> ist eine Schätzung aus den Grenzwerten der Eltern-Einzelwerte (Grundlagen/Gangarten/Disziplinen), keine echte Vererbungssimulation.';
   html += '</div>';
 
-  html += '<div class="group-heading">Hengste</div>';
-  html += top.map((c, i) => stallionCandidateHtml(i + 1, c, mare)).join('');
+  html += `<div class="group-heading">${candidateLabelPlural}</div>`;
+  html += top.map((c, i) => {
+    // Decksprung/EKH/Datenbank-Schätzung brauchen mare/stallion in der
+    // biologisch richtigen Reihenfolge (sonst würden z.B. beim Speichern
+    // Stuten- und Hengstname vertauscht) - c.stallion ist bei Richtung
+    // "hengst" tatsächlich die Kandidaten-Stute.
+    const mareArg = isHengstRichtung ? c.stallion : primary;
+    const stallionArg = isHengstRichtung ? primary : c.stallion;
+    return candidateCardHtml(i + 1, c, mareArg, stallionArg, primaryLabel);
+  }).join('');
 
   container.innerHTML = html;
 }
@@ -532,17 +577,26 @@ function fmtGp(v) {
 }
 
 // Zeigt den Genort-Ausgleich (siehe exteriorComplementarityScore in
-// js/verpaarung.js) nur, wenn die Stute überhaupt "Problem-Genorte" hat -
-// bei einer bereits perfekten Stute gäbe es sonst nichts zu unterscheiden.
-function complementRowHtml(c) {
+// js/verpaarung.js) nur, wenn das "primäre" Pferd (Stute bei Richtung
+// "stute", Hengst bei Richtung "hengst") überhaupt "Problem-Genorte" hat -
+// bei einem bereits perfekten Pferd gäbe es sonst nichts zu unterscheiden.
+// weaknessOwnerLabel ist "Stute" oder "Hengst" - wessen Schwächen gezählt
+// wurden (immer das primäre Pferd, siehe rankStallions-Aufruf).
+function complementRowHtml(c, weaknessOwnerLabel) {
   const { atStake, saved } = c.complement || {};
   if (!atStake) return '';
   const pct = ((saved / atStake) * 100).toFixed(0);
-  return `<p class="small muted">Genort-Ausgleich (Exterieur): <strong>${saved} von ${atStake}</strong> Problem-Genorten der Stute ausgeglichen (${pct}%)</p>`;
+  const owner = weaknessOwnerLabel === 'Hengst' ? 'des Hengstes' : 'der Stute';
+  return `<p class="small muted">Genort-Ausgleich (Exterieur): <strong>${saved} von ${atStake}</strong> Problem-Genorten ${owner} ausgeglichen (${pct}%)</p>`;
 }
 
-function stallionCandidateHtml(rank, c, mare) {
-  const h = c.stallion;
+// mare/stallion müssen hier immer in der biologisch korrekten Reihenfolge
+// übergeben werden (wichtig für Decksprung/EKH/Datenbank-Schätzung) - der
+// Aufrufer (renderBestMatches) löst das bereits korrekt auf, unabhängig
+// davon, welches der beiden gerade der "Kandidat" c.stallion ist.
+// weaknessOwnerLabel siehe complementRowHtml.
+function candidateCardHtml(rank, c, mare, stallion, weaknessOwnerLabel) {
+  const h = c.stallion; // Kandidat aus rankStallions - bei Richtung "hengst" tatsächlich eine Stute
   const gp = h.tournament_potential?.['Gesamtpotenzial'] ?? '–';
   const extAvg = averageScore(h.exterior_descriptive, scoreExteriorTerm);
   const extPct = h.exterior_genetics?.overall?.percent;
@@ -561,7 +615,7 @@ function stallionCandidateHtml(rank, c, mare) {
       &nbsp;·&nbsp; Genetik: <strong>${genetik ? escapeHtml(genetik) : '–'}</strong>
       &nbsp;·&nbsp; Besitzer: <strong>${h.owner ? escapeHtml(h.owner) : '–'}</strong>
     </p>
-    ${ekhWarningHtml(mare, h)}
+    ${ekhWarningHtml(mare, stallion)}
     <p class="small">
       Fohlen best case: GP <strong>${fmtGp(c.gpBest)}</strong>
       &nbsp;·&nbsp; Ext <strong>${fmtScore(c.extBest)}</strong>
@@ -574,9 +628,9 @@ function stallionCandidateHtml(rank, c, mare) {
       &nbsp;·&nbsp; Ext% <strong>${fmtPct(c.extPctWorst)}</strong>
       &nbsp;·&nbsp; Int <strong>${fmtScore(c.intWorst)}</strong>
     </p>
-    ${empiricalRowHtml(mare, h)}
-    ${complementRowHtml(c)}
-    ${decksprungButtonHtml(mare, h)}
+    ${empiricalRowHtml(mare, stallion)}
+    ${complementRowHtml(c, weaknessOwnerLabel)}
+    ${decksprungButtonHtml(mare, stallion)}
   </div>`;
 }
 

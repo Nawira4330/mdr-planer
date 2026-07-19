@@ -53,61 +53,77 @@
       </div>
     </fieldset>
 
+    <fieldset>
+      <legend>Hengst</legend>
+      <div class="form-grid">
+        <div>
+          <label for="stallion-owner-select">Besitzer</label>
+          <select id="stallion-owner-select"><option value="">Alle</option></select>
+        </div>
+        <div>
+          <label for="stallion-search">Hengst auswählen</label>
+          <div class="searchselect">
+            <input type="text" id="stallion-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
+            <div class="searchselect-panel" id="stallion-panel" hidden></div>
+          </div>
+        </div>
+        <div>
+          <label>Rasse</label>
+          <div class="checkdrop" id="stallion-breed-drop">
+            <button type="button" class="checkdrop-toggle">Alle</button>
+            <div class="checkdrop-panel" hidden></div>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <details class="paste-box collapsible">
+      <summary>Fremder Hengst (Freitext)</summary>
+      <p class="muted small">
+        Für Hengste, die nicht in der Datenbank stehen: Pferdeseite im Spiel
+        markieren (Strg+A), kopieren (Strg+C) und hier einfügen – funktioniert
+        sowohl mit der Desktop- als auch der Handy-Ansicht des Spiels. Es wird
+        nichts gespeichert.
+      </p>
+      <textarea id="stallion-raw-text" placeholder="Hier den kopierten Seitentext des Hengstes einfügen…"></textarea>
+      <div class="paste-actions">
+        <button type="button" id="stallion-parse-btn">Auslesen</button>
+        <span id="stallion-parse-status" class="muted small"></span>
+      </div>
+    </details>
+
     <div class="tabs">
       <button type="button" class="tab-btn active" data-tab="inzucht">Inzuchtprüfung</button>
       <button type="button" class="tab-btn" data-tab="auswahl">Verpaarungsratgeber</button>
     </div>
 
     <section id="tab-inzucht" class="tab-panel">
-      <fieldset>
-        <legend>Hengst</legend>
-        <div class="form-grid">
-          <div>
-            <label for="stallion-owner-select">Besitzer</label>
-            <select id="stallion-owner-select"><option value="">Alle</option></select>
-          </div>
-          <div>
-            <label for="stallion-search">Hengst auswählen</label>
-            <div class="searchselect">
-              <input type="text" id="stallion-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
-              <div class="searchselect-panel" id="stallion-panel" hidden></div>
-            </div>
-          </div>
-          <div>
-            <label>Rasse</label>
-            <div class="checkdrop" id="stallion-breed-drop">
-              <button type="button" class="checkdrop-toggle">Alle</button>
-              <div class="checkdrop-panel" hidden></div>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-
-      <details class="paste-box collapsible">
-        <summary>Fremder Hengst (Freitext)</summary>
-        <p class="muted small">
-          Für Hengste, die nicht in der Datenbank stehen: Pferdeseite im Spiel
-          markieren (Strg+A), kopieren (Strg+C) und hier einfügen – funktioniert
-          sowohl mit der Desktop- als auch der Handy-Ansicht des Spiels. Es wird
-          nichts gespeichert.
-        </p>
-        <textarea id="stallion-raw-text" placeholder="Hier den kopierten Seitentext des Hengstes einfügen…"></textarea>
-        <div class="paste-actions">
-          <button type="button" id="stallion-parse-btn">Auslesen</button>
-          <span id="stallion-parse-status" class="muted small"></span>
-        </div>
-      </details>
-
       <div id="inzucht-result"></div>
     </section>
 
     <section id="tab-auswahl" class="tab-panel" hidden>
       <p class="small muted">
-        Zeigt die Top 10 Hengste für die gewählte Stute, mit einer
-        Fohlen-Vorhersage (Best-/Worst-Case). Hengste, die (nach sichtbarem
-        Stammbaum) mit der Stute verwandt sind oder bei denen das Fohlen
-        doppelt Overo erben könnte, werden ausgeschlossen.
+        Zeigt die Top 10 passenden Partner für das oben gewählte Pferd, mit
+        einer Fohlen-Vorhersage (Best-/Worst-Case). Kandidaten, die (nach
+        sichtbarem Stammbaum) verwandt sind oder bei denen das Fohlen doppelt
+        Overo erben könnte, werden ausgeschlossen.
       </p>
+      <fieldset>
+        <legend>Richtung</legend>
+        <div class="form-grid">
+          <div>
+            <label for="richtung-select">Ausgangspunkt</label>
+            <select id="richtung-select">
+              <option value="stute">Stute → beste Hengste</option>
+              <option value="hengst">Hengst → beste Stuten</option>
+            </select>
+          </div>
+        </div>
+        <p class="muted small" style="margin-top:0.5rem; margin-bottom:0;">
+          Nutzt dafür die oben gewählte Stute bzw. den oben gewählten Hengst
+          (auch ein per Freitext eingelesener fremder Hengst funktioniert).
+        </p>
+      </fieldset>
       <div class="notice notice-warning">
         ⚠️ <strong>GP</strong> und <strong>Int</strong> sind aktuell noch
         grobe Schätzwerte (siehe Erklärung weiter unten) - verlasst euch
@@ -134,7 +150,7 @@
             <select id="sortierung-select">
               <option value="best">Bester Best Case</option>
               <option value="worst">Bester Worst Case</option>
-              <option value="complement">Bester Ausgleich der Stuten-Schwächen (Exterieur)</option>
+              <option value="complement" id="complement-sort-option">Bester Ausgleich der Stuten-Schwächen (Exterieur)</option>
               <option value="empirical">Beste Datenbank-Schätzung</option>
               <option value="diff-asc">Kleinste Differenz (verlässlich)</option>
               <option value="diff-desc">Größte Differenz (Risiko/Chance)</option>
@@ -148,14 +164,14 @@
             </div>
           </div>
           <div>
-            <label>Hengst-Rasse</label>
+            <label id="candidate-breed-label">Hengst-Rasse</label>
             <div class="checkdrop" id="auswahl-stallion-breed-drop">
               <button type="button" class="checkdrop-toggle">Alle</button>
               <div class="checkdrop-panel" hidden></div>
             </div>
           </div>
           <div>
-            <label for="hengst-besitzer-select">Hengst-Besitzer</label>
+            <label id="hengst-besitzer-label" for="hengst-besitzer-select">Hengst-Besitzer</label>
             <select id="hengst-besitzer-select">
               <option value="alle">Alle</option>
               <option value="eigene">Nur eigene</option>
