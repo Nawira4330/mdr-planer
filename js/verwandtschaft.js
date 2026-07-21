@@ -30,6 +30,7 @@ function breedAbbreviation(breed) {
 let allHorses = [];
 let horseSelect;
 let currentTarget = null;
+let foreignTarget = null; // per Freitext eingelesenes, nicht in der DB gespeichertes Pferd
 let matrixRowBreedFilter, matrixColBreedFilter;
 let matrixSort = { field: 'count', dir: 'desc' };
 
@@ -41,6 +42,7 @@ async function init() {
     { onChange: onTargetChange },
   );
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
+  document.querySelector('#foreign-horse-parse-btn').addEventListener('click', onForeignHorseParse);
   // Zeilen (1. Spalte) und Spalten (1. Zeile) der Matrix lassen sich
   // unabhängig voneinander filtern - z.B. "Stuten von Besitzer A" gegen
   // "Stuten von Besitzer B" statt zwangsweise derselben Auswahl auf
@@ -121,8 +123,29 @@ function onOwnerChange() {
   horseSelect.clear(); // löst onTargetChange('') aus
 }
 
+// Auswahl per Dropdown ersetzt ein zuvor per Freitext eingelesenes
+// datenbankfremdes Pferd wieder (Muster wie js/zuchtplaner.js beim
+// "Fremder Hengst"-Freitext).
 function onTargetChange(id) {
+  if (id) {
+    foreignTarget = null;
+    document.querySelector('#foreign-horse-raw-text').value = '';
+    document.querySelector('#foreign-horse-parse-status').textContent = '';
+  }
   currentTarget = allHorses.find((h) => h.id === id) || null;
+  renderFreitext();
+}
+
+function onForeignHorseParse() {
+  const text = document.querySelector('#foreign-horse-raw-text').value;
+  const statusEl = document.querySelector('#foreign-horse-parse-status');
+  if (!text.trim()) {
+    statusEl.textContent = 'Bitte zuerst Text einfügen.';
+    return;
+  }
+  foreignTarget = parseHorseText(text);
+  horseSelect.clear(); // löst onTargetChange('') aus - foreignTarget bleibt erhalten (id ist leer)
+  statusEl.textContent = 'Erkannt: ' + (foreignTarget.name || 'kein Name gefunden');
   renderFreitext();
 }
 
@@ -144,21 +167,27 @@ function closestRelation(matches) {
 
 function renderFreitext() {
   const container = document.querySelector('#freitext-result');
-  if (!currentTarget) {
+  // Ein per Freitext eingelesenes datenbankfremdes Pferd hat Vorrang vor
+  // der Dropdown-Auswahl (siehe onForeignHorseParse/onTargetChange).
+  const target = foreignTarget || currentTarget;
+  if (!target) {
     container.innerHTML = '<p class="muted small">Bitte zuerst ein Pferd auswählen.</p>';
     return;
   }
 
   const related = allHorses
-    .filter((h) => h.id !== currentTarget.id)
+    .filter((h) => h.id !== target.id)
     .map((h) => {
-      const matches = findRelations(currentTarget, h);
+      const matches = findRelations(target, h);
       return matches.length ? { horse: h, closest: closestRelation(matches) } : null;
     })
     .filter(Boolean)
     .sort((a, b) => relationCloseness(a.closest) - relationCloseness(b.closest) || (a.horse.name || '').localeCompare(b.horse.name || '', 'de'));
 
-  let html = `<div class="group-heading">${related.length} verwandte Pferde gefunden</div>`;
+  const heading = foreignTarget
+    ? `${related.length} verwandte Pferde für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
+    : `${related.length} verwandte Pferde gefunden`;
+  let html = `<div class="group-heading">${heading}</div>`;
   if (!related.length) {
     html += '<p class="small muted">Keine Verwandtschaft im sichtbaren Stammbaum gefunden.</p>';
     container.innerHTML = html;
@@ -171,13 +200,13 @@ function renderFreitext() {
       <th>Besitzer</th>
       <th>Nächster gemeinsamer Vorfahre</th>
     </tr></thead>
-    <tbody>${related.map((r) => relationRowHtml(r)).join('')}</tbody>
+    <tbody>${related.map((r) => relationRowHtml(r, target)).join('')}</tbody>
   </table></div>`;
   container.innerHTML = html;
 }
 
-function relationRowHtml(r) {
-  const targetName = escapeHtml(currentTarget.name || '(ohne Name)');
+function relationRowHtml(r, target) {
+  const targetName = escapeHtml(target.name || '(ohne Name)');
   const otherName = escapeHtml(r.horse.name || '(ohne Name)');
   const m = r.closest;
   return `<tr>

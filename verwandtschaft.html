@@ -46,6 +46,22 @@
           </div>
         </div>
       </div>
+
+      <details class="paste-box collapsible">
+        <summary>Datenbankfremdes Pferd (Freitext)</summary>
+        <p class="muted small">
+          Für ein Pferd, das nicht in der Datenbank steht: Pferdeseite im
+          Spiel markieren (Strg+A), kopieren (Strg+C) und hier einfügen –
+          funktioniert sowohl mit der Desktop- als auch der Handy-Ansicht
+          des Spiels. Es wird nichts gespeichert.
+        </p>
+        <textarea id="foreign-horse-raw-text" placeholder="Hier den kopierten Seitentext des Pferdes einfügen…"></textarea>
+        <div class="paste-actions">
+          <button type="button" id="foreign-horse-parse-btn">Auslesen</button>
+          <span id="foreign-horse-parse-status" class="muted small"></span>
+        </div>
+      </details>
+
       <div id="freitext-result">
         <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
       </div>

@@ -68,7 +68,14 @@ function parseHorseText(rawText) {
   result.traits = extractPercentGroups(lines, 'Eigenschaften', 'Papiere');
 
   result.tournament_potential = parseTournamentPotential(lines);
-  result.pedigree = parsePedigree(lines);
+  // pedigreeAncestorNames() (js/breeding.js) erwartet beim "alten Format"
+  // (einfaches Array statt {ancestors:[...]}) an Index 0 das Pferd SELBST
+  // und liest die 14 Vorfahren erst ab Index 1 (slice(1,15)) - dasselbe
+  // Format wie die in der DB gespeicherten pedigree-Felder. parsePedigree()
+  // liefert aber nur die reinen Vorfahren ab Index 0 (kein Selbst-Eintrag),
+  // ohne den Platzhalter hier würde daher der erste erkannte Vorfahre (i.d.R.
+  // der Vater) beim Abgleich stillschweigend übersprungen.
+  result.pedigree = [{ name: result.name }, ...parsePedigree(lines)];
 
   return result;
 }
