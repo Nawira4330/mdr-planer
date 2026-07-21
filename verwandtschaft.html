@@ -68,26 +68,60 @@
             <option value="hengst-hengst">Hengste ↔ Hengste</option>
           </select>
         </div>
-        <div>
-          <label for="matrix-owner-select">Besitzer</label>
-          <select id="matrix-owner-select"><option value="">Alle</option></select>
-        </div>
-        <div>
-          <label>Rasse</label>
-          <div class="checkdrop" id="matrix-breed-drop">
-            <button type="button" class="checkdrop-toggle">Alle</button>
-            <div class="checkdrop-panel" hidden></div>
-          </div>
-        </div>
-        <div>
-          <label for="matrix-zzl-select">ZZL</label>
-          <select id="matrix-zzl-select">
-            <option value="alle">Alle</option>
-            <option value="zzl">Nur mit ZZL</option>
-            <option value="ohne">Nur ohne ZZL</option>
-          </select>
-        </div>
       </div>
+
+      <div class="form-grid" style="margin-top:0.8rem;">
+        <fieldset>
+          <legend>Zeilen (Pferde in der 1. Spalte)</legend>
+          <div class="form-grid">
+            <div>
+              <label for="matrix-row-owner-select">Besitzer</label>
+              <select id="matrix-row-owner-select"><option value="">Alle</option></select>
+            </div>
+            <div>
+              <label>Rasse</label>
+              <div class="checkdrop" id="matrix-row-breed-drop">
+                <button type="button" class="checkdrop-toggle">Alle</button>
+                <div class="checkdrop-panel" hidden></div>
+              </div>
+            </div>
+            <div>
+              <label for="matrix-row-zzl-select">ZZL</label>
+              <select id="matrix-row-zzl-select">
+                <option value="alle">Alle</option>
+                <option value="zzl">Nur mit ZZL</option>
+                <option value="ohne">Nur ohne ZZL</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Spalten (Pferde in der 1. Zeile)</legend>
+          <div class="form-grid">
+            <div>
+              <label for="matrix-col-owner-select">Besitzer</label>
+              <select id="matrix-col-owner-select"><option value="">Alle</option></select>
+            </div>
+            <div>
+              <label>Rasse</label>
+              <div class="checkdrop" id="matrix-col-breed-drop">
+                <button type="button" class="checkdrop-toggle">Alle</button>
+                <div class="checkdrop-panel" hidden></div>
+              </div>
+            </div>
+            <div>
+              <label for="matrix-col-zzl-select">ZZL</label>
+              <select id="matrix-col-zzl-select">
+                <option value="alle">Alle</option>
+                <option value="zzl">Nur mit ZZL</option>
+                <option value="ohne">Nur ohne ZZL</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+
       <p id="matrix-hint" class="muted small"></p>
       <div id="matrix-result"></div>
     </fieldset>

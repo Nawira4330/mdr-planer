@@ -271,11 +271,14 @@ td.actions-cell { display: flex; gap: 0.4rem; }
   white-space: nowrap;
 }
 /* Kopfzeile beim vertikalen Scrollen anpinnen, damit man auch bei vielen
-   Zeilen sieht, zu welchem Pferd eine Spalte gehört. */
+   Zeilen sieht, zu welchem Pferd eine Spalte gehört. Braucht einen
+   DECKENDEN Hintergrund (nicht die globale halbtransparente th-Farbe),
+   sonst scheinen die darunter wegscrollenden Zeilen durch. */
 #matrix-table thead th {
   position: sticky;
   top: 0;
   z-index: 3;
+  background: var(--surface);
 }
 #matrix-table td.related-cell {
   background: rgba(200, 65, 73, 0.22);

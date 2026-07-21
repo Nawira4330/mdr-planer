@@ -25,7 +25,8 @@ function breedAbbreviation(breed) {
 let allHorses = [];
 let horseSelect;
 let currentTarget = null;
-let matrixBreedFilter;
+let matrixRowBreedFilter, matrixColBreedFilter;
+let matrixSort = { field: 'count', dir: 'desc' };
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -35,11 +36,38 @@ async function init() {
     { onChange: onTargetChange },
   );
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
-  matrixBreedFilter = createBreedFilter(document.querySelector('#matrix-breed-drop'), { onChange: renderMatrix });
-  document.querySelector('#matrix-owner-select').addEventListener('change', renderMatrix);
-  document.querySelector('#matrix-zzl-select').addEventListener('change', renderMatrix);
+  // Zeilen (1. Spalte) und Spalten (1. Zeile) der Matrix lassen sich
+  // unabhängig voneinander filtern - z.B. "Stuten von Besitzer A" gegen
+  // "Stuten von Besitzer B" statt zwangsweise derselben Auswahl auf
+  // beiden Seiten.
+  matrixRowBreedFilter = createBreedFilter(document.querySelector('#matrix-row-breed-drop'), { onChange: renderMatrix });
+  matrixColBreedFilter = createBreedFilter(document.querySelector('#matrix-col-breed-drop'), { onChange: renderMatrix });
+  document.querySelector('#matrix-row-owner-select').addEventListener('change', renderMatrix);
+  document.querySelector('#matrix-col-owner-select').addEventListener('change', renderMatrix);
+  document.querySelector('#matrix-row-zzl-select').addEventListener('change', renderMatrix);
+  document.querySelector('#matrix-col-zzl-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-modus-select').addEventListener('change', renderMatrix);
+  wireMatrixSortableHeaders();
   await loadHorses();
+}
+
+// Delegiert auf document, da die <th> bei jedem Neu-Rendern der Matrix neu
+// erzeugt werden (kein erneutes Verdrahten pro Render nötig) - Muster wie
+// js/turnierplaner.js/js/zuchtbuch.js.
+function wireMatrixSortableHeaders() {
+  document.addEventListener('click', (e) => {
+    const th = e.target.closest('#matrix-table th[data-sort]');
+    if (!th) return;
+    const field = th.dataset.sort;
+    if (matrixSort.field === field) {
+      matrixSort.dir = matrixSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      // Bei "Anzahl" ist absteigend (meiste Verwandtschaft zuerst) der
+      // sinnvollere Start, bei Name/Rasse aufsteigend (alphabetisch).
+      matrixSort = { field, dir: field === 'count' ? 'desc' : 'asc' };
+    }
+    renderMatrix();
+  });
 }
 
 async function loadHorses() {
@@ -58,7 +86,7 @@ async function loadHorses() {
   allHorses = data || [];
 
   const owners = [...new Set(allHorses.map((h) => h.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
-  for (const selector of ['#owner-select', '#matrix-owner-select']) {
+  for (const selector of ['#owner-select', '#matrix-row-owner-select', '#matrix-col-owner-select']) {
     const sel = document.querySelector(selector);
     sel.innerHTML = '<option value="">Alle</option>';
     for (const owner of owners) {
@@ -69,7 +97,8 @@ async function loadHorses() {
     }
   }
 
-  matrixBreedFilter.setHorses(allHorses);
+  matrixRowBreedFilter.setHorses(allHorses);
+  matrixColBreedFilter.setHorses(allHorses);
   populateHorseSelect();
   renderMatrix();
 }
@@ -92,6 +121,20 @@ function onTargetChange(id) {
 
 // --- Einzelnes Pferd nachschlagen ---
 
+// "Nähe" einer Übereinstimmung: je kleiner, desto enger verwandt. Ist z.B.
+// die Mutter (oder Tochter) eines Pferds gefunden, teilen sich fast
+// zwangsläufig auch viele weitere Vorfahren dahinter - deshalb wird pro
+// verwandtem Pferd nur die EINE engste Übereinstimmung angezeigt statt
+// aller (sonst würde bei einer Mutter/Tochter-Beziehung eine lange, wenig
+// hilfreiche Liste mit fast der Hälfte des Stammbaums entstehen).
+const POSITION_RANK = { 'Pferd selbst': 0, 'Elternteil': 1, 'Großeltern': 2, 'Urgroßeltern': 3 };
+function relationCloseness(m) {
+  return POSITION_RANK[m.positionA] + POSITION_RANK[m.positionB];
+}
+function closestRelation(matches) {
+  return matches.reduce((best, m) => (relationCloseness(m) < relationCloseness(best) ? m : best));
+}
+
 function renderFreitext() {
   const container = document.querySelector('#freitext-result');
   if (!currentTarget) {
@@ -101,9 +144,12 @@ function renderFreitext() {
 
   const related = allHorses
     .filter((h) => h.id !== currentTarget.id)
-    .map((h) => ({ horse: h, matches: findRelations(currentTarget, h) }))
-    .filter((r) => r.matches.length > 0)
-    .sort((a, b) => b.matches.length - a.matches.length || (a.horse.name || '').localeCompare(b.horse.name || '', 'de'));
+    .map((h) => {
+      const matches = findRelations(currentTarget, h);
+      return matches.length ? { horse: h, closest: closestRelation(matches) } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => relationCloseness(a.closest) - relationCloseness(b.closest) || (a.horse.name || '').localeCompare(b.horse.name || '', 'de'));
 
   let html = `<div class="group-heading">${related.length} verwandte Pferde gefunden</div>`;
   if (!related.length) {
@@ -116,7 +162,7 @@ function renderFreitext() {
     <thead><tr>
       <th>Pferd</th>
       <th>Besitzer</th>
-      <th>Gemeinsame Vorfahren</th>
+      <th>Nächster gemeinsamer Vorfahre</th>
     </tr></thead>
     <tbody>${related.map((r) => relationRowHtml(r)).join('')}</tbody>
   </table></div>`;
@@ -126,26 +172,56 @@ function renderFreitext() {
 function relationRowHtml(r) {
   const targetName = escapeHtml(currentTarget.name || '(ohne Name)');
   const otherName = escapeHtml(r.horse.name || '(ohne Name)');
-  const list = r.matches.map((m) => `<li>${escapeHtml(m.name)} (bei ${targetName}: ${escapeHtml(m.positionA)}, bei ${otherName}: ${escapeHtml(m.positionB)})</li>`).join('');
+  const m = r.closest;
   return `<tr>
     <td data-label="Pferd">${otherName}</td>
     <td data-label="Besitzer">${r.horse.owner ? escapeHtml(r.horse.owner) : '–'}</td>
-    <td data-label="Gemeinsame Vorfahren"><ul class="small" style="margin:0; padding-left:1.1rem;">${list}</ul></td>
+    <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetName}: ${escapeHtml(m.positionA)}, bei ${otherName}: ${escapeHtml(m.positionB)})</td>
   </tr>`;
 }
 
 // --- Verwandtschaftsmatrix ---
 
-function matrixCandidates(gender) {
-  const owner = document.querySelector('#matrix-owner-select').value;
-  const zzl = document.querySelector('#matrix-zzl-select').value;
+// axis: "row" (Zeilen, 1. Spalte) oder "col" (Spalten, 1. Zeile) - jede
+// Achse hat ihren eigenen Besitzer-/Rasse-/ZZL-Filter.
+function matrixCandidates(gender, axis) {
+  const ownerSel = axis === 'row' ? '#matrix-row-owner-select' : '#matrix-col-owner-select';
+  const zzlSel = axis === 'row' ? '#matrix-row-zzl-select' : '#matrix-col-zzl-select';
+  const breedFilter = axis === 'row' ? matrixRowBreedFilter : matrixColBreedFilter;
+  const owner = document.querySelector(ownerSel).value;
+  const zzl = document.querySelector(zzlSel).value;
   return allHorses.filter((h) => {
     if (gender && h.gender !== gender) return false;
     if (owner && h.owner !== owner) return false;
-    if (!matrixBreedFilter.matches(h)) return false;
+    if (!breedFilter.matches(h)) return false;
     if (zzl === 'zzl' && h.breeding_allowed !== true) return false;
     if (zzl === 'ohne' && h.breeding_allowed === true) return false;
     return true;
+  });
+}
+
+function sortableMatrixHeaderHtml(field, label) {
+  const arrow = matrixSort.field === field ? (matrixSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+  return `<th data-sort="${field}">${escapeHtml(label)}${arrow}</th>`;
+}
+
+function matrixSortValue(rd, field) {
+  if (field === 'name') return (rd.horse.name || '').toLowerCase();
+  if (field === 'breed') return (rd.horse.breed || '').toLowerCase();
+  return rd.count;
+}
+
+// Fehlende Werte landen wie überall sonst am Ende, unabhängig von der
+// Sortierrichtung (Muster wie js/turnierplaner.js/js/zuchtbuch.js).
+function applyMatrixSort(rowData) {
+  const { field, dir } = matrixSort;
+  const mult = dir === 'asc' ? 1 : -1;
+  rowData.sort((a, b) => {
+    const va = matrixSortValue(a, field);
+    const vb = matrixSortValue(b, field);
+    if (va === vb) return (a.horse.name || '').localeCompare(b.horse.name || '', 'de');
+    if (typeof va === 'string') return va.localeCompare(vb, 'de') * mult;
+    return (va - vb) * mult;
   });
 }
 
@@ -156,12 +232,14 @@ function renderMatrix() {
 
   let rows, cols;
   if (modus === 'stute-stute') {
-    rows = cols = matrixCandidates('Stute');
+    rows = matrixCandidates('Stute', 'row');
+    cols = matrixCandidates('Stute', 'col');
   } else if (modus === 'hengst-hengst') {
-    rows = cols = matrixCandidates('Hengst');
+    rows = matrixCandidates('Hengst', 'row');
+    cols = matrixCandidates('Hengst', 'col');
   } else {
-    rows = matrixCandidates('Stute');
-    cols = matrixCandidates('Hengst');
+    rows = matrixCandidates('Stute', 'row');
+    cols = matrixCandidates('Hengst', 'col');
   }
 
   if (!rows.length || !cols.length) {
@@ -184,10 +262,11 @@ function renderMatrix() {
     const count = related.filter(Boolean).length;
     return { horse: r, related, count };
   });
-  rowData.sort((a, b) => b.count - a.count || (a.horse.name || '').localeCompare(b.horse.name || '', 'de'));
+  applyMatrixSort(rowData);
 
   let html = '<div class="table-wrap"><table id="matrix-table"><thead><tr>';
-  html += '<th>Name</th><th>Besitzer</th><th>Rasse</th><th>Anzahl</th>';
+  html += sortableMatrixHeaderHtml('name', 'Name') + '<th>Besitzer</th>'
+    + sortableMatrixHeaderHtml('breed', 'Rasse') + sortableMatrixHeaderHtml('count', 'Anzahl');
   html += cols.map((c) => `<th class="col-header" title="${escapeHtml(c.owner || '')}">${escapeHtml(c.name || '(ohne Name)')}</th>`).join('');
   html += '</tr></thead><tbody>';
   html += rowData.map((rd) => `<tr>

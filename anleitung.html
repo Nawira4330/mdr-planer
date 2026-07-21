@@ -392,7 +392,7 @@
       <div class="group-heading">So gehst du vor</div>
       <ol class="small">
         <li>Für ein einzelnes Pferd: oben im Bereich „Einzelnes Pferd nachschlagen“ Besitzer eingrenzen (optional) und Pferd über das Suchfeld auswählen.</li>
-        <li>Für die Matrix: weiter unten Vergleich (Stuten↔Hengste / Stuten↔Stuten / Hengste↔Hengste) sowie Besitzer, Rasse und ZZL wählen, um die angezeigten Pferde einzugrenzen.</li>
+        <li>Für die Matrix: weiter unten Vergleich (Stuten↔Hengste / Stuten↔Stuten / Hengste↔Hengste) wählen, dann Besitzer, Rasse und ZZL getrennt für Zeilen (1. Spalte) und Spalten (1. Zeile) einstellen.</li>
         <li>Ergebnis durchsehen - Einzelansicht als Liste mit Position im Stammbaum, Matrix als Tabelle mit roten Zellen für Verwandtschaft und einer „Anzahl“-Spalte.</li>
       </ol>
 
@@ -413,13 +413,16 @@
         <tr>
           <th>Einzelnes Pferd nachschlagen</th>
           <td>
-            Listet alle verwandten Pferde auf (meist verwandteste zuerst),
-            je mit dem gemeinsamen Namen und der Position im Stammbaum bei
-            BEIDEN Pferden - z. B. „bei Pferd A: Großeltern, bei Pferd B:
-            Elternteil“ (der gemeinsame Name ist bei Pferd B also ein
-            direktes Elternteil, bei Pferd A ein Großelternteil). Ein
-            Pferd kann mit demselben anderen Pferd über mehrere Namen
-            gleichzeitig verwandt sein - alle werden aufgelistet.
+            Listet alle verwandten Pferde auf, sortiert von der engsten zur
+            entferntesten Beziehung. Je Pferd wird nur der EINE nächste
+            gemeinsame Vorfahre angezeigt (nicht jede Übereinstimmung) -
+            ist ein Pferd z. B. Mutter oder Tochter des gesuchten Pferds,
+            teilen sich dahinter fast zwangsläufig viele weitere Vorfahren;
+            eine vollständige Liste wäre hier lang und wenig hilfreich.
+            Angezeigt wird der gemeinsame Name mit der Position im
+            Stammbaum bei BEIDEN Pferden - z. B. „bei Pferd A: Großeltern,
+            bei Pferd B: Elternteil“ (der gemeinsame Name ist bei Pferd B
+            also ein direktes Elternteil, bei Pferd A ein Großelternteil).
           </td>
         </tr>
         <tr>
@@ -435,17 +438,20 @@
         <tr>
           <th>Besitzer, Rasse, ZZL (Matrix-Filter)</th>
           <td>
-            Grenzen ein, welche Pferde in der Matrix erscheinen - wie
-            überall auf der Seite startet die Rassenauswahl standardmäßig
-            bei „American Paint Horse“. Wird die Auswahl zu groß (mehr als
-            4.000 Zeilen × Spalten-Zellen), erscheint statt der Tabelle ein
-            Hinweis, weiter einzugrenzen - aus Performance- und
-            Übersichtlichkeitsgründen.
+            Zeilen (1. Spalte) und Spalten (1. Zeile) haben jeweils einen
+            EIGENEN Besitzer-/Rasse-/ZZL-Filter - z. B. lassen sich so
+            gezielt „Stuten von Besitzer A“ gegen „Stuten von Besitzer B“
+            vergleichen, statt zwangsläufig dieselbe Auswahl auf beiden
+            Seiten zu verwenden. Wie überall auf der Seite startet die
+            Rassenauswahl standardmäßig bei „American Paint Horse“. Wird
+            die Auswahl zu groß (mehr als 4.000 Zeilen × Spalten-Zellen),
+            erscheint statt der Tabelle ein Hinweis, weiter einzugrenzen -
+            aus Performance- und Übersichtlichkeitsgründen.
           </td>
         </tr>
         <tr>
           <th>Anzahl-Spalte</th>
-          <td>Zählt pro Zeile, mit wie vielen der aktuell angezeigten Spalten-Pferde eine Verwandtschaft besteht - die Tabelle ist danach absteigend sortiert (am stärksten vernetzte Pferde zuerst).</td>
+          <td>Zählt pro Zeile, mit wie vielen der aktuell angezeigten Spalten-Pferde eine Verwandtschaft besteht. Name, Rasse und Anzahl sind per Spaltenklick sortierbar (Standard: Anzahl absteigend, am stärksten vernetzte Pferde zuerst).</td>
         </tr>
       </table>
 
