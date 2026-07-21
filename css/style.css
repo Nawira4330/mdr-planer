@@ -40,6 +40,10 @@
 
 * { box-sizing: border-box; }
 
+/* Gesamte Seite auf 80% verkleinert darstellen (Text, Abstände, Bilder -
+   alles gleichmäßig, im Gegensatz zu z. B. nur font-size skaliert). */
+html { zoom: 0.8; }
+
 /* Ohne diese Regel gewinnt z.B. ".btn { display: inline-block }" gegen das
    Browser-Standardverhalten von [hidden], da beide dieselbe Spezifitaet
    haben und Autoren-CSS dabei die User-Agent-Regel schlaegt - Elemente mit
