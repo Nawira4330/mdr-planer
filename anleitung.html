@@ -15,6 +15,7 @@
       <a class="btn secondary" href="zuchtplaner.html">Zuchtplaner</a>
       <a class="btn secondary" href="turnierplaner.html">Turnierplaner</a>
       <a class="btn secondary" href="zuchtbuch.html">Zuchtbuch</a>
+      <a class="btn secondary" href="verwandtschaft.html">Verwandtschaft</a>
       <a class="btn secondary" href="update-log.html">Update-Log</a>
       <a class="btn secondary" href="https://nawira4330.github.io/mdr-datenbank/" target="_blank" rel="noopener">Pferdedatenbank ↗</a>
     </nav>
@@ -22,7 +23,7 @@
 
   <main class="container">
     <p class="muted small">
-      Vier Werkzeuge, ein gemeinsamer Datenbestand: Diese Seite geht jedes
+      Fünf Werkzeuge, ein gemeinsamer Datenbestand: Diese Seite geht jedes
       Werkzeug einzeln durch – Schritt für Schritt, mit jeder Funktion im
       Detail und den Datenfeldern, auf die sie zurückgreift. Gespeichert oder
       verändert wird dabei nirgends etwas (einzige Ausnahme: „Decksprung
@@ -34,6 +35,7 @@
       <a class="btn secondary" href="#ratgeber">Verpaarungsratgeber</a>
       <a class="btn secondary" href="#turnier">Turnierplaner</a>
       <a class="btn secondary" href="#zuchtbuch-anleitung">Zuchtbuch</a>
+      <a class="btn secondary" href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>
       <a class="btn secondary" href="#bausteine">Gemeinsame Bedienelemente</a>
       <a class="btn secondary" href="#technik">Woher die Daten kommen</a>
     </div>
@@ -374,6 +376,87 @@
         Eltern/Geschwister/Nachkommen werden ausschließlich über
         Namensabgleich im Stammbaum-Feld ermittelt – es gibt keine separate
         Mutter-/Vater-ID in der Datenbank.
+      </div>
+    </fieldset>
+
+    <fieldset id="verwandtschaft-anleitung">
+      <legend>Verwandtschaftsmatrix</legend>
+      <p class="small">
+        Zeigt Verwandtschaft anhand des sichtbaren Stammbaums - entweder für
+        ein einzelnes Pferd im Detail (mit welchen Pferden es verwandt ist
+        und an welcher Stelle) oder als Matrix über viele Pferde
+        gleichzeitig (z. B. alle Stuten gegen alle Hengste eines
+        Besitzers).
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Für ein einzelnes Pferd: oben im Bereich „Einzelnes Pferd nachschlagen“ Besitzer eingrenzen (optional) und Pferd über das Suchfeld auswählen.</li>
+        <li>Für die Matrix: weiter unten Vergleich (Stuten↔Hengste / Stuten↔Stuten / Hengste↔Hengste) sowie Besitzer, Rasse und ZZL wählen, um die angezeigten Pferde einzugrenzen.</li>
+        <li>Ergebnis durchsehen - Einzelansicht als Liste mit Position im Stammbaum, Matrix als Tabelle mit roten Zellen für Verwandtschaft und einer „Anzahl“-Spalte.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Verwandtschaftsprüfung</th>
+          <td>
+            Zwei Pferde gelten als verwandt, sobald sich ihre sichtbaren
+            Stammbäume (das Pferd selbst + seine 14 sichtbaren Vorfahren:
+            2 Eltern, 4 Großeltern, 8 Urgroßeltern) mindestens einen Namen
+            teilen - dieselbe vereinfachte Namensdopplungs-Prüfung wie in
+            der Inzuchtprüfung, hier aber direkt zwischen zwei bestehenden
+            Pferden statt für ein hypothetisches Fohlen. „Unbekannt“ löst
+            wie überall keinen Treffer aus.
+          </td>
+        </tr>
+        <tr>
+          <th>Einzelnes Pferd nachschlagen</th>
+          <td>
+            Listet alle verwandten Pferde auf (meist verwandteste zuerst),
+            je mit dem gemeinsamen Namen und der Position im Stammbaum bei
+            BEIDEN Pferden - z. B. „bei Pferd A: Großeltern, bei Pferd B:
+            Elternteil“ (der gemeinsame Name ist bei Pferd B also ein
+            direktes Elternteil, bei Pferd A ein Großelternteil). Ein
+            Pferd kann mit demselben anderen Pferd über mehrere Namen
+            gleichzeitig verwandt sein - alle werden aufgelistet.
+          </td>
+        </tr>
+        <tr>
+          <th>Vergleich (Stuten↔Hengste/Stuten↔Stuten/Hengste↔Hengste)</th>
+          <td>
+            Legt fest, welche zwei Pferdegruppen als Zeilen bzw. Spalten
+            der Matrix gegenübergestellt werden. Bei Stuten↔Stuten bzw.
+            Hengste↔Hengste ist die Matrix symmetrisch (dieselbe Auswahl
+            als Zeilen und Spalten) - ein Pferd wird dabei nie mit sich
+            selbst als "verwandt" markiert.
+          </td>
+        </tr>
+        <tr>
+          <th>Besitzer, Rasse, ZZL (Matrix-Filter)</th>
+          <td>
+            Grenzen ein, welche Pferde in der Matrix erscheinen - wie
+            überall auf der Seite startet die Rassenauswahl standardmäßig
+            bei „American Paint Horse“. Wird die Auswahl zu groß (mehr als
+            4.000 Zeilen × Spalten-Zellen), erscheint statt der Tabelle ein
+            Hinweis, weiter einzugrenzen - aus Performance- und
+            Übersichtlichkeitsgründen.
+          </td>
+        </tr>
+        <tr>
+          <th>Anzahl-Spalte</th>
+          <td>Zählt pro Zeile, mit wie vielen der aktuell angezeigten Spalten-Pferde eine Verwandtschaft besteht - die Tabelle ist danach absteigend sortiert (am stärksten vernetzte Pferde zuerst).</td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> Tabelle <em>horses</em>, ohne ZZL-
+        oder Geschlechtsfilter beim Laden (wie im Zuchtbuch) - die
+        ZZL-Einschränkung ist in der Matrix nur ein optionaler Filter.
+        Genutzte Felder: Name, Besitzer, Geschlecht, Rasse,
+        Reinrassigkeit, Stammbaum, ZZL. Verwandtschaft wird ausschließlich
+        über Namensabgleich im Stammbaum-Feld ermittelt - es gibt keine
+        separate Mutter-/Vater-ID in der Datenbank.
       </div>
     </fieldset>
 

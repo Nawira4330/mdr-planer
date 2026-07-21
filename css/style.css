@@ -243,6 +243,46 @@ td.actions-cell { display: flex; gap: 0.4rem; }
 .pill.yes { color: var(--success); border-color: var(--success); }
 .pill.no { color: var(--danger); border-color: var(--danger); }
 
+/* --- Verwandtschaftsmatrix --- */
+/* border-collapse:separate (statt der globalen table-Regel "collapse")
+   vermeidet bekannte Sticky-Header-Bugs in einigen Browsern; border-
+   spacing:0 hält die Optik dabei nahezu identisch zu vorher. */
+#matrix-table { border-collapse: separate; border-spacing: 0; }
+/* .table-wrap hat overflow-x:auto - laut CSS-Spezifikation berechnet der
+   Browser overflow-y dadurch zwangsweise ebenfalls zu "auto" (man kann
+   nicht eine Achse "auto" und die andere "visible" haben). Ohne eigene
+   Höhenbegrenzung "scrollt" dieser dadurch entstandene Y-Scrollcontainer
+   aber nie wirklich (der Inhalt wächst einfach mit) - dadurch klebt
+   position:sticky an DIESEM Container statt an der Seite und wirkt nie.
+   Eine feste max-height macht daraus einen echten scrollbaren Bereich,
+   in dem die angepinnte Kopfzeile tatsächlich funktioniert. */
+#matrix-result .table-wrap { max-height: 70vh; }
+#matrix-table th, #matrix-table td { text-align: center; }
+#matrix-table th:first-child, #matrix-table td:first-child { text-align: left; }
+/* Kein max-height hier - das würde lange Hengst-/Stutennamen in der
+   senkrechten Schrift abschneiden. Die Kopfzeile wird stattdessen einfach
+   so hoch wie der längste Name es braucht. */
+#matrix-table th.col-header {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: left;
+  vertical-align: bottom;
+  padding: 0.4rem 0.3rem;
+  white-space: nowrap;
+}
+/* Kopfzeile beim vertikalen Scrollen anpinnen, damit man auch bei vielen
+   Zeilen sieht, zu welchem Pferd eine Spalte gehört. */
+#matrix-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+#matrix-table td.related-cell {
+  background: rgba(200, 65, 73, 0.22);
+  color: var(--danger);
+  font-weight: 700;
+}
+
 /* --- Form --- */
 .form-grid {
   display: grid;
@@ -269,6 +309,12 @@ fieldset {
   margin: 1rem 0;
   padding: 0.8rem 1rem 1rem;
   background: var(--surface);
+  /* Browser-Standard für <fieldset> ist min-width:min-content - das lässt
+     ein Fieldset mit einer breiten Tabelle darin (z.B. #matrix-table)
+     nicht mehr auf Handy-Breite schrumpfen, wodurch .table-wraps
+     overflow-x:auto wirkungslos wird und stattdessen die ganze Seite
+     seitlich scrollt. */
+  min-width: 0;
 }
 legend {
   padding: 0.1rem 0.5rem;

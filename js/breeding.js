@@ -120,6 +120,52 @@ function hasOveroGene(horse) {
   return genes.some((g) => g.locus === 'Overo');
 }
 
+// --- Allgemeine Verwandtschaftsprüfung (Verwandtschaftsmatrix) ---
+//
+// Anders als findSharedNames (das den hypothetischen Stammbaum EINES
+// FOHLENS aus Stute+Hengst prüft) geht es hier um die direkte Frage "sind
+// diese zwei bereits existierenden Pferde miteinander verwandt" - dafür
+// zählt der komplette sichtbare Stammbaum JEDES der beiden Pferde für
+// sich (das Pferd selbst + seine 14 Vorfahren), nicht nur die für ein
+// gemeinsames Fohlen relevanten Positionen.
+
+// Baut den vollständigen "Namenspool" eines Pferds: das Pferd selbst +
+// seine 14 sichtbaren Vorfahren, je mit Positions-Label. "Unbekannt" wird
+// wie überall ignoriert.
+function pedigreeNamePool(horse) {
+  if (!horse?.name) return [];
+  const pool = [{ name: horse.name, position: 'Pferd selbst' }];
+  pedigreeAncestorNames(horse).forEach((name, i) => {
+    if (!name || normalizeName(name) === 'unbekannt') return;
+    pool.push({ name, position: i < 2 ? 'Elternteil' : i < 6 ? 'Großeltern' : 'Urgroßeltern' });
+  });
+  return pool;
+}
+
+// Liefert alle Namen, die sich die sichtbaren Stammbäume zweier Pferde
+// teilen (inkl. der Pferde selbst), mit der jeweiligen Position bei BEIDEN
+// Pferden - z.B. { name: 'Rock my Heart', positionA: 'Großeltern',
+// positionB: 'Pferd selbst' } (= Rock my Heart ist Großelternteil von
+// Pferd A und ist selbst Pferd B).
+function findRelations(horseA, horseB) {
+  if (!horseA || !horseB || horseA.id === horseB.id) return [];
+  const poolA = pedigreeNamePool(horseA);
+  const poolB = pedigreeNamePool(horseB);
+  const matches = [];
+  for (const a of poolA) {
+    for (const b of poolB) {
+      if (normalizeName(a.name) === normalizeName(b.name)) {
+        matches.push({ name: a.name, positionA: a.position, positionB: b.position });
+      }
+    }
+  }
+  return matches;
+}
+
+function areRelated(horseA, horseB) {
+  return findRelations(horseA, horseB).length > 0;
+}
+
 // Ein Erbkrankheiten-Wert gilt als "nicht sauber" (Träger ODER ausgeprägt
 // betroffen), sobald mindestens ein Kleinbuchstabe enthalten ist - dasselbe
 // Kriterium wie beim EKH-Wert der Datenbankübersicht (js/zuchtbuch.js:
@@ -146,5 +192,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     pedigreeAncestorNames, pedigreeDepth, foalPedigreeNodes, findSharedNames, hasOveroGene,
     isDiseaseCarrierOrAffected, sharedDiseaseRisks,
+    pedigreeNamePool, findRelations, areRelated,
   };
 }

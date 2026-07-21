@@ -12,6 +12,7 @@ const PROGRESS = [
   { label: 'Verpaarungsratgeber', percent: 80 },
   { label: 'Fohlen-Tracker', percent: 70 },
   { label: 'Verpaarungs-Log (Datenbank)', percent: 90 },
+  { label: 'Verwandtschaftsmatrix', percent: 85 },
 ];
 
 // Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
@@ -27,6 +28,13 @@ const TYPE_META = {
 // nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
+  {
+    date: '2026-07-19T12:00', type: 'feature', title: 'Neues Werkzeug: Verwandtschaftsmatrix',
+    points: [
+      'Einzelnes Pferd nachschlagen: alle verwandten Pferde mit gemeinsamem Namen und Position im Stammbaum (Elternteil/Großeltern/Urgroßeltern) bei beiden Pferden',
+      'Matrix-Ansicht über viele Pferde gleichzeitig (Stuten↔Hengste, Stuten↔Stuten, Hengste↔Hengste), filterbar nach Besitzer, Rasse und ZZL, mit "Anzahl"-Spalte je Pferd',
+    ],
+  },
   {
     date: '2026-07-13T20:15', type: 'feature', title: 'Decksprung-Button speichert echt im Verpaarungs-Log',
     points: [
