@@ -225,13 +225,20 @@ function updateLimitOptions(selectEl, total) {
   selectEl.value = [...selectEl.options].some((o) => o.value === prevValue) ? prevValue : '';
 }
 
+// Start-/Endindex des gewählten alphabetischen Häppchens - leer/"Alle"
+// liefert die volle Spanne [0, total].
+function limitRange(selectEl, total) {
+  if (selectEl.value === '') return [0, total];
+  const idx = parseInt(selectEl.value, 10);
+  return [idx * LIMIT_CHUNK_SIZE, Math.min((idx + 1) * LIMIT_CHUNK_SIZE, total)];
+}
+
 // Wendet die gewählte alphabetische Beschränkung auf eine (bereits nach
 // Name sortierte) Kandidatenliste an - leer/"Alle" lässt die Liste
 // unverändert.
 function applyLimit(list, selectEl) {
-  if (selectEl.value === '') return list;
-  const idx = parseInt(selectEl.value, 10);
-  return list.slice(idx * LIMIT_CHUNK_SIZE, (idx + 1) * LIMIT_CHUNK_SIZE);
+  const [start, end] = limitRange(selectEl, list.length);
+  return list.slice(start, end);
 }
 
 function sortableMatrixHeaderHtml(field, label) {
@@ -281,7 +288,8 @@ function renderMatrix() {
   updateLimitOptions(rowLimitSelect, rowsFull.length);
   updateLimitOptions(colLimitSelect, colsFull.length);
   const rows = applyLimit(rowsFull, rowLimitSelect);
-  const cols = applyLimit(colsFull, colLimitSelect);
+  const [colStart, colEnd] = limitRange(colLimitSelect, colsFull.length);
+  const cols = colsFull.slice(colStart, colEnd);
 
   if (!rows.length || !cols.length) {
     hintEl.textContent = '';
@@ -298,11 +306,22 @@ function renderMatrix() {
 
   const rowHint = rows.length < rowsFull.length ? `${rows.length} von ${rowsFull.length}` : `${rows.length}`;
   const colHint = cols.length < colsFull.length ? `${cols.length} von ${colsFull.length}` : `${cols.length}`;
-  hintEl.textContent = `${rowHint} × ${colHint} Pferde ausgewählt.`;
+  hintEl.textContent = `${rowHint} × ${colHint} Pferde ausgewählt.`
+    + (cols.length < colsFull.length
+      ? ' Die Anzahl-Spalte zählt gegen alle gefilterten Spalten-Pferde, nicht nur den hier angezeigten Ausschnitt.'
+      : '');
 
+  // "Anzahl" zählt IMMER gegen alle gefilterten Spalten (colsFull), nicht
+  // nur gegen den aktuell angezeigten Spalten-Ausschnitt - sonst würde die
+  // Zahl je nach gewählter Beschränkung schwanken, obwohl sich an der
+  // eigentlichen Verwandtschaft nichts geändert hat. Die angezeigten
+  // ✕-Markierungen (related) sind trotzdem nur der sichtbare Ausschnitt
+  // davon (colStart..colEnd), damit Anzahl und Marker konsistent aus
+  // derselben Berechnung stammen.
   const rowData = rows.map((r) => {
-    const related = cols.map((c) => areRelated(r, c));
-    const count = related.filter(Boolean).length;
+    const relatedFull = colsFull.map((c) => areRelated(r, c));
+    const count = relatedFull.filter(Boolean).length;
+    const related = relatedFull.slice(colStart, colEnd);
     return { horse: r, related, count };
   });
   applyMatrixSort(rowData);
