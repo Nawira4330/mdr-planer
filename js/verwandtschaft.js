@@ -10,6 +10,11 @@ const RELATION_FIELDS = 'id,name,owner,gender,breed,purebred_pct,pedigree,breedi
 // Übersichtlichkeitsgründen nicht mehr gerendert wird.
 const MAX_MATRIX_CELLS = 4000;
 
+// Größe der alphabetischen Häppchen für die Beschränkungs-Auswahl (1-30,
+// 31-60, ...) - je Achse unabhängig wählbar, um auch bei vielen Pferden
+// gezielt einen Ausschnitt statt "Alle" darzustellen.
+const LIMIT_CHUNK_SIZE = 30;
+
 // Kurze Kürzel für die Rasse-Spalte der Matrix (spart Platz bei vielen
 // Zeilen) - unbekannte Rassen fallen auf die ersten 3 Buchstaben zurück.
 const BREED_ABBREVIATIONS = {
@@ -46,6 +51,8 @@ async function init() {
   document.querySelector('#matrix-col-owner-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-row-zzl-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-col-zzl-select').addEventListener('change', renderMatrix);
+  document.querySelector('#matrix-row-limit-select').addEventListener('change', renderMatrix);
+  document.querySelector('#matrix-col-limit-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-modus-select').addEventListener('change', renderMatrix);
   wireMatrixSortableHeaders();
   await loadHorses();
@@ -200,6 +207,33 @@ function matrixCandidates(gender, axis) {
   });
 }
 
+// Baut die "1-30 / 31-60 / ..."-Optionen passend zur aktuellen Trefferzahl
+// (nach Besitzer-/Rasse-/ZZL-Filter, vor der Beschränkung selbst) neu auf.
+// Die bisherige Auswahl bleibt erhalten, wenn sie weiterhin existiert -
+// sonst (z. B. weil ein anderer Filter die Liste verkürzt hat) fällt die
+// Auswahl zurück auf "Alle".
+function updateLimitOptions(selectEl, total) {
+  const prevValue = selectEl.value;
+  const chunkCount = Math.ceil(total / LIMIT_CHUNK_SIZE);
+  let html = '<option value="">Alle</option>';
+  for (let i = 0; i < chunkCount; i++) {
+    const start = i * LIMIT_CHUNK_SIZE + 1;
+    const end = Math.min((i + 1) * LIMIT_CHUNK_SIZE, total);
+    html += `<option value="${i}">${start}–${end}</option>`;
+  }
+  selectEl.innerHTML = html;
+  selectEl.value = [...selectEl.options].some((o) => o.value === prevValue) ? prevValue : '';
+}
+
+// Wendet die gewählte alphabetische Beschränkung auf eine (bereits nach
+// Name sortierte) Kandidatenliste an - leer/"Alle" lässt die Liste
+// unverändert.
+function applyLimit(list, selectEl) {
+  if (selectEl.value === '') return list;
+  const idx = parseInt(selectEl.value, 10);
+  return list.slice(idx * LIMIT_CHUNK_SIZE, (idx + 1) * LIMIT_CHUNK_SIZE);
+}
+
 function sortableMatrixHeaderHtml(field, label) {
   const arrow = matrixSort.field === field ? (matrixSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
   return `<th data-sort="${field}">${escapeHtml(label)}${arrow}</th>`;
@@ -230,17 +264,24 @@ function renderMatrix() {
   const hintEl = document.querySelector('#matrix-hint');
   const modus = document.querySelector('#matrix-modus-select').value;
 
-  let rows, cols;
+  let rowsFull, colsFull;
   if (modus === 'stute-stute') {
-    rows = matrixCandidates('Stute', 'row');
-    cols = matrixCandidates('Stute', 'col');
+    rowsFull = matrixCandidates('Stute', 'row');
+    colsFull = matrixCandidates('Stute', 'col');
   } else if (modus === 'hengst-hengst') {
-    rows = matrixCandidates('Hengst', 'row');
-    cols = matrixCandidates('Hengst', 'col');
+    rowsFull = matrixCandidates('Hengst', 'row');
+    colsFull = matrixCandidates('Hengst', 'col');
   } else {
-    rows = matrixCandidates('Stute', 'row');
-    cols = matrixCandidates('Hengst', 'col');
+    rowsFull = matrixCandidates('Stute', 'row');
+    colsFull = matrixCandidates('Hengst', 'col');
   }
+
+  const rowLimitSelect = document.querySelector('#matrix-row-limit-select');
+  const colLimitSelect = document.querySelector('#matrix-col-limit-select');
+  updateLimitOptions(rowLimitSelect, rowsFull.length);
+  updateLimitOptions(colLimitSelect, colsFull.length);
+  const rows = applyLimit(rowsFull, rowLimitSelect);
+  const cols = applyLimit(colsFull, colLimitSelect);
 
   if (!rows.length || !cols.length) {
     hintEl.textContent = '';
@@ -251,11 +292,13 @@ function renderMatrix() {
   const cellCount = rows.length * cols.length;
   if (cellCount > MAX_MATRIX_CELLS) {
     hintEl.textContent = '';
-    container.innerHTML = `<p class="muted small">Die Auswahl ergibt ${rows.length} × ${cols.length} = ${cellCount.toLocaleString('de')} Zellen - das ist zu groß, um sinnvoll dargestellt zu werden (Grenze: ${MAX_MATRIX_CELLS.toLocaleString('de')}). Bitte über Besitzer, Rasse oder ZZL weiter eingrenzen.</p>`;
+    container.innerHTML = `<p class="muted small">Die Auswahl ergibt ${rows.length} × ${cols.length} = ${cellCount.toLocaleString('de')} Zellen - das ist zu groß, um sinnvoll dargestellt zu werden (Grenze: ${MAX_MATRIX_CELLS.toLocaleString('de')}). Bitte über Besitzer, Rasse, ZZL oder die Beschränkung weiter eingrenzen.</p>`;
     return;
   }
 
-  hintEl.textContent = `${rows.length} × ${cols.length} Pferde ausgewählt.`;
+  const rowHint = rows.length < rowsFull.length ? `${rows.length} von ${rowsFull.length}` : `${rows.length}`;
+  const colHint = cols.length < colsFull.length ? `${cols.length} von ${colsFull.length}` : `${cols.length}`;
+  hintEl.textContent = `${rowHint} × ${colHint} Pferde ausgewählt.`;
 
   const rowData = rows.map((r) => {
     const related = cols.map((c) => areRelated(r, c));
