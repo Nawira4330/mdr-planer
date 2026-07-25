@@ -447,6 +447,7 @@ const COLOR_WISH_OPTIONS = [
   { label: 'Pearl (pl)', locus: 'Cream', allele: 'pl' },
   { label: 'Pearl reinerbig (plpl)', locus: 'Cream', allele: 'pl', homozygousOnly: true },
   { label: 'Grey', locus: 'Grey', allele: 'G' },
+  { label: 'Silver', locus: 'Silver', allele: 'Z' },
   { label: 'Splashed', locus: 'Splashed', allele: 'SPL' },
   { label: 'Leopard/Appaloosa', locus: 'Appaloosa', allele: 'Lp' },
   { label: 'Flaxen (sichtbar)', locus: 'Flaxen', allele: 'fl' },
