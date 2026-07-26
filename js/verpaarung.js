@@ -438,8 +438,16 @@ function estimateFoalEmpirical(mare, stallion, deviations) {
 // selbst nicht sichtbar Flaxen ist.
 const COLOR_WISH_OPTIONS = [
   { label: 'Overo', locus: 'Overo', allele: 'O' },
-  { label: 'Tobiano', locus: 'KIT', allele: 'To' },
-  { label: 'Sabino', locus: 'KIT', allele: 'Sb' },
+  // Tobiano/Sabino: Groß-/Kleinschreibung MUSS exakt der Rohdaten aus der
+  // DB entsprechen ("TO"/"SB", komplett großgeschrieben) - anders als
+  // Roan ("Rn", gemischt). extractPresentAlleles() (js/parser.js) behält
+  // das Roh-Token unverändert bei, der Abgleich per .includes() ist
+  // case-sensitiv. Mit den ursprünglich falschen 'To'/'Sb' schlug der
+  // Filter bei JEDEM genetisch getesteten Pferd fehl (nur bei
+  // ungetesteten, über den Fellfarbe-Namen erkannten Pferden - siehe
+  // PHENOTYPE_GENE_HINTS in js/parser.js - funktionierte er zufällig).
+  { label: 'Tobiano', locus: 'KIT', allele: 'TO' },
+  { label: 'Sabino', locus: 'KIT', allele: 'SB' },
   { label: 'Roan', locus: 'KIT', allele: 'Rn' },
   { label: 'Champagne', locus: 'Champagne', allele: 'Ch' },
   { label: 'Dun', locus: 'Dun', allele: 'D' },
@@ -477,27 +485,43 @@ function hasFlaxenTrait(horse, byNameMap) {
   return false;
 }
 
-// Bewusst vereinfacht (analog zu hasOveroGene): das Merkmal gilt als
-// möglich, wenn Stute ODER Hengst das Gen laut presentGenesSummary trägt -
-// kein vollständiges Dominant-/rezessiv-Modell je Locus. Ausnahmen:
+// Prüft NUR den Kandidaten (nicht auch das fest gewählte Pferd) - kein
+// vollständiges Dominant-/rezessiv-Modell je Locus. Ausnahmen:
 // "homozygousOnly" zählt exakte 2-Zeichen-Allel-Token (z.B. "plpl" -> 2x
 // "pl"), statt nur "kommt mindestens einmal vor" zu prüfen - nötig, um
 // Pearl (1 Kopie reicht) von Pearl reinerbig (2 Kopien nötig) zu
 // unterscheiden. "locus === 'Flaxen'" nutzt hasFlaxenTrait statt
 // presentGenesSummary, da Flaxen keinen eigenen Locus hat.
-function colorWishPossible(mare, stallion, wish, flaxenLookup) {
-  const hasWish = (horse) => {
-    if (wish.locus === 'Flaxen') {
-      return wish.viaParent ? hasFlaxenTrait(horse, flaxenLookup) : isVisiblyFlaxen(horse);
-    }
-    const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes);
-    const entry = genes.find((g) => g.locus === wish.locus);
-    if (!entry) return false;
-    if (!wish.homozygousOnly) return entry.alleles.includes(wish.allele);
-    const tokens = entry.alleles.match(/../g) || [];
+//
+// War ursprünglich "Stute ODER Hengst hat das Gen" (genetisch korrekt,
+// da das Fohlen es von jedem Elternteil erben kann) - das machte den
+// Filter aber zum Blindgänger, sobald das fest gewählte Pferd das Merkmal
+// selbst schon trägt: dann bestanden ALLE Kandidaten die Prüfung, auch
+// die ganz ohne das Merkmal (Nutzer-Feedback: bei einer Flaxen-Träger-
+// Stute wurden 111 von 116 Hengsten angezeigt, obwohl nur 5 davon
+// tatsächlich Träger waren). Auf Nutzerwunsch geändert auf "nur der
+// Kandidat selbst trägt es" - eindeutig, nie wirkungslos.
+//
+// Wichtig: über ALLE Einträge mit passendem Locus prüfen (nicht nur den
+// ersten per find()) - bei ungetesteten Loci liefert
+// inferGeneticHintsFromPhenotype() für jedes erkannte Merkmal einen
+// EIGENEN Eintrag (z.B. "Chestnut Roan Sabino" -> je ein KIT-Eintrag für
+// Roan UND für Sabino statt eines zusammengeführten). Mit find() wurde
+// bisher nur der zuerst gefundene Eintrag geprüft - z.B. "Roan" bei einem
+// Pferd mit "Roan Sabino"-Fellfarbe traf dadurch IMMER zu, unabhängig vom
+// tatsächlich gesuchten Merkmal, und machte den Filter effektiv wirkungslos.
+function colorWishPossible(candidate, wish, flaxenLookup) {
+  if (wish.locus === 'Flaxen') {
+    return wish.viaParent ? hasFlaxenTrait(candidate, flaxenLookup) : isVisiblyFlaxen(candidate);
+  }
+  const genes = presentGenesSummary(candidate.colors, candidate.coat_color, candidate.notes);
+  const entries = genes.filter((g) => g.locus === wish.locus);
+  if (!entries.length) return false;
+  if (!wish.homozygousOnly) return entries.some((e) => e.alleles.includes(wish.allele));
+  return entries.some((e) => {
+    const tokens = e.alleles.match(/../g) || [];
     return tokens.filter((t) => t === wish.allele).length >= 2;
-  };
-  return hasWish(mare) || hasWish(stallion);
+  });
 }
 
 // --- Ranking ---
@@ -557,7 +581,7 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, e
   const candidates = stallions.filter((stallion) => {
     if (findSharedNames(mare, stallion).length > 0) return false;
     if (mareHasOvero && hasOveroGene(stallion)) return false;
-    if (wishes.length && !wishes.every((wish) => colorWishPossible(mare, stallion, wish, flaxenLookup))) return false;
+    if (wishes.length && !wishes.every((wish) => colorWishPossible(stallion, wish, flaxenLookup))) return false;
     return true;
   });
 

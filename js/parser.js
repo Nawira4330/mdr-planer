@@ -392,8 +392,12 @@ const PHENOTYPE_GENE_HINTS = [
   { pattern: /varnish roan/i, locus: 'Appaloosa', allele: 'Lp', label: 'Varnish Roan' },
   { pattern: /\bchampagne\b/i, locus: 'Champagne', allele: 'Ch', label: 'Champagne' },
   { pattern: /\broan\b/i, locus: 'KIT', allele: 'Rn', label: 'Roan' },
-  { pattern: /\btobiano\b/i, locus: 'KIT', allele: 'To', label: 'Tobiano' },
-  { pattern: /\bsabino\b/i, locus: 'KIT', allele: 'Sb', label: 'Sabino' },
+  // allele-Schreibweise ("TO"/"SB") passend zu den echten Rohwerten der
+  // getesteten Loci gewählt (siehe COLOR_WISH_OPTIONS in js/verpaarung.js),
+  // damit getestete und über die Fellfarbe abgeleitete Pferde einheitlich
+  // erkannt werden.
+  { pattern: /\btobiano\b/i, locus: 'KIT', allele: 'TO', label: 'Tobiano' },
+  { pattern: /\bsabino\b/i, locus: 'KIT', allele: 'SB', label: 'Sabino' },
   { pattern: /\bovero\b/i, locus: 'Overo', allele: 'O', label: 'Overo' },
   { pattern: /\bsplashed\b/i, locus: 'Splashed', allele: 'SPL', label: 'Splashed White' },
   { pattern: /\bdun\b/i, locus: 'Dun', allele: 'D', label: 'Dun' },
