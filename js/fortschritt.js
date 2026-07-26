@@ -29,6 +29,14 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-27T15:00', type: 'bugfix', title: 'Verpaarungsratgeber: Flaxen-Träger-Erkennung findet mehr Pferde',
+    points: [
+      'Neu: erkennt Trägerschaft zusätzlich über bekannte eigene NACHKOMMEN - ist ein Fohlen sichtbar Flaxen, müssen beide Eltern zwingend Träger sein (genetisch bewiesen bei einem rezessiven Merkmal), unabhängig davon, ob die eigenen Eltern des Pferds überhaupt erfasst sind (bei vielen Pferden nicht der Fall)',
+      'Bewusst weiterhin nur eine Generation weit (Eltern bzw. eigene Fohlen) - bei Großeltern & Co. besteht keine Gewissheit mehr, nur noch eine Wahrscheinlichkeit (50%/25%), das würde fälschlich Nicht-Träger als Träger einstufen',
+      'Ergebnis mit echten Daten verifiziert: von 5 auf 12 erkannte Hengst-Träger, von 16 auf 23 erkannte Stuten-Träger',
+    ],
+  },
+  {
     date: '2026-07-27T11:00', type: 'feature', title: 'Verpaarungsratgeber: Ausgleich-Sortierung jetzt auch für GP und Int, Top 20 statt Top 10',
     points: [
       '"Bester Ausgleich der Stuten-/Hengst-Schwächen" gibt es jetzt für alle vier Schwerpunkte (vorher nur Ext%) - zählt gezielt, wie viele der eigenen unterdurchschnittlichen Werte des Ausgangspferds ein Kandidat ausgleicht',

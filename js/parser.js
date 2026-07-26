@@ -407,8 +407,10 @@ const PHENOTYPE_GENE_HINTS = [
   { pattern: /\b(leopard|fewspot|blanket|snowcap)\b/i, locus: 'Appaloosa', allele: 'Lp', label: 'Leopard-Musterung' },
   // Flaxen hat keinen eigenen getesteten Locus in der Datenbank - nur als
   // Wort in der Fellfarbe erkennbar, wenn sichtbar (siehe COLOR_WISH_OPTIONS
-  // in js/verpaarung.js für die Einschränkung, die daraus folgt).
-  { pattern: /\bflaxen\b/i, locus: 'Flaxen', allele: 'fl', label: 'Flaxen' },
+  // in js/verpaarung.js für die Einschränkung, die daraus folgt). Sichtbar
+  // heißt reinerbig (zwei Kopien) - daher "flfl", nicht nur "fl" (das
+  // steht für eine einzelne, unsichtbare Trägerschaft-Kopie).
+  { pattern: /\bflaxen\b/i, locus: 'Flaxen', allele: 'flfl', label: 'Flaxen' },
 ];
 
 // Gibt eine Liste { locus, allele, label } aller aus dem Fellfarbe-Namen

@@ -249,28 +249,59 @@ function interieurFoalRange(mare, stallion) {
 // und dadurch schon von Natur aus stutenspezifisch (empirisch bestätigt:
 // bei 8 echten Stuten 5 verschiedene Gewinner) - dieser Score ergänzt es
 // trotzdem um dieselbe "Problem/gerettet"-Darstellung wie bei GP/Ext%, für
-// eine einheitliche Anzeige über alle Schwerpunkte hinweg. "Problem" ist
-// eine Eigenschaft, bei der die Stute SCHLECHTER als ihr eigener
-// Durchschnitt abschneidet (höhere Zahl = schlechter), "gerettet", wenn
-// der Hengst dort einen besseren (niedrigeren) Wert einbringt.
+// eine einheitliche Anzeige über alle Schwerpunkte hinweg.
+//
+// Bewusst NICHT (mehr) relativ zum eigenen Durchschnitt der Stute, sondern
+// nach absoluter Kategorie in drei Prioritätsstufen gewichtet (auf
+// Nutzerwunsch):
+// 1. Priorität (höchstes Gewicht): "In Ordnung"/"Schlecht"/"Miserabel"
+//    (Score 3-5) - echte Problemstellen, sollen möglichst stark
+//    ausgeglichen werden. "Gerettet" zählt, wenn der Hengst dort einen
+//    ECHT besseren (niedrigeren) Wert einbringt.
+// 2. Priorität: "Exzellent" (Score 1) - lässt sich nicht mehr verbessern,
+//    soll aber unterstützt/gehalten werden. "Gerettet" zählt, wenn der
+//    Hengst dort ebenfalls exzellent ist (sonst würde der Fohlen-
+//    Durchschnitt dort wieder absacken).
+// 3. Priorität (niedrigstes Gewicht): "Gut" (Score 2) - dieselbe Logik wie
+//    Priorität 2, nur mit weniger Gewicht in der Sortierung.
+// "weighted" (nicht "saved") bestimmt die Sortierung (siehe sortKey) -
+// dadurch schlägt jede einzelne ausgeglichene Problemstelle (Prio 1) IMMER
+// jede beliebige Kombination aus Prio 2+3, unabhängig von deren Anzahl.
+// "atStake"/"saved" bleiben die reinen (ungewichteten) Summen aller drei
+// Stufen für die "X von Y ausgeglichen"-Anzeige.
 function intComplementarityScore(mare, stallion) {
   const stallionByLabel = new Map((stallion?.temperament || []).map((r) => [r.label, r]));
   const scores = (mare?.temperament || [])
     .map((r) => ({ label: r.label, score: scoreTemperamentTerm(r.value) }))
     .filter((r) => r.score != null);
-  if (!scores.length) return { atStake: 0, saved: 0 };
-  const avg = scores.reduce((a, r) => a + r.score, 0) / scores.length;
+  if (!scores.length) return { atStake: 0, saved: 0, weighted: 0 };
 
-  let atStake = 0, saved = 0;
+  let atStakeProblem = 0, savedProblem = 0;
+  let atStakeExzellent = 0, savedExzellent = 0;
+  let atStakeGut = 0, savedGut = 0;
+
   for (const { label, score: a } of scores) {
-    if (a <= avg) continue;
     const stallionRow = stallionByLabel.get(label);
     const b = stallionRow ? scoreTemperamentTerm(stallionRow.value) : null;
     if (b == null) continue;
-    atStake++;
-    if (b < a) saved++;
+
+    if (a >= 3) {
+      atStakeProblem++;
+      if (b < a) savedProblem++;
+    } else if (a === 1) {
+      atStakeExzellent++;
+      if (b === 1) savedExzellent++;
+    } else {
+      atStakeGut++;
+      if (b <= 2) savedGut++;
+    }
   }
-  return { atStake, saved };
+
+  return {
+    atStake: atStakeProblem + atStakeExzellent + atStakeGut,
+    saved: savedProblem + savedExzellent + savedGut,
+    weighted: savedProblem * 10000 + savedExzellent * 100 + savedGut,
+  };
 }
 
 // --- GP (Gesamtpotenzial) ---
@@ -538,20 +569,45 @@ function isVisiblyFlaxen(horse) {
 }
 
 // Flaxen-Trägerschaft: sichtbar am Pferd selbst ODER (da es keinen eigenen
-// getesteten Genort gibt) wenn mindestens ein Elternteil sichtbar Flaxen
-// ist - das Pferd hat dann zwingend mindestens eine rezessive fl-Kopie
-// geerbt, auch wenn selbst nicht sichtbar. byNameMap: Map<normalisierter
-// Name, Pferd mit coat_color> aus einem möglichst breiten Bestand (siehe
-// flaxenLookup in js/zuchtplaner.js), damit auch Elternteile gefunden
-// werden, die selbst nicht (mehr) im ZZL-Kandidatenpool stehen.
-function hasFlaxenTrait(horse, byNameMap) {
+// getesteten Genort gibt) indirekt über zwei Signale, beide nur eine
+// Generation weit - NICHT weiter (Großeltern etc.), weil dort keine
+// Gewissheit mehr besteht:
+// 1. Eltern - ist Vater ODER Mutter selbst sichtbar Flaxen (= reinerbig
+//    fl/fl), geben sie zu 100% eine fl-Kopie weiter - das Pferd MUSS
+//    mindestens eine rezessive Kopie geerbt haben, ganz gleich wie das
+//    zweite Allel aussieht. Bewusst NICHT auf Großeltern/Urgroßeltern
+//    ausgeweitet: ist z.B. nur der Urgroßvater sichtbar Flaxen, ist seine
+//    fl-Kopie beim eigenen Kind bereits nur noch zu 50% vorhanden (Fl/fl,
+//    da dessen zweiter Elternteil sie mit hoher Wahrscheinlichkeit nicht
+//    trägt) und vererbt sich von dort nur noch zufällig weiter (bei
+//    Urgroßeltern nur noch ~12,5%-Wahrscheinlichkeit) - keine Gewissheit
+//    mehr, würde also fälschlich Nicht-Träger als Träger einstufen.
+// 2. Nachkommen - ist ein BEKANNTES eigenes Fohlen sichtbar Flaxen, MUSS
+//    dieses Pferd zwingend selbst Träger sein (genetisch bewiesen bei
+//    einem rezessiven Merkmal: für ein sichtbares Fohlen müssen BEIDE
+//    Eltern mindestens eine Kopie beisteuern) - unabhängig davon, ob die
+//    eigenen Vorfahren des Pferds überhaupt in der Datenbank stehen. In
+//    der Praxis oft der wirksamere der beiden Wege: viele Stammbäume
+//    verweisen auf Namen, die nie als eigener Datensatz erfasst wurden
+//    (externe/importierte Pferde), wodurch Weg 1 oft ins Leere läuft,
+//    auch wenn eine Trägerschaft tatsächlich vorliegt.
+// byNameMap: Map<normalisierter Name, Pferd mit coat_color> aus einem
+// möglichst breiten Bestand (siehe flaxenLookup in js/zuchtplaner.js).
+// childrenByParentName: Map<normalisierter Name, Pferd[]> - Reverse-Index
+// aus demselben Bestand (siehe flaxenChildrenByName in js/zuchtplaner.js).
+function hasFlaxenTrait(horse, byNameMap, childrenByParentName) {
   if (isVisiblyFlaxen(horse)) return true;
-  if (!byNameMap) return false;
-  const anc = pedigreeAncestorNames(horse);
-  for (const name of [anc[0], anc[1]]) {
-    if (!name || normalizeName(name) === 'unbekannt') continue;
-    const parent = byNameMap.get(normalizeName(name));
-    if (parent && isVisiblyFlaxen(parent)) return true;
+  if (byNameMap) {
+    const anc = pedigreeAncestorNames(horse);
+    for (const name of [anc[0], anc[1]]) {
+      if (!name || normalizeName(name) === 'unbekannt') continue;
+      const parent = byNameMap.get(normalizeName(name));
+      if (parent && isVisiblyFlaxen(parent)) return true;
+    }
+  }
+  if (childrenByParentName) {
+    const children = childrenByParentName.get(normalizeName(horse.name)) || [];
+    if (children.some((c) => isVisiblyFlaxen(c))) return true;
   }
   return false;
 }
@@ -581,9 +637,9 @@ function hasFlaxenTrait(horse, byNameMap) {
 // bisher nur der zuerst gefundene Eintrag geprüft - z.B. "Roan" bei einem
 // Pferd mit "Roan Sabino"-Fellfarbe traf dadurch IMMER zu, unabhängig vom
 // tatsächlich gesuchten Merkmal, und machte den Filter effektiv wirkungslos.
-function colorWishPossible(candidate, wish, flaxenLookup) {
+function colorWishPossible(candidate, wish, flaxenLookup, flaxenChildrenByName) {
   if (wish.locus === 'Flaxen') {
-    return wish.viaParent ? hasFlaxenTrait(candidate, flaxenLookup) : isVisiblyFlaxen(candidate);
+    return wish.viaParent ? hasFlaxenTrait(candidate, flaxenLookup, flaxenChildrenByName) : isVisiblyFlaxen(candidate);
   }
   const genes = presentGenesSummary(candidate.colors, candidate.coat_color, candidate.notes);
   const entries = genes.filter((g) => g.locus === wish.locus);
@@ -636,7 +692,11 @@ function sortKey(candidate, schwerpunkt, sortMode) {
     return candidate.emp ? candidate.emp[metric] : null;
   }
   if (sortMode === 'complement') {
-    return candidate.complement ? candidate.complement.saved : null;
+    if (!candidate.complement) return null;
+    // "weighted" gibt es nur bei Int (Prioritätsstufen, siehe
+    // intComplementarityScore) - bei Ext%/GP ist "saved" bereits der
+    // richtige Sortierwert.
+    return candidate.complement.weighted ?? candidate.complement.saved;
   }
 
   const bestField = SCHWERPUNKT_BEST_FIELD[schwerpunkt] || 'gpBest';
@@ -654,14 +714,14 @@ function sortKey(candidate, schwerpunkt, sortMode) {
 // Harte Ausschlüsse zuerst (Inzucht, doppeltes Overo, nicht erfüllbare
 // Farbwünsche), danach Sortierung nach dem gewählten Schwerpunkt +
 // Sortiermodus, Top 20 (RANK_RESULT_COUNT).
-function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, empiricalDeviations, flaxenLookup }) {
+function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, empiricalDeviations, flaxenLookup, flaxenChildrenByName }) {
   const mareHasOvero = hasOveroGene(mare);
   const wishes = (farbwuensche || []).map((label) => COLOR_WISH_OPTIONS.find((o) => o.label === label)).filter(Boolean);
 
   const candidates = stallions.filter((stallion) => {
     if (findSharedNames(mare, stallion).length > 0) return false;
     if (mareHasOvero && hasOveroGene(stallion)) return false;
-    if (wishes.length && !wishes.every((wish) => colorWishPossible(stallion, wish, flaxenLookup))) return false;
+    if (wishes.length && !wishes.every((wish) => colorWishPossible(stallion, wish, flaxenLookup, flaxenChildrenByName))) return false;
     return true;
   });
 

@@ -37,10 +37,13 @@ let richtung = 'stute';
 let empiricalDeviations = null; // wird nach loadHorses() befüllt, siehe loadEmpiricalDeviations()
 // Map<normalisierterName, Pferd> aus demselben breiten Bestand wie
 // empiricalDeviations (horses + foal_reference_data) - für die Flaxen-
-// Trägerschaftsprüfung über Eltern (siehe hasFlaxenTrait in
-// js/verpaarung.js): findet auch Elternteile, die selbst nicht (mehr) im
+// Trägerschaftsprüfung über Vorfahren (siehe hasFlaxenTrait in
+// js/verpaarung.js): findet auch Vorfahren, die selbst nicht (mehr) im
 // ZZL-Kandidatenpool stehen.
 let flaxenLookup = null;
+// Reverse-Index dazu (Name -> bekannte Nachkommen) für die zusätzliche
+// Trägerschaftsprüfung über Nachkommen, siehe hasFlaxenTrait.
+let flaxenChildrenByName = null;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -120,6 +123,20 @@ async function loadEmpiricalDeviations() {
   for (const h of combined) {
     const key = normalizeName(h.name);
     if (key && !flaxenLookup.has(key)) flaxenLookup.set(key, h);
+  }
+  // Reverse-Index (wer nennt diesen Namen als Vater/Mutter) - erlaubt
+  // hasFlaxenTrait zusätzlich zur Ahnen-Prüfung auch über bekannte
+  // Nachkommen auf Trägerschaft zu schließen (siehe Kommentar dort).
+  // Gleiches Muster wie js/fohlen-tracker.js.
+  flaxenChildrenByName = new Map();
+  for (const h of combined) {
+    const anc = pedigreeAncestorNames(h);
+    for (const parentName of [anc[0], anc[1]]) {
+      if (!parentName || normalizeName(parentName) === 'unbekannt') continue;
+      const key = normalizeName(parentName);
+      if (!flaxenChildrenByName.has(key)) flaxenChildrenByName.set(key, []);
+      flaxenChildrenByName.get(key).push(h);
+    }
   }
   renderInzuchtResult();
   if (activeTab === 'auswahl') renderBestMatches();
@@ -300,6 +317,19 @@ function renderInzuchtResult() {
   container.innerHTML = html;
 }
 
+// Ergänzt die Genetik-Anzeige um "fl", wenn eine sonst unsichtbare
+// Flaxen-Trägerschaft (1 Kopie) nur über Eltern/Nachkommen erkennbar ist
+// (siehe hasFlaxenTrait in js/verpaarung.js) - sichtbares Flaxen (2
+// Kopien, "flfl") liefert presentGenesSummary bereits selbst über die
+// Fellfarbe (siehe PHENOTYPE_GENE_HINTS in js/parser.js), landet also
+// schon in "genetik" und wird hier nicht doppelt ergänzt.
+function genetikWithFlaxen(horse, genetik) {
+  if (!isVisiblyFlaxen(horse) && hasFlaxenTrait(horse, flaxenLookup, flaxenChildrenByName)) {
+    return genetik ? `${genetik} fl` : 'fl';
+  }
+  return genetik;
+}
+
 function parentSummaryHtml(label, horse) {
   if (!horse) return '';
   const gp = horse.tournament_potential?.['Gesamtpotenzial'];
@@ -307,7 +337,7 @@ function parentSummaryHtml(label, horse) {
   const extPct = horse.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(horse.temperament, scoreTemperamentTerm);
   const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes);
-  const genetik = genes.map((g) => g.alleles).join(' ');
+  const genetik = genetikWithFlaxen(horse, genes.map((g) => g.alleles).join(' '));
 
   return `<div class="result-card">
     <h2>${escapeHtml(label)}: ${escapeHtml(horse.name || '(ohne Name)')}</h2>
@@ -552,7 +582,7 @@ function renderBestMatches() {
   // Kandidaten weiterhin "stallion" (auch wenn er hier tatsächlich eine
   // Stute ist), siehe candidateCardHtml unten.
   const { total, candidateCount, top } = rankStallions(primary, filteredCandidates, {
-    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations, flaxenLookup,
+    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations, flaxenLookup, flaxenChildrenByName,
   });
 
   const primaryHasOvero = hasOveroGene(primary);
@@ -609,7 +639,7 @@ function fmtGp(v) {
 // dieselbe Modul-Variable, die auch rankStallions bei der Berechnung
 // des Ausgleichs übergeben wird.
 const COMPLEMENT_UNIT_LABEL = { gp: 'Werte-Ausgleich (GP)', ext: 'Genort-Ausgleich (Ext%)', extpct: 'Genort-Ausgleich (Ext%)', int: 'Ausgleich (Int)' };
-const COMPLEMENT_NOUN_LABEL = { gp: 'unterdurchschnittlichen Werten', ext: 'Problem-Genorten', extpct: 'Problem-Genorten', int: 'unterdurchschnittlichen Eigenschaften' };
+const COMPLEMENT_NOUN_LABEL = { gp: 'unterdurchschnittlichen Werten', ext: 'Problem-Genorten', extpct: 'Problem-Genorten', int: 'Problem-/Halte-Eigenschaften' };
 function complementRowHtml(c, weaknessOwnerLabel) {
   const { atStake, saved } = c.complement || {};
   if (!atStake) return '';
@@ -632,7 +662,7 @@ function candidateCardHtml(rank, c, mare, stallion, weaknessOwnerLabel) {
   const extPct = h.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(h.temperament, scoreTemperamentTerm);
   const genes = presentGenesSummary(h.colors, h.coat_color, h.notes);
-  const genetik = genes.map((g) => g.alleles).join(' ');
+  const genetik = genetikWithFlaxen(h, genes.map((g) => g.alleles).join(' '));
 
   return `<div class="result-card">
     <h2>${rank}. ${escapeHtml(h.name || '(ohne Name)')}</h2>
