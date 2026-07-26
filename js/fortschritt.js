@@ -10,7 +10,7 @@ const PROGRESS = [
   { label: 'LP-Prognose', percent: 100 },
   { label: 'Zuchtbuch', percent: 20 },
   { label: 'Verpaarungsratgeber', percent: 80 },
-  { label: 'Fohlen-Tracker', percent: 70 },
+  { label: 'Fohlen-Tracker', percent: 90 },
   { label: 'Verpaarungs-Log (Datenbank)', percent: 90 },
   { label: 'Verwandtschaftsmatrix', percent: 85 },
 ];
@@ -28,6 +28,14 @@ const TYPE_META = {
 // nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
+  {
+    date: '2026-07-25T15:00', type: 'feature', title: 'Neues Werkzeug: Fohlen-Tracker',
+    points: [
+      'Fohlenanzahl eines Pferds mit ZZL nachschlagen (mit Besitzer-Filter für die Suche) - Anzahl plus Liste aller gefundenen Fohlen',
+      'Top 10 der Pferde mit den meisten Fohlen, filterbar nach Besitzer, Geschlecht und Rasse',
+      'Jede Top-10-Zeile per Klick aufklappbar: Fohlenliste mit Name, Rasse, Geschlecht, GP/Ext/Ext%/Int, ZZL, Farbe und Besitzer',
+    ],
+  },
   {
     date: '2026-07-19T12:00', type: 'feature', title: 'Neues Werkzeug: Verwandtschaftsmatrix',
     points: [

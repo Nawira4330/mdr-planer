@@ -16,6 +16,7 @@
       <a class="btn secondary" href="turnierplaner.html">Turnierplaner</a>
       <a class="btn secondary" href="zuchtbuch.html">Zuchtbuch</a>
       <a class="btn secondary" href="verwandtschaft.html">Verwandtschaft</a>
+      <a class="btn secondary" href="fohlen-tracker.html">Fohlen-Tracker</a>
       <a class="btn secondary" href="update-log.html">Update-Log</a>
       <a class="btn secondary" href="https://nawira4330.github.io/mdr-datenbank/" target="_blank" rel="noopener">Pferdedatenbank ↗</a>
     </nav>
@@ -23,7 +24,7 @@
 
   <main class="container">
     <p class="muted small">
-      Fünf Werkzeuge, ein gemeinsamer Datenbestand: Diese Seite geht jedes
+      Sechs Werkzeuge, ein gemeinsamer Datenbestand: Diese Seite geht jedes
       Werkzeug einzeln durch – Schritt für Schritt, mit jeder Funktion im
       Detail und den Datenfeldern, auf die sie zurückgreift. Gespeichert oder
       verändert wird dabei nirgends etwas (einzige Ausnahme: „Decksprung
@@ -36,6 +37,7 @@
       <a class="btn secondary" href="#turnier">Turnierplaner</a>
       <a class="btn secondary" href="#zuchtbuch-anleitung">Zuchtbuch</a>
       <a class="btn secondary" href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>
+      <a class="btn secondary" href="#fohlen-tracker-anleitung">Fohlen-Tracker</a>
       <a class="btn secondary" href="#bausteine">Gemeinsame Bedienelemente</a>
       <a class="btn secondary" href="#technik">Woher die Daten kommen</a>
     </div>
@@ -485,6 +487,69 @@
         Reinrassigkeit, Stammbaum, ZZL. Verwandtschaft wird ausschließlich
         über Namensabgleich im Stammbaum-Feld ermittelt - es gibt keine
         separate Mutter-/Vater-ID in der Datenbank.
+      </div>
+    </fieldset>
+
+    <fieldset id="fohlen-tracker-anleitung">
+      <h2>🐣 Fohlen-Tracker</h2>
+      <p class="muted small">
+        Zählt für ein Pferd, wie viele Fohlen es im sichtbaren Stammbaum der
+        übrigen Pferde hat, und zeigt eine Top 10 der Pferde mit den meisten
+        Fohlen.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Für ein einzelnes Pferd: oben im Bereich „Fohlenanzahl eines Pferds“ Besitzer eingrenzen (optional) und Pferd über das Suchfeld auswählen - nur Pferde mit ZZL stehen zur Auswahl.</li>
+        <li>Für die Top 10: weiter unten Besitzer, Geschlecht und/oder Rasse zum Eingrenzen einstellen.</li>
+        <li>Ergebnis durchsehen - Einzelansicht als Liste aller gefundenen Fohlen, Top 10 als absteigend sortierte Rangliste.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Fohlen-Ermittlung</th>
+          <td>
+            Ein Pferd gilt als Fohlen eines anderen, sobald dessen Name im
+            Stammbaum-Feld als Vater ODER Mutter hinterlegt ist - derselbe
+            Namensabgleich wie im Zuchtbuch, hier aber nur die direkte
+            Elternschaft (Generation 1), nicht Enkel/Urenkel. „Unbekannt“
+            löst wie überall keinen Treffer aus.
+          </td>
+        </tr>
+        <tr>
+          <th>Fohlenanzahl eines Pferds</th>
+          <td>
+            Die Suche zeigt nur Pferde MIT ZZL (Zuchtzulassung) zur Auswahl,
+            wie gewünscht - der Besitzer-Filter grenzt dabei nur die
+            Such-Auswahl ein (Besitzer des gesuchten Pferds), nicht die
+            gefundenen Fohlen selbst. Darunter erscheint die Anzahl sowie
+            eine Tabelle aller gefundenen Fohlen mit Name, Geschlecht,
+            Rasse, Besitzer und ZZL.
+          </td>
+        </tr>
+        <tr>
+          <th>Top 10 - meiste Fohlen</th>
+          <td>
+            Berücksichtigt bewusst ALLE Pferde, nicht nur die mit aktueller
+            ZZL - auch frühere Deckhengste/Zuchtstuten ohne (mehr)
+            bestehende ZZL können noch Fohlen haben. Besitzer, Geschlecht
+            und Rasse filtern dabei die Kandidaten, aus denen die Top 10
+            ermittelt wird (z. B. nur Hengste eines bestimmten Besitzers).
+            Pferde ohne Fohlen erscheinen nicht in der Liste. Per Klick auf
+            eine Zeile (▸) klappt darunter die Liste seiner Fohlen mit
+            Name, Rasse, Geschlecht, GP/Ext/Ext%/Int, ZZL, Farbe und
+            Besitzer auf - erneuter Klick klappt sie wieder ein.
+          </td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> Tabelle <em>horses</em>, ohne ZZL-
+        oder Geschlechtsfilter beim Laden. Genutzte Felder: Name, Besitzer,
+        Geschlecht, Rasse, Stammbaum, ZZL. Fohlen werden ausschließlich über
+        Namensabgleich im Stammbaum-Feld ermittelt - es gibt keine separate
+        Mutter-/Vater-ID in der Datenbank.
       </div>
     </fieldset>
 

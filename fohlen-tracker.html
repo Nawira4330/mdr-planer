@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Fohlen-Tracker – MDR Zucht- &amp; Turnierplaner</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>🐣 Fohlen-Tracker</h1>
+    <nav>
+      <a class="btn secondary" href="index.html">← Zur Übersicht</a>
+      <a class="btn secondary" href="zuchtplaner.html">Zuchtplaner</a>
+      <a class="btn secondary" href="turnierplaner.html">Turnierplaner</a>
+      <a class="btn secondary" href="zuchtbuch.html">Zuchtbuch</a>
+      <a class="btn secondary" href="verwandtschaft.html">Verwandtschaft</a>
+      <a class="btn secondary" href="update-log.html">Update-Log</a>
+      <a class="btn secondary" href="https://nawira4330.github.io/mdr-datenbank/" target="_blank" rel="noopener">Pferdedatenbank ↗</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p class="muted small">
+      Nur lesender Zugriff auf die Pferdedatenbank – hier wird nichts
+      gespeichert oder verändert. Fohlen werden ausschließlich über den
+      sichtbaren Stammbaum (Vater-/Mutter-Name) ermittelt, nicht über eine
+      feste Eltern-Kind-Verknüpfung in der Datenbank.
+    </p>
+
+    <fieldset>
+      <legend>Fohlenanzahl eines Pferds</legend>
+      <div class="form-grid">
+        <div>
+          <label for="owner-select">Besitzer</label>
+          <select id="owner-select"><option value="">Alle</option></select>
+        </div>
+        <div>
+          <label for="horse-search">Pferd mit ZZL auswählen</label>
+          <div class="searchselect">
+            <input type="text" id="horse-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
+            <div class="searchselect-panel" id="horse-panel" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div id="foal-result">
+        <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Top 10 - meiste Fohlen</legend>
+      <p class="muted small">
+        Berücksichtigt alle Pferde (unabhängig von ZZL), da auch frühere
+        Deckhengste/Zuchtstuten ohne aktuelle ZZL noch Fohlen haben können.
+      </p>
+      <div class="form-grid">
+        <div>
+          <label for="top-owner-select">Besitzer</label>
+          <select id="top-owner-select"><option value="">Alle</option></select>
+        </div>
+        <div>
+          <label for="top-gender-select">Geschlecht</label>
+          <select id="top-gender-select">
+            <option value="">Alle</option>
+            <option value="Stute">Stuten</option>
+            <option value="Hengst">Hengste</option>
+          </select>
+        </div>
+        <div>
+          <label>Rasse</label>
+          <div class="checkdrop" id="top-breed-drop">
+            <button type="button" class="checkdrop-toggle">Alle</button>
+            <div class="checkdrop-panel" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div id="top-result"></div>
+    </fieldset>
+
+    <p id="load-error" class="error"></p>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/breeding.js"></script>
+  <script src="js/searchableSelect.js"></script>
+  <script src="js/breedFilter.js"></script>
+  <script src="js/fohlen-tracker.js"></script>
+</body>
+</html>
