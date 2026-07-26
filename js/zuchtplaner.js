@@ -245,7 +245,10 @@ function onMareChange() {
 }
 
 // Auswahl per Dropdown ersetzt einen zuvor per Freitext eingelesenen
-// fremden Hengst wieder.
+// fremden Hengst wieder. Ruft (wie onMareChange) auch renderBestMatches()
+// auf - bei Richtung "hengst" ist der Hengst der Ausgangspunkt des
+// Verpaarungsratgebers, ohne diesen Aufruf blieb die Trefferliste beim
+// vorherigen Hengst stehen, wenn ein neuer per Dropdown gewählt wurde.
 function onStallionChange(id) {
   if (id) {
     foreignStallion = null;
@@ -253,6 +256,7 @@ function onStallionChange(id) {
     document.querySelector('#stallion-parse-status').textContent = '';
   }
   renderInzuchtResult();
+  renderBestMatches();
 }
 
 function onStallionParse() {
@@ -497,13 +501,19 @@ function updateHengstBesitzerLabels(primary) {
 // Passt Beschriftungen an, die je nach Richtung von "Hengst" auf "Stute"
 // wechseln müssen - der Filter/die Sortierung selbst bleibt exakt
 // dieselbe Logik, nur bezogen auf den jeweils anderen Kandidatenpool.
+// Genort-Ausgleich (siehe rankStallions in js/verpaarung.js) rechnet je
+// nach Schwerpunkt mit einer anderen Metrik - Klammerzusatz entsprechend
+// mitführen, damit klar ist, WORAUF sich der Ausgleich gerade bezieht.
+const COMPLEMENT_SCHWERPUNKT_LABEL = { gp: 'GP', ext: 'Ext%', extpct: 'Ext%', int: 'Int' };
+
 function updateRichtungsLabels() {
   const isHengstRichtung = richtung === 'hengst';
   document.querySelector('#candidate-breed-label').textContent = isHengstRichtung ? 'Stute-Rasse' : 'Hengst-Rasse';
   document.querySelector('#hengst-besitzer-label').textContent = isHengstRichtung ? 'Stute-Besitzer' : 'Hengst-Besitzer';
+  const metricLabel = COMPLEMENT_SCHWERPUNKT_LABEL[schwerpunkt] || 'Ext%';
   document.querySelector('#complement-sort-option').textContent = isHengstRichtung
-    ? 'Bester Ausgleich der Hengst-Schwächen (Ext%)'
-    : 'Bester Ausgleich der Stuten-Schwächen (Ext%)';
+    ? `Bester Ausgleich der Hengst-Schwächen (${metricLabel})`
+    : `Bester Ausgleich der Stuten-Schwächen (${metricLabel})`;
 }
 
 function renderBestMatches() {
@@ -588,18 +598,26 @@ function fmtGp(v) {
   return v != null ? Math.round(v) : '–';
 }
 
-// Zeigt den Genort-Ausgleich (siehe exteriorComplementarityScore in
+// Zeigt den Ausgleich (siehe gpComplementarityScore/
+// intComplementarityScore/exteriorComplementarityScore in
 // js/verpaarung.js) nur, wenn das "primäre" Pferd (Stute bei Richtung
-// "stute", Hengst bei Richtung "hengst") überhaupt "Problem-Genorte" hat -
+// "stute", Hengst bei Richtung "hengst") überhaupt "Problemstellen" hat -
 // bei einem bereits perfekten Pferd gäbe es sonst nichts zu unterscheiden.
 // weaknessOwnerLabel ist "Stute" oder "Hengst" - wessen Schwächen gezählt
-// wurden (immer das primäre Pferd, siehe rankStallions-Aufruf).
+// wurden (immer das primäre Pferd, siehe rankStallions-Aufruf). Text/
+// Einheit hängt vom global gewählten Schwerpunkt ab - "schwerpunkt" ist
+// dieselbe Modul-Variable, die auch rankStallions bei der Berechnung
+// des Ausgleichs übergeben wird.
+const COMPLEMENT_UNIT_LABEL = { gp: 'Werte-Ausgleich (GP)', ext: 'Genort-Ausgleich (Ext%)', extpct: 'Genort-Ausgleich (Ext%)', int: 'Ausgleich (Int)' };
+const COMPLEMENT_NOUN_LABEL = { gp: 'unterdurchschnittlichen Werten', ext: 'Problem-Genorten', extpct: 'Problem-Genorten', int: 'unterdurchschnittlichen Eigenschaften' };
 function complementRowHtml(c, weaknessOwnerLabel) {
   const { atStake, saved } = c.complement || {};
   if (!atStake) return '';
   const pct = ((saved / atStake) * 100).toFixed(0);
   const owner = weaknessOwnerLabel === 'Hengst' ? 'des Hengstes' : 'der Stute';
-  return `<p class="small muted">Genort-Ausgleich (Ext%): <strong>${saved} von ${atStake}</strong> Problem-Genorten ${owner} ausgeglichen (${pct}%)</p>`;
+  const unitLabel = COMPLEMENT_UNIT_LABEL[schwerpunkt] || COMPLEMENT_UNIT_LABEL.extpct;
+  const nounLabel = COMPLEMENT_NOUN_LABEL[schwerpunkt] || COMPLEMENT_NOUN_LABEL.extpct;
+  return `<p class="small muted">${unitLabel}: <strong>${saved} von ${atStake}</strong> ${nounLabel} ${owner} ausgeglichen (${pct}%)</p>`;
 }
 
 // mare/stallion müssen hier immer in der biologisch korrekten Reihenfolge

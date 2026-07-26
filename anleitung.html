@@ -159,7 +159,7 @@
         <li>Zum Tab „Verpaarungsratgeber“ wechseln.</li>
         <li>Richtung wählen: „Stute → beste Hengste“ (Standard) oder „Hengst → beste Stuten“.</li>
         <li>Schwerpunkt, Sortierung, optional Farbwünsche, die anzuzeigenden Rassen und den Besitzer-Filter einstellen.</li>
-        <li>Die Top 10 passenden Kandidaten mit Fohlen-Vorhersage durchsehen.</li>
+        <li>Die Top 20 passenden Kandidaten mit Fohlen-Vorhersage durchsehen.</li>
       </ol>
 
       <div class="group-heading">Funktionen im Detail</div>
@@ -185,16 +185,26 @@
           <td>
             Unabhängig vom Schwerpunkt wählbar: „Bester Best Case“ / „Bester
             Worst Case“ sortiert nach dem jeweiligen Grenzwert des
-            Schwerpunkts; „Bester Ausgleich der Stuten-/Hengst-Schwächen
-            (Ext%)“ zählt gezielt, wie viele der eigenen Problem-Genorte
-            des Ausgangspferds vom jeweiligen Kandidaten ausgeglichen werden
-            (einzige Sortierung, die für Ext/Ext% wirklich vom gewählten
-            Ausgangspferd abhängt - alle anderen ranken dafür rechnerisch
-            fast immer denselben, individuell stärksten Kandidaten); „Beste
-            Datenbank-Schätzung“ nutzt den empirischen Schätzwert; „Kleinste
-            Differenz“ bringt die verlässlichsten Kandidaten (kleiner
-            Abstand zwischen Best- und Worst-Case) nach oben, „Größte
-            Differenz“ die mit der größten Schwankungsbreite.
+            Schwerpunkts - bei GP und Ext% praktisch immer derselbe,
+            individuell stärkste Kandidat, unabhängig vom Ausgangspferd
+            (rechnerisch bedingt: sein Anteil ist dort eine reine additive
+            Konstante bzw. er dominiert die max()-Vergleiche fast jedes
+            Partners). „Bester Ausgleich der Stuten-/Hengst-Schwächen“
+            zählt stattdessen gezielt, wie viele der eigenen
+            unterdurchschnittlichen Werte/Problemstellen des Ausgangspferds
+            (je Schwerpunkt: Ext%-Genorte, GP-Grundlagen/-Gangarten/
+            -Disziplinen oder Int-Eigenschaften) vom jeweiligen Kandidaten
+            ausgeglichen werden - dadurch bei GP und Ext% die einzige
+            Sortierung, die wirklich vom gewählten Ausgangspferd abhängt
+            (bei Int ist bereits „Bester Best Case“ von Natur aus
+            ausgangspferd-abhängig, da hier mit Mittelwerten statt Summen/
+            Maxima gerechnet wird - „Ausgleich“ liefert dieselbe
+            „X von Y ausgeglichen“-Anzeige trotzdem einheitlich für alle
+            Schwerpunkte). „Beste Datenbank-Schätzung“ nutzt den
+            empirischen Schätzwert; „Kleinste Differenz“ bringt die
+            verlässlichsten Kandidaten (kleiner Abstand zwischen Best- und
+            Worst-Case) nach oben, „Größte Differenz“ die mit der größten
+            Schwankungsbreite.
           </td>
         </tr>
         <tr>

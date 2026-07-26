@@ -29,6 +29,15 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-27T11:00', type: 'feature', title: 'Verpaarungsratgeber: Ausgleich-Sortierung jetzt auch für GP und Int, Top 20 statt Top 10',
+    points: [
+      '"Bester Ausgleich der Stuten-/Hengst-Schwächen" gibt es jetzt für alle vier Schwerpunkte (vorher nur Ext%) - zählt gezielt, wie viele der eigenen unterdurchschnittlichen Werte des Ausgangspferds ein Kandidat ausgleicht',
+      'Grund: bei "Bester Best Case" gewinnt bei GP und Ext% praktisch immer derselbe, individuell stärkste Kandidat, unabhängig von der gewählten Stute/dem gewählten Hengst - die Ausgleich-Sortierung liefert dagegen eine wirklich ausgangspferd-abhängige Rangfolge',
+      'Trefferliste von Top 10 auf Top 20 erweitert - mehr Auswahl auf einen Blick',
+      'Bugfix: bei Richtung "Hengst → beste Stuten" aktualisierte sich die Trefferliste nicht, wenn per Dropdown ein anderer Hengst gewählt wurde (blieb auf dem vorherigen stehen)',
+    ],
+  },
+  {
     date: '2026-07-25T15:00', type: 'feature', title: 'Neues Werkzeug: Fohlen-Tracker',
     points: [
       'Fohlenanzahl eines Pferds mit ZZL nachschlagen (mit Besitzer-Filter für die Suche) - Anzahl plus Liste aller gefundenen Fohlen',

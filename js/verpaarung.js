@@ -245,6 +245,34 @@ function interieurFoalRange(mare, stallion) {
   };
 }
 
+// Interieur-Best-Case ist bereits ein Mittelwert (nicht max/Summe wie GP)
+// und dadurch schon von Natur aus stutenspezifisch (empirisch bestätigt:
+// bei 8 echten Stuten 5 verschiedene Gewinner) - dieser Score ergänzt es
+// trotzdem um dieselbe "Problem/gerettet"-Darstellung wie bei GP/Ext%, für
+// eine einheitliche Anzeige über alle Schwerpunkte hinweg. "Problem" ist
+// eine Eigenschaft, bei der die Stute SCHLECHTER als ihr eigener
+// Durchschnitt abschneidet (höhere Zahl = schlechter), "gerettet", wenn
+// der Hengst dort einen besseren (niedrigeren) Wert einbringt.
+function intComplementarityScore(mare, stallion) {
+  const stallionByLabel = new Map((stallion?.temperament || []).map((r) => [r.label, r]));
+  const scores = (mare?.temperament || [])
+    .map((r) => ({ label: r.label, score: scoreTemperamentTerm(r.value) }))
+    .filter((r) => r.score != null);
+  if (!scores.length) return { atStake: 0, saved: 0 };
+  const avg = scores.reduce((a, r) => a + r.score, 0) / scores.length;
+
+  let atStake = 0, saved = 0;
+  for (const { label, score: a } of scores) {
+    if (a <= avg) continue;
+    const stallionRow = stallionByLabel.get(label);
+    const b = stallionRow ? scoreTemperamentTerm(stallionRow.value) : null;
+    if (b == null) continue;
+    atStake++;
+    if (b < a) saved++;
+  }
+  return { atStake, saved };
+}
+
 // --- GP (Gesamtpotenzial) ---
 //
 // Anhand zweier echter Pferde (und erneut bestätigt an "Pawnbarian":
@@ -305,6 +333,49 @@ function estimateFoalGP(mare, stallion) {
     if (gpWorst == null || candidateWorst < gpWorst) gpWorst = candidateWorst;
   }
   return { gpBest, gpWorst };
+}
+
+// "Bester Best Case" für GP wählt bei jeder Stute fast immer denselben,
+// objektiv stärksten Hengst (sumBestWorst nimmt pro Eigenschaft
+// max(Stute, Hengst) - hat ein Hengst in fast allen Eigenschaften höhere
+// Werte als praktisch jede Stute im Pool, gewinnt er unabhängig von der
+// gewählten Stute; empirisch bestätigt: bei 8 echten Stuten 8x derselbe
+// Hengst). Analog zu exteriorComplementarityScore wird hier stattdessen
+// gezählt, wie viele der EIGENEN unterdurchschnittlichen Werte der Stute
+// (Grundlagen/Gangarten/Disziplinen ihrer eigenen Begabungskategorie) ein
+// Hengst-Kandidat tatsächlich anhebt (sein Wert > ihrer, gewinnt also den
+// max() in der Best-Case-Summe) - dadurch stutenspezifisch statt praktisch
+// immer derselbe Kandidat.
+function gpComplementarityScore(mare, stallion) {
+  const mareTraitMap = flattenTraitPotentials(mare?.traits);
+  const stallionTraitMap = flattenTraitPotentials(stallion?.traits);
+  let atStake = 0, saved = 0;
+
+  const countGroup = (names, mapA, mapB) => {
+    const values = names.map((n) => mapA[n]).filter((v) => v != null);
+    if (!values.length) return;
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    for (const name of names) {
+      const a = mapA[name], b = mapB[name];
+      if (a == null || b == null || a >= avg) continue;
+      atStake++;
+      if (b > a) saved++;
+    }
+  };
+
+  countGroup(GP_GRUNDLAGEN_NAMES, mareTraitMap, stallionTraitMap);
+
+  const mareCategory = findDisciplineCategory(mare?.disciplines, mare?.tournament_potential?.['Begabung']);
+  if (mareCategory) {
+    const gangartNames = mareCategory === 'Mehrgang' ? GP_MEHRGANG_GANGARTEN : GP_NORMAL_GANGARTEN;
+    countGroup(gangartNames, mareTraitMap, stallionTraitMap);
+
+    const mareDiscMap = Object.fromEntries((mare.disciplines[mareCategory] || []).map((e) => [e.name, e.potential]));
+    const stallionDiscMap = Object.fromEntries((stallion?.disciplines?.[mareCategory] || []).map((e) => [e.name, e.potential]));
+    countGroup(Object.keys(mareDiscMap), mareDiscMap, stallionDiscMap);
+  }
+
+  return { atStake, saved };
 }
 
 // --- Datenbank-Schätzung (3. Version, neben Best-/Worst-Case) ---
@@ -526,6 +597,11 @@ function colorWishPossible(candidate, wish, flaxenLookup) {
 
 // --- Ranking ---
 
+// Von 10 auf 20 erhöht (Nutzerwunsch "mehr Hengstvarianten") - mehr
+// Auswahl auf einen Blick, ohne die Ausschluss-/Sortierlogik selbst zu
+// ändern.
+const RANK_RESULT_COUNT = 20;
+
 // Höher = besser für GP/Ext%, niedriger = besser für Ext/Int (1=exzellent
 // ... 5=miserabel-Skala) - siehe Plan.
 const SCHWERPUNKT_HIGHER_IS_BETTER = { gp: true, ext: false, extpct: true, int: false };
@@ -543,10 +619,14 @@ const SCHWERPUNKT_EMPIRICAL_METRIC = { gp: 'gp', ext: 'ext', extpct: 'extPct', i
 //   derselben Richtung wie best/worst - Kandidaten ohne Schätzung (z.B.
 //   fehlende Trios oder GP bei Rasselos, siehe estimateFoalEmpirical)
 //   landen wie überall sonst am Ende der Liste.
-// - "complement": siehe exteriorComplementarityScore - unabhängig vom
-//   gewählten Schwerpunkt immer die Exterieur-Genort-Komplementarität
-//   (einziger Modus, der für Ext/Ext% wirklich stutenspezifisch
-//   unterscheidet, siehe Kommentar dort).
+// - "complement": schwerpunktabhängige Komplementarität - wie viele der
+//   EIGENEN Problemstellen des Ausgangspferds (Ext%: Genorte, GP:
+//   unterdurchschnittliche Grundlagen/Gangarten/Disziplinen, Int:
+//   unterdurchschnittliche Eigenschaften) der Kandidat tatsächlich
+//   ausgleicht (siehe exteriorComplementarityScore/
+//   gpComplementarityScore/intComplementarityScore) - im Gegensatz zu
+//   "best"/"worst"/"empirical" bei GP/Ext% wirklich stutenspezifisch statt
+//   praktisch immer derselbe Kandidat (siehe Kommentare dort).
 // - "diff-asc"/"diff-desc": Abstand zwischen Best- und Worst-Case
 //   (unabhängig von der Richtung) - klein = verlässliches Ergebnis, groß =
 //   große Schwankungsbreite (Risiko/Chance).
@@ -573,7 +653,7 @@ function sortKey(candidate, schwerpunkt, sortMode) {
 
 // Harte Ausschlüsse zuerst (Inzucht, doppeltes Overo, nicht erfüllbare
 // Farbwünsche), danach Sortierung nach dem gewählten Schwerpunkt +
-// Sortiermodus, Top 10.
+// Sortiermodus, Top 20 (RANK_RESULT_COUNT).
 function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, empiricalDeviations, flaxenLookup }) {
   const mareHasOvero = hasOveroGene(mare);
   const wishes = (farbwuensche || []).map((label) => COLOR_WISH_OPTIONS.find((o) => o.label === label)).filter(Boolean);
@@ -590,7 +670,9 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, e
     const int = interieurFoalRange(mare, stallion);
     const gp = estimateFoalGP(mare, stallion);
     const emp = empiricalDeviations ? estimateFoalEmpirical(mare, stallion, empiricalDeviations) : null;
-    const complement = exteriorComplementarityScore(mare, stallion);
+    const complement = schwerpunkt === 'gp' ? gpComplementarityScore(mare, stallion)
+      : schwerpunkt === 'int' ? intComplementarityScore(mare, stallion)
+      : exteriorComplementarityScore(mare, stallion); // 'ext'/'extpct' (Default)
     return { stallion, ...ext, ...int, ...gp, emp, complement };
   });
 
@@ -615,13 +697,13 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, e
     return ascending ? va - vb : vb - va;
   });
 
-  return { total: stallions.length, candidateCount: candidates.length, top: scored.slice(0, 10) };
+  return { total: stallions.length, candidateCount: candidates.length, top: scored.slice(0, RANK_RESULT_COUNT) };
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     parseExteriorLocus, exteriorBestWorstForTrait, exteriorFoalRange,
-    exteriorComplementarityScore,
+    exteriorComplementarityScore, gpComplementarityScore, intComplementarityScore,
     interieurBestWorstForTrait, interieurFoalRange, estimateFoalGP,
     horseGP, horseExt, horseExtPct, horseInt,
     computeEmpiricalDeviations, estimateFoalEmpirical,
