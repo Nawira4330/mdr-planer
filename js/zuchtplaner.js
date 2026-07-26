@@ -502,8 +502,8 @@ function updateRichtungsLabels() {
   document.querySelector('#candidate-breed-label').textContent = isHengstRichtung ? 'Stute-Rasse' : 'Hengst-Rasse';
   document.querySelector('#hengst-besitzer-label').textContent = isHengstRichtung ? 'Stute-Besitzer' : 'Hengst-Besitzer';
   document.querySelector('#complement-sort-option').textContent = isHengstRichtung
-    ? 'Bester Ausgleich der Hengst-Schwächen (Exterieur)'
-    : 'Bester Ausgleich der Stuten-Schwächen (Exterieur)';
+    ? 'Bester Ausgleich der Hengst-Schwächen (Ext%)'
+    : 'Bester Ausgleich der Stuten-Schwächen (Ext%)';
 }
 
 function renderBestMatches() {
@@ -599,7 +599,7 @@ function complementRowHtml(c, weaknessOwnerLabel) {
   if (!atStake) return '';
   const pct = ((saved / atStake) * 100).toFixed(0);
   const owner = weaknessOwnerLabel === 'Hengst' ? 'des Hengstes' : 'der Stute';
-  return `<p class="small muted">Genort-Ausgleich (Exterieur): <strong>${saved} von ${atStake}</strong> Problem-Genorten ${owner} ausgeglichen (${pct}%)</p>`;
+  return `<p class="small muted">Genort-Ausgleich (Ext%): <strong>${saved} von ${atStake}</strong> Problem-Genorten ${owner} ausgeglichen (${pct}%)</p>`;
 }
 
 // mare/stallion müssen hier immer in der biologisch korrekten Reihenfolge
