@@ -158,10 +158,24 @@
               <option value="best">Bester Best Case</option>
               <option value="worst">Bester Worst Case</option>
               <option value="complement" id="complement-sort-option">Bester Ausgleich der Stuten-Schwächen (Ext%)</option>
+              <option value="combo">Kombinierter Ausgleich (2 Kriterien)</option>
               <option value="empirical">Beste Datenbank-Schätzung</option>
               <option value="diff-asc">Kleinste Differenz (verlässlich)</option>
               <option value="diff-desc">Größte Differenz (Risiko/Chance)</option>
             </select>
+          </div>
+          <div id="combo-second-wrap" hidden>
+            <label for="combo-second-select">2. Kriterium</label>
+            <select id="combo-second-select">
+              <option value="gp">GP</option>
+              <option value="ext">Ext</option>
+              <option value="extpct" selected>Ext%</option>
+              <option value="int">Int</option>
+            </select>
+          </div>
+          <div id="combo-weight-wrap" hidden>
+            <label for="combo-weight-input">Gewichtung 1. Kriterium (%)</label>
+            <input type="number" id="combo-weight-input" min="0" max="100" step="5" value="50" />
           </div>
           <div>
             <label>Farbwünsche (optional)</label>

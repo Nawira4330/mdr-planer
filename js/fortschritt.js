@@ -11,7 +11,6 @@ const PROGRESS = [
   { label: 'Zuchtbuch', percent: 20 },
   { label: 'Verpaarungsratgeber', percent: 80 },
   { label: 'Fohlen-Tracker', percent: 90 },
-  { label: 'Verpaarungs-Log (Datenbank)', percent: 90 },
   { label: 'Verwandtschaftsmatrix', percent: 85 },
 ];
 
@@ -28,6 +27,14 @@ const TYPE_META = {
 // nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
+  {
+    date: '2026-07-28T10:00', type: 'feature', title: 'Verpaarungsratgeber: Kombinierter Ausgleich aus 2 frei wählbaren Kriterien',
+    points: [
+      'Neue Sortierung "Kombinierter Ausgleich (2 Kriterien)" - kombiniert den Ausgleich-Prozentsatz des Schwerpunkts mit einem frei wählbaren 2. Kriterium (GP/Ext/Ext%/Int)',
+      'Gewichtung zwischen beiden Kriterien individuell einstellbar (0-100 %, z.B. 70 % GP / 30 % Ext%)',
+      'Bewusst immer nur 2 Kriterien gleichzeitig kombinierbar, nicht mehr',
+    ],
+  },
   {
     date: '2026-07-27T18:00', type: 'feature', title: 'Verpaarungsratgeber: Eigener Ext-Ausgleich (getrennt von Ext%)',
     points: [

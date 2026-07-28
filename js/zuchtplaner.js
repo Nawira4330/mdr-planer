@@ -29,6 +29,12 @@ let mareSelect, stallionSelect;
 let mareBreedFilter, stallionBreedFilter, auswahlStallionBreedFilter;
 let schwerpunkt = 'gp';
 let sortMode = 'best';
+// Nur bei sortMode "combo" relevant (siehe rankStallions in
+// js/verpaarung.js): 2. Kriterium + individuelle Gewichtung zwischen
+// Schwerpunkt (1. Kriterium) und comboSecond (1. Kriterium zählt zu
+// comboWeight%, 2. Kriterium zu 100-comboWeight%).
+let comboSecond = 'extpct';
+let comboWeight = 50;
 // "stute": oben gewählte Stute -> Top-Hengste (Standard). "hengst": oben
 // gewählter Hengst -> Top-Stuten (umgekehrte Richtung) - siehe
 // renderBestMatches, nutzt dieselbe rankStallions()-Logik nur mit
@@ -80,6 +86,17 @@ async function init() {
   });
   document.querySelector('#sortierung-select').addEventListener('change', (e) => {
     sortMode = e.target.value;
+    updateComboControlsVisibility();
+    renderBestMatches();
+  });
+  document.querySelector('#combo-second-select').addEventListener('change', (e) => {
+    comboSecond = e.target.value;
+    renderBestMatches();
+  });
+  document.querySelector('#combo-weight-input').addEventListener('change', (e) => {
+    const v = parseInt(e.target.value, 10);
+    comboWeight = Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 50;
+    e.target.value = comboWeight;
     renderBestMatches();
   });
   document.querySelector('#hengst-besitzer-select').addEventListener('change', renderBestMatches);
@@ -528,6 +545,15 @@ function updateHengstBesitzerLabels(primary) {
   document.querySelector('#hengst-besitzer-select option[value="fremde"]').textContent = `Nur fremde (nicht ${owner})`;
 }
 
+// "2. Kriterium"/"Gewichtung" sind nur bei sortMode "combo" relevant -
+// werden sonst versteckt, damit sie bei den anderen Sortiermodi nicht
+// verwirren.
+function updateComboControlsVisibility() {
+  const show = sortMode === 'combo';
+  document.querySelector('#combo-second-wrap').hidden = !show;
+  document.querySelector('#combo-weight-wrap').hidden = !show;
+}
+
 // Passt Beschriftungen an, die je nach Richtung von "Hengst" auf "Stute"
 // wechseln müssen - der Filter/die Sortierung selbst bleibt exakt
 // dieselbe Logik, nur bezogen auf den jeweils anderen Kandidatenpool.
@@ -583,6 +609,7 @@ function renderBestMatches() {
   // Stute ist), siehe candidateCardHtml unten.
   const { total, candidateCount, top } = rankStallions(primary, filteredCandidates, {
     schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations, flaxenLookup, flaxenChildrenByName,
+    comboSecond, comboWeight,
   });
 
   const primaryHasOvero = hasOveroGene(primary);
@@ -650,6 +677,25 @@ function complementRowHtml(c, weaknessOwnerLabel) {
   return `<p class="small muted">${unitLabel}: <strong>${saved} von ${atStake}</strong> ${nounLabel} ${owner} ausgeglichen (${pct}%)</p>`;
 }
 
+// Zeigt bei sortMode "combo" (siehe rankStallions) beide Einzel-Prozente
+// (Schwerpunkt = 1. Kriterium, comboSecond = 2. Kriterium) plus den
+// gewichteten Gesamtwert, statt der einzeiligen complementRowHtml-Anzeige.
+// Jede Komponente nutzt denselben "saved/atStake"-Prozentsatz wie die
+// einzelnen Ausgleich-Anzeigen - bei Int/Ext geht dabei die interne
+// Prioritätsstufung (siehe intComplementarityScore/extComplementarityScore)
+// nicht verloren, sie steckt schon in "saved" (der Anteil je Stufe), wird
+// hier aber wie überall als EIN Gesamtprozentsatz dargestellt.
+function comboRowHtml(c, weaknessOwnerLabel) {
+  if (!c.comboComplement) return '';
+  const owner = weaknessOwnerLabel === 'Hengst' ? 'des Hengstes' : 'der Stute';
+  const labelA = COMPLEMENT_SCHWERPUNKT_LABEL[schwerpunkt] || schwerpunkt;
+  const labelB = COMPLEMENT_SCHWERPUNKT_LABEL[comboSecond] || comboSecond;
+  const pctA = c.complement?.atStake ? ((c.complement.saved / c.complement.atStake) * 100).toFixed(0) : '100';
+  const pctB = c.comboComplement?.atStake ? ((c.comboComplement.saved / c.comboComplement.atStake) * 100).toFixed(0) : '100';
+  return `<p class="small muted">Kombinierter Ausgleich ${owner} (${labelA} ${comboWeight}% / ${labelB} ${100 - comboWeight}%): <strong>${c.comboScore.toFixed(0)}%</strong>
+    <br><span class="muted" style="font-size:0.85em;">${labelA}: ${pctA}% ausgeglichen &nbsp;·&nbsp; ${labelB}: ${pctB}% ausgeglichen</span></p>`;
+}
+
 // mare/stallion müssen hier immer in der biologisch korrekten Reihenfolge
 // übergeben werden (wichtig für Decksprung/EKH/Datenbank-Schätzung) - der
 // Aufrufer (renderBestMatches) löst das bereits korrekt auf, unabhängig
@@ -689,7 +735,7 @@ function candidateCardHtml(rank, c, mare, stallion, weaknessOwnerLabel) {
       &nbsp;·&nbsp; Int <strong>${fmtScore(c.intWorst)}</strong>
     </p>
     ${empiricalRowHtml(mare, stallion)}
-    ${complementRowHtml(c, weaknessOwnerLabel)}
+    ${sortMode === 'combo' ? comboRowHtml(c, weaknessOwnerLabel) : complementRowHtml(c, weaknessOwnerLabel)}
     ${decksprungButtonHtml(mare, stallion)}
   </div>`;
 }

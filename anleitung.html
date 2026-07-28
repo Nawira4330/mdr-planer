@@ -219,7 +219,19 @@
             empirischen Schätzwert; „Kleinste Differenz“ bringt die
             verlässlichsten Kandidaten (kleiner Abstand zwischen Best- und
             Worst-Case) nach oben, „Größte Differenz“ die mit der größten
-            Schwankungsbreite.
+            Schwankungsbreite. „Kombinierter Ausgleich (2 Kriterien)“
+            blendet den Ausgleich-Prozentsatz des Schwerpunkts (1.
+            Kriterium) mit dem eines frei wählbaren 2. Kriteriums (eigenes
+            Dropdown, erscheint nur in diesem Modus) - die Gewichtung
+            zwischen beiden lässt sich über ein Eingabefeld (0-100 %)
+            individuell einstellen, z. B. 70 % GP / 30 % Ext%. Beide
+            Kriterien werden zuerst einzeln auf 0-100 % normiert
+            (Problemstellen ohne jede Schwäche zählen als 100 %), erst
+            danach gewichtet gemischt - dadurch bleiben auch sehr
+            unterschiedliche Metriken (z. B. GP mit wenigen Grundlagen-
+            Werten vs. Ext% mit vielen Genorten) fair vergleichbar. Es
+            lassen sich bewusst immer nur genau 2 Kriterien kombinieren,
+            nicht mehr.
           </td>
         </tr>
         <tr>

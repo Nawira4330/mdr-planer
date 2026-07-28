@@ -770,10 +770,13 @@ function sortKey(candidate, schwerpunkt, sortMode) {
   }
   if (sortMode === 'complement') {
     if (!candidate.complement) return null;
-    // "weighted" gibt es nur bei Int (Prioritätsstufen, siehe
-    // intComplementarityScore) - bei Ext%/GP ist "saved" bereits der
-    // richtige Sortierwert.
+    // "weighted" gibt es nur bei Int/Ext (Prioritätsstufen, siehe
+    // intComplementarityScore/extComplementarityScore) - bei Ext%/GP ist
+    // "saved" bereits der richtige Sortierwert.
     return candidate.complement.weighted ?? candidate.complement.saved;
+  }
+  if (sortMode === 'combo') {
+    return candidate.comboScore;
   }
 
   const bestField = SCHWERPUNKT_BEST_FIELD[schwerpunkt] || 'gpBest';
@@ -788,10 +791,34 @@ function sortKey(candidate, schwerpunkt, sortMode) {
   return sortMode === 'worst' ? worst : best;
 }
 
+// Wählt die passende Komplementaritäts-Funktion für einen Schwerpunkt-
+// Schlüssel - gemeinsam genutzt vom 1. Kriterium (schwerpunkt) und, bei
+// sortMode "combo", vom 2. Kriterium (comboSecond).
+function complementScoreFor(schwerpunktKey, mare, stallion) {
+  if (schwerpunktKey === 'gp') return gpComplementarityScore(mare, stallion);
+  if (schwerpunktKey === 'int') return intComplementarityScore(mare, stallion);
+  if (schwerpunktKey === 'ext') return extComplementarityScore(mare, stallion);
+  return exteriorComplementarityScore(mare, stallion); // 'extpct' (Default)
+}
+
+// Prozentsatz "ausgeglichen" (0-100) aus einem Komplementaritäts-Ergebnis -
+// gemeinsame Normierung, um zwei UNTERSCHIEDLICHE Metriken (z.B. GP mit
+// ~16 Grundlagen/Gangarten/Disziplinen vs. Ext% mit ~70-90 Genorten)
+// überhaupt vergleichbar zu machen (siehe sortMode "combo"). Kein
+// "atStake" (0) heißt: keine Problemstellen vorhanden, also bereits
+// perfekt -> 100%, nicht 0%.
+function complementPercent(c) {
+  if (!c || !c.atStake) return 100;
+  return (c.saved / c.atStake) * 100;
+}
+
 // Harte Ausschlüsse zuerst (Inzucht, doppeltes Overo, nicht erfüllbare
 // Farbwünsche), danach Sortierung nach dem gewählten Schwerpunkt +
 // Sortiermodus, Top 20 (RANK_RESULT_COUNT).
-function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, empiricalDeviations, flaxenLookup, flaxenChildrenByName }) {
+function rankStallions(mare, stallions, {
+  schwerpunkt, farbwuensche, sortMode, empiricalDeviations, flaxenLookup, flaxenChildrenByName,
+  comboSecond, comboWeight,
+}) {
   const mareHasOvero = hasOveroGene(mare);
   const wishes = (farbwuensche || []).map((label) => COLOR_WISH_OPTIONS.find((o) => o.label === label)).filter(Boolean);
 
@@ -802,27 +829,41 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, e
     return true;
   });
 
+  // "combo" (Nutzerwunsch): kombiniert IMMER genau 2 Kriterien - Schwerpunkt
+  // (1. Kriterium) + comboSecond (2. Kriterium), individuell gewichtet
+  // über comboWeight (0-100, Anteil des 1. Kriteriums; Rest zählt für das
+  // 2.). Jedes Kriterium wird zuerst einzeln auf 0-100% normiert (siehe
+  // complementPercent), erst DANACH gewichtet gemischt - so bleiben
+  // beliebige Metrik-Kombinationen vergleichbar, auch wenn ihre
+  // "atStake"-Größenordnungen stark unterschiedlich sind.
+  const isCombo = sortMode === 'combo' && comboSecond;
+  const weightA = isCombo ? Math.min(100, Math.max(0, comboWeight ?? 50)) : 50;
+
   const scored = candidates.map((stallion) => {
     const ext = exteriorFoalRange(mare, stallion);
     const int = interieurFoalRange(mare, stallion);
     const gp = estimateFoalGP(mare, stallion);
     const emp = empiricalDeviations ? estimateFoalEmpirical(mare, stallion, empiricalDeviations) : null;
-    const complement = schwerpunkt === 'gp' ? gpComplementarityScore(mare, stallion)
-      : schwerpunkt === 'int' ? intComplementarityScore(mare, stallion)
-      : schwerpunkt === 'ext' ? extComplementarityScore(mare, stallion)
-      : exteriorComplementarityScore(mare, stallion); // 'extpct' (Default)
-    return { stallion, ...ext, ...int, ...gp, emp, complement };
+    const complement = complementScoreFor(schwerpunkt, mare, stallion);
+    let comboComplement = null;
+    let comboScore = null;
+    if (isCombo) {
+      comboComplement = complementScoreFor(comboSecond, mare, stallion);
+      comboScore = (complementPercent(complement) * weightA + complementPercent(comboComplement) * (100 - weightA)) / 100;
+    }
+    return { stallion, ...ext, ...int, ...gp, emp, complement, comboComplement, comboScore };
   });
 
   const mode = sortMode || 'best';
   // Bei "diff": größere Differenz zuerst bei diff-desc, kleinere zuerst bei
-  // diff-asc. Bei "complement": mehr gerettete Problem-Genorte zuerst
-  // (immer "höher = besser", unabhängig vom Schwerpunkt). Bei
-  // "best"/"worst"/"empirical": Richtung folgt dem Schwerpunkt selbst
-  // (z.B. bei Int ist niedriger immer besser, ob Best- oder Worst-Case).
+  // diff-asc. Bei "complement"/"combo": mehr gerettete Problem-Genorte
+  // bzw. höherer kombinierter Prozentsatz zuerst (immer "höher = besser",
+  // unabhängig vom Schwerpunkt). Bei "best"/"worst"/"empirical": Richtung
+  // folgt dem Schwerpunkt selbst (z.B. bei Int ist niedriger immer besser,
+  // ob Best- oder Worst-Case).
   const ascending = mode === 'diff-asc'
     ? true
-    : mode === 'diff-desc' || mode === 'complement'
+    : mode === 'diff-desc' || mode === 'complement' || mode === 'combo'
       ? false
       : SCHWERPUNKT_HIGHER_IS_BETTER[schwerpunkt] === false;
 
