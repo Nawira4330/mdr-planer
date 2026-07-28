@@ -534,7 +534,7 @@ function updateHengstBesitzerLabels(primary) {
 // Genort-Ausgleich (siehe rankStallions in js/verpaarung.js) rechnet je
 // nach Schwerpunkt mit einer anderen Metrik - Klammerzusatz entsprechend
 // mitführen, damit klar ist, WORAUF sich der Ausgleich gerade bezieht.
-const COMPLEMENT_SCHWERPUNKT_LABEL = { gp: 'GP', ext: 'Ext%', extpct: 'Ext%', int: 'Int' };
+const COMPLEMENT_SCHWERPUNKT_LABEL = { gp: 'GP', ext: 'Ext', extpct: 'Ext%', int: 'Int' };
 
 function updateRichtungsLabels() {
   const isHengstRichtung = richtung === 'hengst';
@@ -638,8 +638,8 @@ function fmtGp(v) {
 // Einheit hängt vom global gewählten Schwerpunkt ab - "schwerpunkt" ist
 // dieselbe Modul-Variable, die auch rankStallions bei der Berechnung
 // des Ausgleichs übergeben wird.
-const COMPLEMENT_UNIT_LABEL = { gp: 'Werte-Ausgleich (GP)', ext: 'Genort-Ausgleich (Ext%)', extpct: 'Genort-Ausgleich (Ext%)', int: 'Ausgleich (Int)' };
-const COMPLEMENT_NOUN_LABEL = { gp: 'unterdurchschnittlichen Werten', ext: 'Problem-Genorten', extpct: 'Problem-Genorten', int: 'Problem-/Halte-Eigenschaften' };
+const COMPLEMENT_UNIT_LABEL = { gp: 'Werte-Ausgleich (GP)', ext: 'Ausgleich (Ext)', extpct: 'Genort-Ausgleich (Ext%)', int: 'Ausgleich (Int)' };
+const COMPLEMENT_NOUN_LABEL = { gp: 'unterdurchschnittlichen Werten', ext: 'Problem-/Halte-Genorten', extpct: 'Problem-Genorten', int: 'Problem-/Halte-Eigenschaften' };
 function complementRowHtml(c, weaknessOwnerLabel) {
   const { atStake, saved } = c.complement || {};
   if (!atStake) return '';

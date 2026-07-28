@@ -189,6 +189,83 @@ function exteriorComplementarityScore(mare, stallion) {
   return { atStake, saved };
 }
 
+// Eigene Kategorie (1-5, wie EXTERIOR_TERM_SCORES/exterior_descriptive)
+// EINES Pferds für EIN Merkmal, direkt aus seinem eigenen Genotyp
+// abgeleitet - dieselbe Fehler-Zählung wie exteriorBestWorstForTrait,
+// aber deterministisch für ein bereits bestehendes Pferd statt als
+// Best-/Worst-Case-Spanne für ein hypothetisches Fohlen: ihre Zygotie
+// steht schon fest, es gibt keine Unsicherheit. Vorne (Genort 1-4)
+// zählt als Fehler, wenn sie selbst kein H hat (zA=0), hinten (Genort
+// 5-8), wenn sie selbst mindestens 1x H hat (zA>=1).
+function ownExteriorTraitScore(tokens) {
+  let frontFehler = 0, backFehler = 0;
+  for (let i = 0; i < 8; i++) {
+    const z = parseExteriorLocus(tokens[i]);
+    if (i < 4) { if (z === 0) frontFehler++; }
+    else if (z >= 1) { backFehler++; }
+  }
+  return Math.max(frontFehler, backFehler) + 1;
+}
+
+// Ext-Ausgleich (auf Nutzerwunsch): anders als exteriorComplementarityScore
+// (behandelt alle Problem-Genorte gleich) unterscheidet dieser Score nach
+// der EIGENEN Ext-Kategorie der Stute je Merkmal (siehe
+// ownExteriorTraitScore, direkt aus denselben Genort-Daten wie Ext%
+// berechnet) in zwei Prioritätsstufen:
+// 1. Priorität ("ausgleichen"): Merkmale mit eigener Kategorie 3/4/5 (In
+//    Ordnung/Schlecht/Miserabel bzw. "zu X"/"viel zu X") - dieselbe
+//    Genort-Rettung wie exteriorComplementarityScore (vorne: Hengst
+//    bringt H; hinten: Hengst bringt kein HH).
+// 2. Priorität ("unterstützen"): Merkmale mit eigener Kategorie 1 oder 2
+//    (Exzellent/Gut) - bereits gute Genorte sollen nicht verschlechtert
+//    werden (dieselbe Rettungs-Logik, nur auf die bereits GUTEN statt
+//    schlechten Genorte angewendet).
+// "weighted" (nicht "saved") bestimmt die Sortierung (siehe sortKey) -
+// jede ausgeglichene Problemstelle (Prio 1) schlägt dabei immer jede
+// Anzahl unterstützter guter Genorte (Prio 2), analog zu
+// intComplementarityScore.
+function extComplementarityScore(mare, stallion) {
+  const mareRows = mare?.exterior_genetics?.rows || [];
+  const stallionByLabel = new Map((stallion?.exterior_genetics?.rows || []).map((r) => [r.label, r]));
+
+  let atStakeFix = 0, savedFix = 0;
+  let atStakeSupport = 0, savedSupport = 0;
+
+  for (const mareRow of mareRows) {
+    const stallionRow = stallionByLabel.get(mareRow.label);
+    if (!stallionRow) continue;
+    const mareTokens = parseExteriorTokens(mareRow.genotype);
+    const stallionTokens = parseExteriorTokens(stallionRow.genotype);
+    if (!mareTokens || !stallionTokens) continue;
+
+    const isFixTier = ownExteriorTraitScore(mareTokens) >= 3;
+
+    for (let i = 0; i < 8; i++) {
+      const zA = parseExteriorLocus(mareTokens[i]);
+      const zB = parseExteriorLocus(stallionTokens[i]);
+      if (i < 4) {
+        if (isFixTier) {
+          if (zA === 0) { atStakeFix++; if (zB >= 1) savedFix++; }
+        } else if (zA >= 1) {
+          atStakeSupport++;
+          if (zB >= 1) savedSupport++;
+        }
+      } else if (isFixTier) {
+        if (zA !== 2) { atStakeFix++; if (zB !== 2) savedFix++; }
+      } else if (zA !== 2) {
+        atStakeSupport++;
+        if (zB !== 2) savedSupport++;
+      }
+    }
+  }
+
+  return {
+    atStake: atStakeFix + atStakeSupport,
+    saved: savedFix + savedSupport,
+    weighted: savedFix * 10000 + savedSupport,
+  };
+}
+
 // --- Interieur: nur Phänotyp-Kategorie bekannt (kein Gencode) ---
 //
 // Kategorie -> Bandbreite "Anzahl hh-Loci von 8" (Komplement der
@@ -732,7 +809,8 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, e
     const emp = empiricalDeviations ? estimateFoalEmpirical(mare, stallion, empiricalDeviations) : null;
     const complement = schwerpunkt === 'gp' ? gpComplementarityScore(mare, stallion)
       : schwerpunkt === 'int' ? intComplementarityScore(mare, stallion)
-      : exteriorComplementarityScore(mare, stallion); // 'ext'/'extpct' (Default)
+      : schwerpunkt === 'ext' ? extComplementarityScore(mare, stallion)
+      : exteriorComplementarityScore(mare, stallion); // 'extpct' (Default)
     return { stallion, ...ext, ...int, ...gp, emp, complement };
   });
 
@@ -763,7 +841,7 @@ function rankStallions(mare, stallions, { schwerpunkt, farbwuensche, sortMode, e
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     parseExteriorLocus, exteriorBestWorstForTrait, exteriorFoalRange,
-    exteriorComplementarityScore, gpComplementarityScore, intComplementarityScore,
+    exteriorComplementarityScore, extComplementarityScore, gpComplementarityScore, intComplementarityScore,
     interieurBestWorstForTrait, interieurFoalRange, estimateFoalGP,
     horseGP, horseExt, horseExtPct, horseInt,
     computeEmpiricalDeviations, estimateFoalEmpirical,

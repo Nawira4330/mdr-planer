@@ -29,6 +29,14 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-27T18:00', type: 'feature', title: 'Verpaarungsratgeber: Eigener Ext-Ausgleich (getrennt von Ext%)',
+    points: [
+      'Schwerpunkt Ext hat beim "Bester Ausgleich" jetzt eine eigene, zweistufige Priorität statt derselben Formel wie Ext%: 1. Merkmale mit eigener Kategorie "In Ordnung"/"Schlecht"/"Miserabel" möglichst stark ausgleichen, 2. bereits "Exzellent"/"Gut" bewertete Merkmale nicht verschlechtern lassen',
+      'Die eigene Kategorie je Merkmal wird direkt aus denselben Genort-Daten wie Ext% berechnet (nicht aus dem separaten Beschreibungstext) - dadurch bleiben Ext- und Ext%-Ausgleich auf derselben Datengrundlage, aber mit unterschiedlicher Gewichtung',
+      'Ext% selbst bleibt unverändert (weiterhin alle Problem-Genorte gleich gewichtet)',
+    ],
+  },
+  {
     date: '2026-07-27T15:00', type: 'bugfix', title: 'Verpaarungsratgeber: Flaxen-Träger-Erkennung findet mehr Pferde',
     points: [
       'Neu: erkennt Trägerschaft zusätzlich über bekannte eigene NACHKOMMEN - ist ein Fohlen sichtbar Flaxen, müssen beide Eltern zwingend Träger sein (genetisch bewiesen bei einem rezessiven Merkmal), unabhängig davon, ob die eigenen Eltern des Pferds überhaupt erfasst sind (bei vielen Pferden nicht der Fall)',
