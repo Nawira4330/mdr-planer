@@ -8,7 +8,7 @@ const PROGRESS = [
   { label: 'Inzuchtprüfer', percent: 100 },
   { label: 'Turnierplaner', percent: 100 },
   { label: 'LP-Prognose', percent: 100 },
-  { label: 'Zuchtbuch', percent: 20 },
+  { label: 'Zuchtbuch', percent: 85 },
   { label: 'Verpaarungsratgeber', percent: 90 },
   { label: 'Fohlen-Tracker', percent: 90 },
   { label: 'Verwandtschaftsmatrix', percent: 90 },
@@ -27,6 +27,22 @@ const TYPE_META = {
 // nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
+  {
+    date: '2026-07-28T14:00', type: 'feature', title: 'Zuchtbuch: Verwandten-Zusammenfassung erweitert',
+    points: [
+      'Zusammenfassung über der Verwandtschaftsübersicht zählt Enkelkinder jetzt einzeln, statt sie mit "Sonstige Verwandte" zu vermischen',
+      '"Weitere Verwandtschaft" (bei "Alle Verwandtschaft") zeigt jetzt zusätzlich, wo genau sich der gemeinsame Vorfahre im Stammbaum beider Pferde befindet, z.B. bei diesem Pferd Großeltern, beim gefundenen Pferd Urgroßeltern',
+    ],
+  },
+  {
+    date: '2026-07-28T13:00', type: 'bugfix', title: 'Erbkrankheiten-Prüfung erkannte echte Träger bisher nicht',
+    points: [
+      'Die EKH-Erkennung (Inzuchtprüfung, Verpaarungsratgeber, Zuchtbuch) sowie die LP-Prognose gingen von derselben Groß-/Kleinschreibung wie bei den Farbgenen aus - Erbkrankheiten-Rohwerte folgen aber einem eigenen Format ("NN/NN" = frei, "HE/NN" = Träger, immer großgeschrieben, dazu "Nicht getestet")',
+      'Dadurch wurden "Nicht getestet"-Pferde fälschlich als Träger gezählt, während echte Träger (z.B. "JE/NN") komplett übersehen wurden - betraf auch, ob die LP-Prüfung eine ausgeprägte Erbkrankheit korrekt erkennt',
+      'Jetzt korrekt anhand des echten NN/XX-Formats geprüft, mit echten Datenbankwerten verifiziert',
+      'EKH-Warnung gleichzeitig verbessert: erscheint jetzt schon, wenn NUR EIN Elternteil betroffen ist (gelb), nicht mehr erst wenn beide dieselbe Krankheit tragen - zusätzlich rot, wenn ein Elternteil eine Krankheit bereits ausgeprägt (homozygot) hat',
+    ],
+  },
   {
     date: '2026-07-28T10:00', type: 'feature', title: 'Verpaarungsratgeber: Kombinierter Ausgleich aus 2 frei wählbaren Kriterien',
     points: [

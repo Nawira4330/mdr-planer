@@ -132,13 +132,19 @@ function computeTournamentValues(profile) {
 
 // Leistungsprüfung (LP) - Bestehens-Prüfung nach inoffiziellen,
 // community-ermittelten Kriterien (nicht von MDR selbst, siehe Hinweis in
-// der UI). Ein Genotyp gilt als "ausgeprägt betroffen" (nicht erlaubt),
-// wenn er ausschließlich aus Kleinbuchstaben besteht (kein Trägerallel als
-// Großbuchstabe mehr vorhanden) - Träger (gemischte Groß-/Kleinschreibung)
-// sind laut Kriterien erlaubt.
+// der UI). Erbkrankheiten-Rohwerte sind IMMER "Allel1/Allel2" in
+// Großbuchstaben ("NN" = gesund, jeder andere 2-Buchstaben-Code ein
+// Risiko-Allel, z.B. "HE" für HERDA) - NICHT dieselbe Kleinbuchstaben-
+// Konvention wie die Farbgenetik-Loci (mit echten DB-Werten verifiziert:
+// "NN/NN", "HE/NN", "Nicht getestet" - nie Kleinbuchstaben). Ein Genotyp
+// gilt als "ausgeprägt betroffen" (nicht erlaubt), wenn BEIDE Allele
+// derselbe Risiko-Code sind (z.B. "HE/HE") - ein einzelnes Risiko-Allel
+// ("HE/NN", Träger) ist laut Kriterien erlaubt.
 function isDiseaseAusgepraegt(value) {
   if (!value) return false;
-  return /[a-z]/.test(value) && !/[A-Z]/.test(value);
+  const parts = value.split('/').map((p) => p.trim()).filter(Boolean);
+  if (parts.length !== 2) return false;
+  return parts[0] !== 'NN' && parts[0] === parts[1];
 }
 
 // Wie in horseForm.js (js/list.js-Pendant in MDR-Datenbank): die

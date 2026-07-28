@@ -166,12 +166,30 @@ function areRelated(horseA, horseB) {
   return findRelations(horseA, horseB).length > 0;
 }
 
+// Erbkrankheiten-Rohwerte folgen NICHT derselben Groß-/Kleinschreibungs-
+// Konvention wie die Farbgenetik-Loci, sondern immer "Allel1/Allel2" in
+// GROSSBUCHSTABEN: "NN" ist das gesunde/normale Allel, jeder andere
+// 2-Buchstaben-Code ein krankheitsspezifisches Risiko-Allel (z.B. "HE" für
+// HERDA, "JE" für JEB) - "NN/NN" = frei, "HE/NN" = Träger (1 Kopie),
+// hypothetisch "HE/HE" = ausgeprägt betroffen (2 Kopien). Zusätzlich gibt
+// es "Nicht getestet" (unbekannt - zählt NICHT als Träger). Verifiziert
+// gegen alle in der Datenbank vorkommenden Rohwerte alle 10 erfassten
+// Krankheiten (nie Kleinbuchstaben, immer NN/XX-Format oder "Nicht
+// getestet").
+function diseaseAlleles(value) {
+  if (!value) return null;
+  const parts = value.split('/').map((p) => p.trim()).filter(Boolean);
+  return parts.length === 2 ? parts : null;
+}
+
 // Ein Erbkrankheiten-Wert gilt als "nicht sauber" (Träger ODER ausgeprägt
-// betroffen), sobald mindestens ein Kleinbuchstabe enthalten ist - dasselbe
-// Kriterium wie beim EKH-Wert der Datenbankübersicht (js/zuchtbuch.js:
-// isDiseaseClear), hier nur umgekehrt formuliert.
+// betroffen), sobald mindestens ein Allel nicht "NN" ist - "Nicht
+// getestet" zählt bewusst NICHT als Träger (unbekannt ist etwas anderes
+// als bestätigt betroffen).
 function isDiseaseCarrierOrAffected(value) {
-  return /[a-z]/.test(value || '');
+  const alleles = diseaseAlleles(value);
+  if (!alleles) return false;
+  return alleles.some((a) => a !== 'NN');
 }
 
 // Liefert die Labels aller Erbkrankheiten (EKH), bei denen BEIDE

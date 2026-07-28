@@ -90,20 +90,39 @@ function filterRelatives(relatives, filters) {
 // Stammbaum = das Pferd selbst + seine 14 sichtbaren Vorfahren. Pferde,
 // die schon über Eltern/Geschwister/Nachkommen gefunden wurden, werden
 // über excludeIds nicht doppelt aufgeführt.
+//
+// Nutzt pedigreeNamePool aus js/breeding.js (liefert zu jedem Namen auch
+// seine Position: "Elternteil"/"Großeltern"/"Urgroßeltern"), damit die
+// Beziehung anzeigen kann, WO im Stammbaum beider Pferde sich der
+// gemeinsame Name befindet - z.B. bei diesem Pferd ein Großelternteil,
+// beim gefundenen Pferd ein Urgroßelternteil.
 function findExtendedRelatives(horse, horses, excludeIds) {
-  const ownNames = [horse.name, ...pedigreeAncestorNames(horse)].filter((n) => n && normalizeName(n) !== 'unbekannt');
-  const ownNormalized = new Set(ownNames.map(normalizeName));
+  const ownPositionByName = new Map();
+  for (const entry of pedigreeNamePool(horse)) {
+    if (entry.position === 'Pferd selbst') continue; // eigener Name selbst ist keine "Weitere Verwandtschaft"
+    const key = normalizeName(entry.name);
+    if (!ownPositionByName.has(key)) ownPositionByName.set(key, entry.position);
+  }
 
   const results = [];
   for (const other of horses) {
     if (other.id === horse.id || excludeIds.has(other.id)) continue;
-    const otherNames = [other.name, ...pedigreeAncestorNames(other)].filter((n) => n && normalizeName(n) !== 'unbekannt');
-    const sharedName = otherNames.find((n) => ownNormalized.has(normalizeName(n)));
-    if (sharedName) {
-      results.push({ horse: other, beziehung: `Weitere Verwandtschaft (gemeinsam: ${sharedName})`, sortRank: 50 });
+    for (const entry of pedigreeNamePool(other)) {
+      const positionOwn = ownPositionByName.get(normalizeName(entry.name));
+      if (positionOwn) {
+        results.push({ horse: other, beziehung: extendedRelationLabel(entry.name, positionOwn, entry.position), sortRank: 50 });
+        break; // ein Fund pro Pferdepaar reicht
+      }
     }
   }
   return results;
+}
+
+function extendedRelationLabel(name, positionOwn, positionOther) {
+  if (positionOther === 'Pferd selbst') {
+    return `Weitere Verwandtschaft (${positionOwn} dieses Pferds, selbst in der Datenbank: ${name})`;
+  }
+  return `Weitere Verwandtschaft (gemeinsamer Vorfahre: ${name} – bei diesem Pferd: ${positionOwn}, beim gefundenen Pferd: ${positionOther})`;
 }
 
 async function loadHorses() {
@@ -166,13 +185,14 @@ function computeDerived(h) {
   };
 }
 
-// EKH-Anzeige: jede Krankheit mit mindestens einem Kleinbuchstaben im Wert
-// (Träger ODER voll betroffen) - bewusst NICHT dasselbe wie
-// isDiseaseAusgepraegt in tournamentScoring.js (das nur volle Homozygotie
-// für die LP-Prüfung zählt). Hier geht es um dieselbe informative Anzeige
-// wie in der Datenbankübersicht, nicht um eine Ausschluss-Prüfung.
+// EKH-Anzeige: jede Krankheit, bei der mindestens ein Allel nicht "NN"
+// ist (Träger ODER voll betroffen, siehe isDiseaseCarrierOrAffected in
+// js/breeding.js) - bewusst NICHT dasselbe wie isDiseaseAusgepraegt in
+// tournamentScoring.js (das nur volle Homozygotie für die LP-Prüfung
+// zählt). Hier geht es um dieselbe informative Anzeige wie in der
+// Datenbankübersicht, nicht um eine Ausschluss-Prüfung.
 function isDiseaseClear(value) {
-  return !/[a-z]/.test(value || '');
+  return !isDiseaseCarrierOrAffected(value);
 }
 function affectedDiseaseLabels(row) {
   return (row.genetic_diseases || []).filter((d) => !isDiseaseClear(d.value)).map((d) => d.label);
@@ -393,6 +413,34 @@ function applyRassefremdeFilter(relatives, horse) {
   });
 }
 
+// Zusammenfassung der wichtigsten Verwandtschafts-Kategorien als Zahlen -
+// immer aus der VOLLEN, ungefilterten Verwandtenliste berechnet
+// (unabhängig von den Häkchen/der Rassefremde-Auswahl oben), damit die
+// Zahlen nicht durch die Feinauswahl verzerrt werden. "Sonstige
+// Verwandte" fasst alles zusammen, was nicht in die vier genannten
+// Kategorien fällt (Vollgeschwister + alle Nachkommen-Generationen ab
+// Urenkelkind) - bewusst OHNE die entfernteren, nur bei "Alle
+// Verwandtschaft" zusätzlich geladenen Verwandten (Onkel/Tante/Cousin,
+// siehe findExtendedRelatives), die sind eine separate, optionale
+// Kategorie.
+function relativeCountsHtml(allRelatives) {
+  const counts = { kinder: 0, enkel: 0, hgMutter: 0, hgVater: 0, sonstige: 0 };
+  for (const r of allRelatives) {
+    if (r.beziehung === 'Kind') counts.kinder++;
+    else if (r.beziehung === 'Enkelkind') counts.enkel++;
+    else if (r.beziehung === 'Halbgeschwister (mütterlicherseits)') counts.hgMutter++;
+    else if (r.beziehung === 'Halbgeschwister (väterlicherseits)') counts.hgVater++;
+    else counts.sonstige++;
+  }
+  return `<p class="small muted">
+    Kinder: <strong>${counts.kinder}</strong>
+    &nbsp;·&nbsp; Enkelkinder: <strong>${counts.enkel}</strong>
+    &nbsp;·&nbsp; Halbgeschwister (Mutter): <strong>${counts.hgMutter}</strong>
+    &nbsp;·&nbsp; Halbgeschwister (Vater): <strong>${counts.hgVater}</strong>
+    &nbsp;·&nbsp; Sonstige Verwandte: <strong>${counts.sonstige}</strong>
+  </p>`;
+}
+
 function relativesTableHtml(horse) {
   const filters = selectedRelativeFilters();
   const allRelatives = findRelatives(horse, allHorses);
@@ -407,6 +455,7 @@ function relativesTableHtml(horse) {
   relatives = applySort(relatives);
 
   let html = '<div class="group-heading">Verwandtschaftsübersicht</div>';
+  html += relativeCountsHtml(allRelatives);
   if (!relatives.length) {
     html += allRelatives.length
       ? '<p class="small muted">Keine Verwandten mit den aktuell aktivierten Kategorien - oben weitere Häkchen setzen.</p>'

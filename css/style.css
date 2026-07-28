@@ -488,6 +488,7 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
   background: var(--surface);
 }
 .notice.notice-warning { border-color: var(--danger); background: rgba(200, 65, 73, 0.08); }
+.notice.notice-caution { border-color: var(--warning); background: rgba(196, 122, 31, 0.08); }
 
 /* --- Ergebnis-Karte (Inzuchtprüfung) --- */
 .result-card {

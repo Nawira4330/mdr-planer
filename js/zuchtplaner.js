@@ -400,14 +400,43 @@ function foalSectionHtml(mare, stallion) {
   return html;
 }
 
-// EKH-Warnung (Erbkrankheiten): erscheint, sobald Stute und Hengst bei
-// mindestens einer Erbkrankheit beide Träger oder ausgeprägt betroffen
-// sind - analog zur Overo-Doppelträger-Warnung, aber für jede in
-// genetic_diseases erfasste Krankheit statt nur Overo.
+// EKH-Warnung (Erbkrankheiten): erscheint, sobald Stute ODER Hengst
+// mindestens eine Erbkrankheit als Träger oder ausgeprägt betroffen
+// trägt (isDiseaseCarrierOrAffected, js/breeding.js) - zwei Stufen je
+// nach Risiko fürs Fohlen:
+// - ROT (notice-warning): beide Elterntiere tragen DIESELBE Krankheit
+//   (Risiko eines ausgeprägt betroffenen Fohlens) ODER ein Elternteil ist
+//   bei irgendeiner Krankheit bereits selbst ausgeprägt betroffen -
+//   "doppelt", nur Kleinbuchstaben, siehe isDiseaseAusgepraegt in
+//   js/tournamentScoring.js.
+// - GELB (notice-caution): nur EIN Elternteil ist (Träger einer)
+//   Krankheit, nicht geteilt und nicht ausgeprägt - geringeres Risiko,
+//   aber trotzdem erwähnenswert.
 function ekhWarningHtml(mare, stallion) {
-  const shared = sharedDiseaseRisks(mare, stallion);
-  if (!shared.length) return '';
-  return `<div class="notice notice-warning">⚠️ Beide Elterntiere sind bei folgender Erbkrankheit (EKH) mindestens Träger: <strong>${shared.map(escapeHtml).join(', ')}</strong> – bei gleicher Erbkrankheit auf beiden Seiten besteht ein erhöhtes Risiko für ein ausgeprägt betroffenes Fohlen.</div>`;
+  const mareDiseases = mare?.genetic_diseases || [];
+  const stallionDiseases = stallion?.genetic_diseases || [];
+  const mareCarrier = mareDiseases.filter((d) => isDiseaseCarrierOrAffected(d.value));
+  const stallionCarrier = stallionDiseases.filter((d) => isDiseaseCarrierOrAffected(d.value));
+  if (!mareCarrier.length && !stallionCarrier.length) return '';
+
+  const mareLabels = new Set(mareCarrier.map((d) => d.label));
+  const stallionLabels = new Set(stallionCarrier.map((d) => d.label));
+  const allLabels = [...new Set([...mareLabels, ...stallionLabels])];
+  const sharedLabels = allLabels.filter((l) => mareLabels.has(l) && stallionLabels.has(l));
+  const doubledLabels = [...new Set(
+    [...mareDiseases, ...stallionDiseases].filter((d) => isDiseaseAusgepraegt(d.value)).map((d) => d.label),
+  )];
+
+  const severe = sharedLabels.length > 0 || doubledLabels.length > 0;
+  const reasonParts = [];
+  if (sharedLabels.length) reasonParts.push(`beide Elterntiere tragen ${sharedLabels.map(escapeHtml).join(', ')}`);
+  if (doubledLabels.length) reasonParts.push(`${doubledLabels.map(escapeHtml).join(', ')} ist bei einem Elternteil bereits ausgeprägt (doppelt)`);
+  const reasonText = severe
+    ? ` – ${reasonParts.join('; ')}, erhöhtes Risiko für ein ausgeprägt betroffenes Fohlen.`
+    : ' – nur bei einem Elternteil bekannt, geringeres Risiko.';
+
+  const cssClass = severe ? 'notice-warning' : 'notice-caution';
+  return `<div class="notice ${cssClass}">⚠️ Erbkrankheit(en) (EKH) bei mindestens einem Elternteil: <strong>${allLabels.map(escapeHtml).join(', ')}</strong>${reasonText}</div>`;
 }
 
 // Fohlen-Vorhersage (Best-/Worst-Case + Datenbank-Schätzung) für die
