@@ -28,6 +28,13 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-28T15:00', type: 'feature', title: 'Verwandtschaftsmatrix: Inzucht-Gefahr farblich unterschieden',
+    points: [
+      'Verwandte Zellen in der Matrix sind jetzt rot (würde bei Verpaarung echte Inzucht im gemeinsamen Fohlen verursachen) oder grün (verwandt, aber der gemeinsame Vorfahre liegt zu weit zurück, um im sichtbaren Fohlen-Stammbaum aufzutauchen) - geprüft mit derselben Logik wie die Inzuchtprüfung im Zuchtplaner',
+      '"Anzahl"-Spalte zeigt zusätzlich in Klammern, wie viele der verwandten Pferde davon eine echte Inzucht-Gefahr wären',
+    ],
+  },
+  {
     date: '2026-07-28T14:00', type: 'feature', title: 'Zuchtbuch: Verwandten-Zusammenfassung erweitert',
     points: [
       'Zusammenfassung über der Verwandtschaftsübersicht zählt Enkelkinder jetzt einzeln, statt sie mit "Sonstige Verwandte" zu vermischen',

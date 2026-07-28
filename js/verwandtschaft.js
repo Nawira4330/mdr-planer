@@ -335,7 +335,7 @@ function renderMatrix() {
 
   const rowHint = rows.length < rowsFull.length ? `${rows.length} von ${rowsFull.length}` : `${rows.length}`;
   const colHint = cols.length < colsFull.length ? `${cols.length} von ${colsFull.length}` : `${cols.length}`;
-  hintEl.textContent = `${rowHint} × ${colHint} Pferde ausgewählt.`
+  hintEl.textContent = `${rowHint} × ${colHint} Pferde ausgewählt. "Anzahl" zeigt Gesamt (davon in Klammern, wie viele bei Verpaarung Inzucht im gemeinsamen Fohlen verursachen würden).`
     + (cols.length < colsFull.length
       ? ' Die Anzahl-Spalte zählt gegen alle gefilterten Spalten-Pferde, nicht nur den hier angezeigten Ausschnitt.'
       : '');
@@ -344,14 +344,33 @@ function renderMatrix() {
   // nur gegen den aktuell angezeigten Spalten-Ausschnitt - sonst würde die
   // Zahl je nach gewählter Beschränkung schwanken, obwohl sich an der
   // eigentlichen Verwandtschaft nichts geändert hat. Die angezeigten
-  // ✕-Markierungen (related) sind trotzdem nur der sichtbare Ausschnitt
-  // davon (colStart..colEnd), damit Anzahl und Marker konsistent aus
-  // derselben Berechnung stammen.
+  // Zellen-Markierungen sind trotzdem nur der sichtbare Ausschnitt davon
+  // (colStart..colEnd), damit Anzahl und Marker konsistent aus derselben
+  // Berechnung stammen.
+  //
+  // Je sichtbarer Zelle wird zusätzlich zwischen zwei Verwandtschafts-Arten
+  // unterschieden: findSharedNames(r, c) prüft (wie die Inzuchtprüfung im
+  // Zuchtplaner), ob der gemeinsame Vorfahre auch tatsächlich im sichtbaren
+  // Stammbaum eines gemeinsamen Fohlens doppelt auftauchen würde (nur
+  // Eltern + Großeltern + Urgroßeltern DES FOHLENS zählen, siehe
+  // foalPedigreeNodes in js/breeding.js - die jeweils eigenen
+  // Urgroßeltern beider Pferde fallen dafür schon raus). Rot = echte
+  // Inzucht-Gefahr bei gemeinsamem Fohlen, Grün = verwandt, aber der
+  // gemeinsame Vorfahre liegt zu weit zurück, um im Fohlen-Stammbaum
+  // aufzutauchen.
   const rowData = rows.map((r) => {
-    const relatedFull = colsFull.map((c) => areRelated(r, c));
-    const count = relatedFull.filter(Boolean).length;
-    const related = relatedFull.slice(colStart, colEnd);
-    return { horse: r, related, count };
+    // Je Spalten-Pferd einmal berechnet: 'none' (nicht verwandt), 'safe'
+    // (verwandt, aber gemeinsamer Vorfahre zu weit zurück für ein Fohlen)
+    // oder 'inbreeding' (würde bei Verpaarung Inzucht im Fohlen
+    // verursachen, per findSharedNames wie in der Inzuchtprüfung).
+    const statesFull = colsFull.map((c) => {
+      if (!areRelated(r, c)) return 'none';
+      return findSharedNames(r, c).length > 0 ? 'inbreeding' : 'safe';
+    });
+    const count = statesFull.filter((s) => s !== 'none').length;
+    const inbreedingCount = statesFull.filter((s) => s === 'inbreeding').length;
+    const cellStates = statesFull.slice(colStart, colEnd);
+    return { horse: r, cellStates, count, inbreedingCount };
   });
   applyMatrixSort(rowData);
 
@@ -364,11 +383,17 @@ function renderMatrix() {
     <td data-label="Name">${escapeHtml(rd.horse.name || '(ohne Name)')}</td>
     <td data-label="Besitzer">${rd.horse.owner ? escapeHtml(rd.horse.owner) : '–'}</td>
     <td data-label="Rasse" title="${escapeHtml(rd.horse.breed || '')}">${escapeHtml(breedAbbreviation(rd.horse.breed))}</td>
-    <td data-label="Anzahl">${rd.count}</td>
-    ${rd.related.map((isRel) => `<td class="${isRel ? 'related-cell' : ''}">${isRel ? '✕' : ''}</td>`).join('')}
+    <td data-label="Anzahl" title="Davon würden ${rd.inbreedingCount} bei Verpaarung Inzucht im gemeinsamen Fohlen verursachen">${rd.count} (${rd.inbreedingCount})</td>
+    ${rd.cellStates.map((state) => matrixCellHtml(state)).join('')}
   </tr>`).join('');
   html += '</tbody></table></div>';
   container.innerHTML = html;
+}
+
+function matrixCellHtml(state) {
+  if (state === 'inbreeding') return '<td class="related-cell" title="Würde bei einem gemeinsamen Fohlen Inzucht verursachen">✕</td>';
+  if (state === 'safe') return '<td class="related-cell-safe" title="Verwandt, aber zu weit entfernt - würde bei einem gemeinsamen Fohlen keine Inzucht verursachen">✕</td>';
+  return '<td></td>';
 }
 
 function escapeHtml(str) {
