@@ -28,6 +28,15 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-29T09:00', type: 'bugfix', title: 'Stammbaum von per Freitext eingelesenen Pferden war um 1 verschoben',
+    points: [
+      'Der Kopiertext wiederholt direkt unter "Stammbaum" noch einmal die eigene Kopfzeile des Pferds (Name, Rasse, Potenzial), bevor die echten Vorfahren folgen - dieser Wiederholungs-Eintrag wurde bisher nicht erkannt und fälschlich als erster "Vorfahre" mitgezählt',
+      'Dadurch rutschten alle Positionen um 1 (aus dem echten Vater wurde ein "Vorfahre" des Pferds selbst) und der jeweils letzte echte Vorfahre fiel unter den Tisch (nur 14 Plätze insgesamt)',
+      'Betraf u.a. "Fremder Hengst" in der Inzuchtprüfung und "Datenbankfremdes Pferd" in der Verwandtschaftsmatrix - konnte dort fälschlich Inzucht anzeigen (weil das Pferd sich selbst als eigenen Vorfahren "traf") oder eine echte Verwandtschaft übersehen',
+      'Jetzt korrekt erkannt und entfernt, mit zwei realen Beispiel-Pferden verifiziert',
+    ],
+  },
+  {
     date: '2026-07-28T15:00', type: 'feature', title: 'Verwandtschaftsmatrix: Inzucht-Gefahr farblich unterschieden',
     points: [
       'Verwandte Zellen in der Matrix sind jetzt rot (würde bei Verpaarung echte Inzucht im gemeinsamen Fohlen verursachen) oder grün (verwandt, aber der gemeinsame Vorfahre liegt zu weit zurück, um im sichtbaren Fohlen-Stammbaum aufzutauchen) - geprüft mit derselben Logik wie die Inzuchtprüfung im Zuchtplaner',

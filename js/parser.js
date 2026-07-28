@@ -75,7 +75,7 @@ function parseHorseText(rawText) {
   // liefert aber nur die reinen Vorfahren ab Index 0 (kein Selbst-Eintrag),
   // ohne den Platzhalter hier würde daher der erste erkannte Vorfahre (i.d.R.
   // der Vater) beim Abgleich stillschweigend übersprungen.
-  result.pedigree = [{ name: result.name }, ...parsePedigree(lines)];
+  result.pedigree = [{ name: result.name }, ...parsePedigree(lines, result.name)];
 
   return result;
 }
@@ -278,7 +278,7 @@ function parseTournamentPotential(lines) {
 // beschriftet dabei jede Vorfahren-Gruppe zusätzlich (z.B. "Eltern des
 // Vaters", "Eltern der Großmutter väterlicherseits") - diese Zeilen sind
 // keine Pferdenamen und werden daher herausgefiltert.
-function parsePedigree(lines) {
+function parsePedigree(lines, ownName) {
   let startIdx = lines.indexOf('Stammbaum');
   if (startIdx === -1) startIdx = lines.indexOf('Besitzhistorie');
   if (startIdx === -1) return [];
@@ -314,6 +314,15 @@ function parsePedigree(lines) {
       entries.push(current);
       current = null;
     }
+  }
+  // Direkt unter der Überschrift "Stammbaum" wiederholt der Kopiertext noch
+  // einmal die eigene Kopfzeile des Pferds (Name, Rasse, Potenzial, "Diff.-GP
+  // Eltern"), bevor die echten Vorfahren folgen - ohne diesen Eintrag zu
+  // entfernen, würden alle nachfolgenden Positionen um 1 verschoben (aus dem
+  // Vater würde fälschlich ein "Vorfahre" des Pferds selbst) und der letzte
+  // echte Vorfahre stillschweigend abgeschnitten (nur 14 Plätze insgesamt).
+  if (entries.length && ownName && entries[0].name === ownName) {
+    entries.shift();
   }
   return entries;
 }
