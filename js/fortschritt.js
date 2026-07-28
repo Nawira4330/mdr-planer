@@ -32,6 +32,7 @@ const CHANGELOG = [
     points: [
       'Verwandte Zellen in der Matrix sind jetzt rot (würde bei Verpaarung echte Inzucht im gemeinsamen Fohlen verursachen) oder grün (verwandt, aber der gemeinsame Vorfahre liegt zu weit zurück, um im sichtbaren Fohlen-Stammbaum aufzutauchen) - geprüft mit derselben Logik wie die Inzuchtprüfung im Zuchtplaner',
       '"Anzahl"-Spalte zeigt zusätzlich in Klammern, wie viele der verwandten Pferde davon eine echte Inzucht-Gefahr wären',
+      'Dieselbe Unterscheidung jetzt auch bei „Einzelnes Pferd nachschlagen“: neue Spalte „Bei Verpaarung“ pro gefundenem Verwandten, plus Inzucht-Anzahl in Klammern in der Überschrift',
     ],
   },
   {

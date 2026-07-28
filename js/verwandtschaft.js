@@ -175,18 +175,26 @@ function renderFreitext() {
     return;
   }
 
+  // Zusätzlich zur reinen Verwandtschaft (findRelations) wird je Pferd
+  // geprüft, ob der gemeinsame Vorfahre bei Verpaarung auch tatsächlich im
+  // sichtbaren Stammbaum eines gemeinsamen Fohlens doppelt auftauchen
+  // würde (findSharedNames) - dieselbe Unterscheidung wie in der Matrix.
   const related = allHorses
     .filter((h) => h.id !== target.id)
     .map((h) => {
       const matches = findRelations(target, h);
-      return matches.length ? { horse: h, closest: closestRelation(matches) } : null;
+      if (!matches.length) return null;
+      const inbreeding = findSharedNames(target, h).length > 0;
+      return { horse: h, closest: closestRelation(matches), inbreeding };
     })
     .filter(Boolean)
     .sort((a, b) => relationCloseness(a.closest) - relationCloseness(b.closest) || (a.horse.name || '').localeCompare(b.horse.name || '', 'de'));
+  const inbreedingCount = related.filter((r) => r.inbreeding).length;
 
+  const countLabel = `${related.length} verwandte Pferde (${inbreedingCount} davon mit Inzucht-Gefahr bei Verpaarung)`;
   const heading = foreignTarget
-    ? `${related.length} verwandte Pferde für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
-    : `${related.length} verwandte Pferde gefunden`;
+    ? `${countLabel} für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
+    : `${countLabel} gefunden`;
   let html = `<div class="group-heading">${heading}</div>`;
   if (!related.length) {
     html += '<p class="small muted">Keine Verwandtschaft im sichtbaren Stammbaum gefunden.</p>';
@@ -199,6 +207,7 @@ function renderFreitext() {
       <th>Pferd</th>
       <th>Besitzer</th>
       <th>Nächster gemeinsamer Vorfahre</th>
+      <th>Bei Verpaarung</th>
     </tr></thead>
     <tbody>${related.map((r) => relationRowHtml(r, target)).join('')}</tbody>
   </table></div>`;
@@ -209,10 +218,14 @@ function relationRowHtml(r, target) {
   const targetName = escapeHtml(target.name || '(ohne Name)');
   const otherName = escapeHtml(r.horse.name || '(ohne Name)');
   const m = r.closest;
+  const pill = r.inbreeding
+    ? '<span class="pill no">Inzucht-Gefahr</span>'
+    : '<span class="pill yes">Unbedenklich</span>';
   return `<tr>
     <td data-label="Pferd">${otherName}</td>
     <td data-label="Besitzer">${r.horse.owner ? escapeHtml(r.horse.owner) : '–'}</td>
     <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetName}: ${escapeHtml(m.positionA)}, bei ${otherName}: ${escapeHtml(m.positionB)})</td>
+    <td data-label="Bei Verpaarung">${pill}</td>
   </tr>`;
 }
 
