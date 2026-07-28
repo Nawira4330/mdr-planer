@@ -9,9 +9,9 @@ const PROGRESS = [
   { label: 'Turnierplaner', percent: 100 },
   { label: 'LP-Prognose', percent: 100 },
   { label: 'Zuchtbuch', percent: 20 },
-  { label: 'Verpaarungsratgeber', percent: 80 },
+  { label: 'Verpaarungsratgeber', percent: 90 },
   { label: 'Fohlen-Tracker', percent: 90 },
-  { label: 'Verwandtschaftsmatrix', percent: 85 },
+  { label: 'Verwandtschaftsmatrix', percent: 90 },
 ];
 
 // Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
