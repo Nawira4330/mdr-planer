@@ -28,6 +28,13 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-29T11:00', type: 'feature', title: 'Verwandtschaftsmatrix: Top-Beschränkung nach Sortierung + Hengste↔Stuten',
+    points: [
+      'Beschränkung ("1.-30." usw.) bedeutet bei Sortierung nach "Anzahl"/"Inzucht" jetzt die Top-Werte aus ALLEN gefilterten Zeilen-Pferden statt der alphabetisch ersten 30 - z.B. zeigt "1.-30." bei Sortierung nach Inzucht die 30 Pferde mit der höchsten Inzuchtzahl',
+      'Neuer Vergleich "Hengste ↔ Stuten" (zusätzlich zu Stuten↔Hengste) - Zeilen und Spalten vertauscht',
+    ],
+  },
+  {
     date: '2026-07-29T10:00', type: 'feature', title: 'Verwandtschaftsmatrix: Filter und Sortierung nach Inzucht-Gefahr',
     points: [
       'Neuer Filter „Bei Verpaarung (Fohlen)“: Alle / Nur mit Inzucht-Gefahr / Nur ohne Inzucht-Gefahr - blendet die jeweils anderen Zellen-Markierungen aus, ohne die Zeilen/Spalten-Auswahl selbst zu verändern',

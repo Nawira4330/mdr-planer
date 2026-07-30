@@ -465,7 +465,7 @@
       <div class="group-heading">So gehst du vor</div>
       <ol class="small">
         <li>Für ein einzelnes Pferd: oben im Bereich „Einzelnes Pferd nachschlagen“ Besitzer eingrenzen (optional) und Pferd über das Suchfeld auswählen - oder für ein datenbankfremdes Pferd stattdessen dessen kopierten Spieltext unter „Datenbankfremdes Pferd (Freitext)“ einfügen und auf „Auslesen“ klicken.</li>
-        <li>Für die Matrix: weiter unten Vergleich (Stuten↔Hengste / Stuten↔Stuten / Hengste↔Hengste) wählen, dann Besitzer, Rasse, ZZL und bei Bedarf die alphabetische Beschränkung getrennt für Zeilen (1. Spalte) und Spalten (1. Zeile) einstellen.</li>
+        <li>Für die Matrix: weiter unten Vergleich (Stuten↔Hengste / Hengste↔Stuten / Stuten↔Stuten / Hengste↔Hengste) wählen, dann Besitzer, Rasse, ZZL und bei Bedarf die alphabetische Beschränkung getrennt für Zeilen (1. Spalte) und Spalten (1. Zeile) einstellen.</li>
         <li>Ergebnis durchsehen - Einzelansicht als Liste mit Position im Stammbaum, Matrix als Tabelle mit roten/grünen Zellen für Verwandtschaft, „Anzahl“-/„Inzucht“-Spalten und optionalem Filter „Bei Verpaarung (Fohlen)“.</li>
       </ol>
 
@@ -569,16 +569,31 @@
           <th>Beschränkung (Matrix-Filter)</th>
           <td>
             Teilt die (nach Besitzer/Rasse/ZZL bereits gefilterten) Zeilen
-            bzw. Spalten alphabetisch in Häppchen zu je 30 Pferden auf
-            (1.-30. Eintrag, 31.-60. Eintrag, ...) - unabhängig für Zeilen
-            und Spalten wählbar. Nützlich bei sehr vielen Treffern, um
-            trotzdem eine übersichtliche Tabelle zu bekommen, ohne über
-            Besitzer/Rasse einschränken zu müssen. Standard: „Alle“.
+            bzw. Spalten in Häppchen zu je 30 Pferden auf (1.-30. Eintrag,
+            31.-60. Eintrag, ...) - unabhängig für Zeilen und Spalten
+            wählbar. Nützlich bei sehr vielen Treffern, um trotzdem eine
+            übersichtliche Tabelle zu bekommen, ohne über Besitzer/Rasse
+            einschränken zu müssen. Standard: „Alle“. Ist gerade nach
+            „Anzahl“ oder „Inzucht“ sortiert, bedeutet die Beschränkung bei
+            den Zeilen die Top-Werte nach dieser Sortierung (z.B. „1.-30.“
+            = die 30 Pferde mit der meisten Verwandtschaft/Inzucht-Gefahr
+            unter ALLEN gefilterten Zeilen-Pferden, nicht die alphabetisch
+            ersten 30) - bei Sortierung nach Name/Rasse bleibt es bei der
+            alphabetischen Häppchen-Aufteilung.
           </td>
         </tr>
         <tr>
-          <th>Anzahl-Spalte</th>
-          <td>Zählt pro Zeile, mit wie vielen aller (nach Besitzer/Rasse/ZZL) gefilterten Spalten-Pferde eine Verwandtschaft besteht - unabhängig davon, ob bei den Spalten gerade eine Beschränkung aktiv ist. Ist die Spalten-Beschränkung aktiv, werden also nur die ✕-Markierungen für den angezeigten Ausschnitt eingeblendet, während die Anzahl selbst weiterhin für alle gefilterten Spalten-Pferde gilt (ein Hinweistext darüber macht das kenntlich). Name, Rasse und Anzahl sind per Spaltenklick sortierbar (Standard: Anzahl absteigend, am stärksten vernetzte Pferde zuerst).</td>
+          <th>Anzahl-/Inzucht-Spalte</th>
+          <td>
+            „Anzahl“ zählt pro Zeile, mit wie vielen aller (nach
+            Besitzer/Rasse/ZZL) gefilterten Spalten-Pferde eine
+            Verwandtschaft besteht; „Inzucht“ zählt davon, bei wie vielen
+            das auch eine echte Inzucht-Gefahr im gemeinsamen Fohlen wäre
+            (rote Zellen) - beide unabhängig davon, ob bei den Spalten
+            gerade eine Beschränkung aktiv ist (ein Hinweistext macht das
+            kenntlich). Name, Rasse, Anzahl und Inzucht sind per
+            Spaltenklick sortierbar (Standard: Anzahl absteigend).
+          </td>
         </tr>
       </table>
 

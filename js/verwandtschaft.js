@@ -310,6 +310,36 @@ function applyMatrixSort(rowData) {
   });
 }
 
+// "Anzahl" zählt IMMER gegen ALLE gefilterten Spalten (colsFull), nicht nur
+// gegen den aktuell angezeigten Spalten-Ausschnitt - sonst würde die Zahl
+// je nach gewählter Beschränkung schwanken, obwohl sich an der
+// eigentlichen Verwandtschaft nichts geändert hat. Die zurückgegebenen
+// Zellen-Markierungen (cellStates) sind trotzdem nur der sichtbare
+// Ausschnitt davon (colStart..colEnd), damit Anzahl und Marker konsistent
+// aus derselben Berechnung stammen.
+//
+// Je Zelle wird zwischen zwei Verwandtschafts-Arten unterschieden:
+// findSharedNames(r, c) prüft (wie die Inzuchtprüfung im Zuchtplaner), ob
+// der gemeinsame Vorfahre auch tatsächlich im sichtbaren Stammbaum eines
+// gemeinsamen Fohlens doppelt auftauchen würde (nur Eltern + Großeltern +
+// Urgroßeltern DES FOHLENS zählen, siehe foalPedigreeNodes in
+// js/breeding.js - die jeweils eigenen Urgroßeltern beider Pferde fallen
+// dafür schon raus). 'inbreeding' = echte Inzucht-Gefahr bei gemeinsamem
+// Fohlen, 'safe' = verwandt, aber der gemeinsame Vorfahre liegt zu weit
+// zurück, um im Fohlen-Stammbaum aufzutauchen.
+function computeRowData(rowsSubset, colsFull, colStart, colEnd) {
+  return rowsSubset.map((r) => {
+    const statesFull = colsFull.map((c) => {
+      if (!areRelated(r, c)) return 'none';
+      return findSharedNames(r, c).length > 0 ? 'inbreeding' : 'safe';
+    });
+    const count = statesFull.filter((s) => s !== 'none').length;
+    const inbreedingCount = statesFull.filter((s) => s === 'inbreeding').length;
+    const cellStates = statesFull.slice(colStart, colEnd);
+    return { horse: r, cellStates, count, inbreedingCount };
+  });
+}
+
 function renderMatrix() {
   const container = document.querySelector('#matrix-result');
   const hintEl = document.querySelector('#matrix-hint');
@@ -322,6 +352,9 @@ function renderMatrix() {
   } else if (modus === 'hengst-hengst') {
     rowsFull = matrixCandidates('Hengst', 'row');
     colsFull = matrixCandidates('Hengst', 'col');
+  } else if (modus === 'hengst-stute') {
+    rowsFull = matrixCandidates('Hengst', 'row');
+    colsFull = matrixCandidates('Stute', 'col');
   } else {
     rowsFull = matrixCandidates('Stute', 'row');
     colsFull = matrixCandidates('Hengst', 'col');
@@ -331,66 +364,54 @@ function renderMatrix() {
   const colLimitSelect = document.querySelector('#matrix-col-limit-select');
   updateLimitOptions(rowLimitSelect, rowsFull.length);
   updateLimitOptions(colLimitSelect, colsFull.length);
-  const rows = applyLimit(rowsFull, rowLimitSelect);
   const [colStart, colEnd] = limitRange(colLimitSelect, colsFull.length);
   const cols = colsFull.slice(colStart, colEnd);
 
-  if (!rows.length || !cols.length) {
+  // Bei Sortierung nach "Anzahl"/"Inzucht" soll die Beschränkung ("1-30" usw.)
+  // nicht mehr den alphabetisch ersten Ausschnitt bedeuten, sondern die
+  // Top-N nach dem gewählten Sortierfeld (z.B. "1-30" bei Sortierung nach
+  // Inzucht = die 30 Pferde mit der höchsten Inzuchtzahl aus ALLEN
+  // gefilterten Zeilen-Pferden, nicht die ersten 30 alphabetisch) - dafür
+  // muss VOR der Beschränkung für alle rowsFull-Pferde (nicht nur den
+  // späteren Ausschnitt) Anzahl/Inzucht berechnet und sortiert werden. Bei
+  // Sortierung nach Name/Rasse oder "Alle" bleibt es beim günstigeren alten
+  // Verhalten (erst begrenzen, dann nur den sichtbaren Ausschnitt berechnen).
+  const isRankedSort = matrixSort.field === 'count' || matrixSort.field === 'inbreedingCount';
+  let rowData;
+  if (isRankedSort && rowLimitSelect.value !== '') {
+    const allRowData = computeRowData(rowsFull, colsFull, colStart, colEnd);
+    applyMatrixSort(allRowData);
+    const [rowStart, rowEnd] = limitRange(rowLimitSelect, allRowData.length);
+    rowData = allRowData.slice(rowStart, rowEnd);
+  } else {
+    const rows = applyLimit(rowsFull, rowLimitSelect);
+    rowData = computeRowData(rows, colsFull, colStart, colEnd);
+    applyMatrixSort(rowData);
+  }
+
+  if (!rowData.length || !cols.length) {
     hintEl.textContent = '';
     container.innerHTML = '<p class="muted small">Keine Pferde für diese Auswahl gefunden - Filter anpassen.</p>';
     return;
   }
 
-  const cellCount = rows.length * cols.length;
+  const cellCount = rowData.length * cols.length;
   if (cellCount > MAX_MATRIX_CELLS) {
     hintEl.textContent = '';
-    container.innerHTML = `<p class="muted small">Die Auswahl ergibt ${rows.length} × ${cols.length} = ${cellCount.toLocaleString('de')} Zellen - das ist zu groß, um sinnvoll dargestellt zu werden (Grenze: ${MAX_MATRIX_CELLS.toLocaleString('de')}). Bitte über Besitzer, Rasse, ZZL oder die Beschränkung weiter eingrenzen.</p>`;
+    container.innerHTML = `<p class="muted small">Die Auswahl ergibt ${rowData.length} × ${cols.length} = ${cellCount.toLocaleString('de')} Zellen - das ist zu groß, um sinnvoll dargestellt zu werden (Grenze: ${MAX_MATRIX_CELLS.toLocaleString('de')}). Bitte über Besitzer, Rasse, ZZL oder die Beschränkung weiter eingrenzen.</p>`;
     return;
   }
 
   const inzuchtFilter = document.querySelector('#matrix-inzucht-filter-select').value; // '' | 'inzucht' | 'sicher'
 
-  const rowHint = rows.length < rowsFull.length ? `${rows.length} von ${rowsFull.length}` : `${rows.length}`;
+  const rowHint = rowData.length < rowsFull.length ? `${rowData.length} von ${rowsFull.length}` : `${rowData.length}`;
   const colHint = cols.length < colsFull.length ? `${cols.length} von ${colsFull.length}` : `${cols.length}`;
   hintEl.textContent = `${rowHint} × ${colHint} Pferde ausgewählt. "Anzahl" = Gesamt verwandt, "Inzucht" = davon mit Inzucht-Gefahr bei einem gemeinsamen Fohlen.`
     + (cols.length < colsFull.length
       ? ' Beide Spalten zählen gegen alle gefilterten Spalten-Pferde, nicht nur den hier angezeigten Ausschnitt.'
       : '')
-    + (inzuchtFilter ? ' Zellen-Markierungen sind auf "Bei Verpaarung" gefiltert - die Zahlen-Spalten bleiben davon unberührt.' : '');
-
-  // "Anzahl" zählt IMMER gegen alle gefilterten Spalten (colsFull), nicht
-  // nur gegen den aktuell angezeigten Spalten-Ausschnitt - sonst würde die
-  // Zahl je nach gewählter Beschränkung schwanken, obwohl sich an der
-  // eigentlichen Verwandtschaft nichts geändert hat. Die angezeigten
-  // Zellen-Markierungen sind trotzdem nur der sichtbare Ausschnitt davon
-  // (colStart..colEnd), damit Anzahl und Marker konsistent aus derselben
-  // Berechnung stammen.
-  //
-  // Je sichtbarer Zelle wird zusätzlich zwischen zwei Verwandtschafts-Arten
-  // unterschieden: findSharedNames(r, c) prüft (wie die Inzuchtprüfung im
-  // Zuchtplaner), ob der gemeinsame Vorfahre auch tatsächlich im sichtbaren
-  // Stammbaum eines gemeinsamen Fohlens doppelt auftauchen würde (nur
-  // Eltern + Großeltern + Urgroßeltern DES FOHLENS zählen, siehe
-  // foalPedigreeNodes in js/breeding.js - die jeweils eigenen
-  // Urgroßeltern beider Pferde fallen dafür schon raus). Rot = echte
-  // Inzucht-Gefahr bei gemeinsamem Fohlen, Grün = verwandt, aber der
-  // gemeinsame Vorfahre liegt zu weit zurück, um im Fohlen-Stammbaum
-  // aufzutauchen.
-  const rowData = rows.map((r) => {
-    // Je Spalten-Pferd einmal berechnet: 'none' (nicht verwandt), 'safe'
-    // (verwandt, aber gemeinsamer Vorfahre zu weit zurück für ein Fohlen)
-    // oder 'inbreeding' (würde bei Verpaarung Inzucht im Fohlen
-    // verursachen, per findSharedNames wie in der Inzuchtprüfung).
-    const statesFull = colsFull.map((c) => {
-      if (!areRelated(r, c)) return 'none';
-      return findSharedNames(r, c).length > 0 ? 'inbreeding' : 'safe';
-    });
-    const count = statesFull.filter((s) => s !== 'none').length;
-    const inbreedingCount = statesFull.filter((s) => s === 'inbreeding').length;
-    const cellStates = statesFull.slice(colStart, colEnd);
-    return { horse: r, cellStates, count, inbreedingCount };
-  });
-  applyMatrixSort(rowData);
+    + (inzuchtFilter ? ' Zellen-Markierungen sind auf "Bei Verpaarung" gefiltert - die Zahlen-Spalten bleiben davon unberührt.' : '')
+    + (isRankedSort && rowLimitSelect.value !== '' ? ' Beschränkung zeigt die Top-Werte nach der aktuellen Sortierung, nicht den alphabetisch ersten Ausschnitt.' : '');
 
   let html = '<div class="table-wrap"><table id="matrix-table"><thead><tr>';
   html += sortableMatrixHeaderHtml('name', 'Name') + '<th>Besitzer</th>'
