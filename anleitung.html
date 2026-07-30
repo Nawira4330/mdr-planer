@@ -466,7 +466,7 @@
       <ol class="small">
         <li>Für ein einzelnes Pferd: oben im Bereich „Einzelnes Pferd nachschlagen“ Besitzer eingrenzen (optional) und Pferd über das Suchfeld auswählen - oder für ein datenbankfremdes Pferd stattdessen dessen kopierten Spieltext unter „Datenbankfremdes Pferd (Freitext)“ einfügen und auf „Auslesen“ klicken.</li>
         <li>Für die Matrix: weiter unten Vergleich (Stuten↔Hengste / Stuten↔Stuten / Hengste↔Hengste) wählen, dann Besitzer, Rasse, ZZL und bei Bedarf die alphabetische Beschränkung getrennt für Zeilen (1. Spalte) und Spalten (1. Zeile) einstellen.</li>
-        <li>Ergebnis durchsehen - Einzelansicht als Liste mit Position im Stammbaum, Matrix als Tabelle mit roten/grünen Zellen für Verwandtschaft und einer „Anzahl“-Spalte.</li>
+        <li>Ergebnis durchsehen - Einzelansicht als Liste mit Position im Stammbaum, Matrix als Tabelle mit roten/grünen Zellen für Verwandtschaft, „Anzahl“-/„Inzucht“-Spalten und optionalem Filter „Bei Verpaarung (Fohlen)“.</li>
       </ol>
 
       <div class="group-heading">Funktionen im Detail</div>
@@ -494,9 +494,21 @@
             gemeinsame Vorfahre liegt bei mindestens einem der beiden
             Pferde in dessen eigenen Urgroßeltern - das wäre schon die
             Ururgroßeltern-Generation des Fohlens und fällt damit aus dem
-            sichtbaren, geprüften Bereich heraus. Die „Anzahl“-Spalte zeigt
-            die Gesamtzahl verwandter Pferde, in Klammern davon die Anzahl
-            der roten (echte Inzucht-Gefahr).
+            sichtbaren, geprüften Bereich heraus. Zwei eigene, sortierbare
+            Spalten „Anzahl“ (Gesamtzahl verwandter Pferde) und „Inzucht“
+            (davon nur die roten, mit echter Inzucht-Gefahr).
+          </td>
+        </tr>
+        <tr>
+          <th>Filter „Bei Verpaarung (Fohlen)“</th>
+          <td>
+            Blendet in der Matrix wahlweise nur die roten Zellen („Nur mit
+            Inzucht-Gefahr“) oder nur die grünen Zellen („Nur ohne
+            Inzucht-Gefahr“) ein, alle anderen Zellen bleiben leer -
+            praktisch zum schnellen Überblick, welche Paarungen
+            problematisch bzw. unbedenklich wären. Betrifft nur die
+            Zellen-Markierungen; die Spalten „Anzahl“ und „Inzucht“ zeigen
+            immer die echten, ungefilterten Zahlen.
           </td>
         </tr>
         <tr>

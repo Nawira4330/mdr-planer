@@ -56,6 +56,7 @@ async function init() {
   document.querySelector('#matrix-row-limit-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-col-limit-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-modus-select').addEventListener('change', renderMatrix);
+  document.querySelector('#matrix-inzucht-filter-select').addEventListener('change', renderMatrix);
   wireMatrixSortableHeaders();
   await loadHorses();
 }
@@ -71,9 +72,9 @@ function wireMatrixSortableHeaders() {
     if (matrixSort.field === field) {
       matrixSort.dir = matrixSort.dir === 'asc' ? 'desc' : 'asc';
     } else {
-      // Bei "Anzahl" ist absteigend (meiste Verwandtschaft zuerst) der
+      // Bei "Anzahl"/"Inzucht" ist absteigend (meiste zuerst) der
       // sinnvollere Start, bei Name/Rasse aufsteigend (alphabetisch).
-      matrixSort = { field, dir: field === 'count' ? 'desc' : 'asc' };
+      matrixSort = { field, dir: (field === 'count' || field === 'inbreedingCount') ? 'desc' : 'asc' };
     }
     renderMatrix();
   });
@@ -291,6 +292,7 @@ function sortableMatrixHeaderHtml(field, label) {
 function matrixSortValue(rd, field) {
   if (field === 'name') return (rd.horse.name || '').toLowerCase();
   if (field === 'breed') return (rd.horse.breed || '').toLowerCase();
+  if (field === 'inbreedingCount') return rd.inbreedingCount;
   return rd.count;
 }
 
@@ -346,12 +348,15 @@ function renderMatrix() {
     return;
   }
 
+  const inzuchtFilter = document.querySelector('#matrix-inzucht-filter-select').value; // '' | 'inzucht' | 'sicher'
+
   const rowHint = rows.length < rowsFull.length ? `${rows.length} von ${rowsFull.length}` : `${rows.length}`;
   const colHint = cols.length < colsFull.length ? `${cols.length} von ${colsFull.length}` : `${cols.length}`;
-  hintEl.textContent = `${rowHint} × ${colHint} Pferde ausgewählt. "Anzahl" zeigt Gesamt (davon in Klammern, wie viele bei Verpaarung Inzucht im gemeinsamen Fohlen verursachen würden).`
+  hintEl.textContent = `${rowHint} × ${colHint} Pferde ausgewählt. "Anzahl" = Gesamt verwandt, "Inzucht" = davon mit Inzucht-Gefahr bei einem gemeinsamen Fohlen.`
     + (cols.length < colsFull.length
-      ? ' Die Anzahl-Spalte zählt gegen alle gefilterten Spalten-Pferde, nicht nur den hier angezeigten Ausschnitt.'
-      : '');
+      ? ' Beide Spalten zählen gegen alle gefilterten Spalten-Pferde, nicht nur den hier angezeigten Ausschnitt.'
+      : '')
+    + (inzuchtFilter ? ' Zellen-Markierungen sind auf "Bei Verpaarung" gefiltert - die Zahlen-Spalten bleiben davon unberührt.' : '');
 
   // "Anzahl" zählt IMMER gegen alle gefilterten Spalten (colsFull), nicht
   // nur gegen den aktuell angezeigten Spalten-Ausschnitt - sonst würde die
@@ -389,21 +394,30 @@ function renderMatrix() {
 
   let html = '<div class="table-wrap"><table id="matrix-table"><thead><tr>';
   html += sortableMatrixHeaderHtml('name', 'Name') + '<th>Besitzer</th>'
-    + sortableMatrixHeaderHtml('breed', 'Rasse') + sortableMatrixHeaderHtml('count', 'Anzahl');
+    + sortableMatrixHeaderHtml('breed', 'Rasse') + sortableMatrixHeaderHtml('count', 'Anzahl')
+    + sortableMatrixHeaderHtml('inbreedingCount', 'Inzucht');
   html += cols.map((c) => `<th class="col-header" title="${escapeHtml(c.owner || '')}">${escapeHtml(c.name || '(ohne Name)')}</th>`).join('');
   html += '</tr></thead><tbody>';
   html += rowData.map((rd) => `<tr>
     <td data-label="Name">${escapeHtml(rd.horse.name || '(ohne Name)')}</td>
     <td data-label="Besitzer">${rd.horse.owner ? escapeHtml(rd.horse.owner) : '–'}</td>
     <td data-label="Rasse" title="${escapeHtml(rd.horse.breed || '')}">${escapeHtml(breedAbbreviation(rd.horse.breed))}</td>
-    <td data-label="Anzahl" title="Davon würden ${rd.inbreedingCount} bei Verpaarung Inzucht im gemeinsamen Fohlen verursachen">${rd.count} (${rd.inbreedingCount})</td>
-    ${rd.cellStates.map((state) => matrixCellHtml(state)).join('')}
+    <td data-label="Anzahl">${rd.count}</td>
+    <td data-label="Inzucht" title="Würde bei Verpaarung mit diesen Pferden Inzucht im gemeinsamen Fohlen verursachen">${rd.inbreedingCount}</td>
+    ${rd.cellStates.map((state) => matrixCellHtml(state, inzuchtFilter)).join('')}
   </tr>`).join('');
   html += '</tbody></table></div>';
   container.innerHTML = html;
 }
 
-function matrixCellHtml(state) {
+// inzuchtFilter: '' (alle zeigen), 'inzucht' (nur rote Zellen zeigen, grüne
+// ausblenden) oder 'sicher' (nur grüne zeigen, rote ausblenden) - filtert
+// bewusst nur die Zellen-Markierungen, nicht die Zeilen/Spalten selbst oder
+// die Anzahl-/Inzucht-Zahlenspalten (die bleiben immer die vollen, echten
+// Zahlen, unabhängig vom Filter).
+function matrixCellHtml(state, inzuchtFilter) {
+  if (inzuchtFilter === 'inzucht' && state !== 'inbreeding') state = 'none';
+  if (inzuchtFilter === 'sicher' && state !== 'safe') state = 'none';
   if (state === 'inbreeding') return '<td class="related-cell" title="Würde bei einem gemeinsamen Fohlen Inzucht verursachen">✕</td>';
   if (state === 'safe') return '<td class="related-cell-safe" title="Verwandt, aber zu weit entfernt - würde bei einem gemeinsamen Fohlen keine Inzucht verursachen">✕</td>';
   return '<td></td>';

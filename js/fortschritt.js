@@ -28,6 +28,13 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-29T10:00', type: 'feature', title: 'Verwandtschaftsmatrix: Filter und Sortierung nach Inzucht-Gefahr',
+    points: [
+      'Neuer Filter „Bei Verpaarung (Fohlen)“: Alle / Nur mit Inzucht-Gefahr / Nur ohne Inzucht-Gefahr - blendet die jeweils anderen Zellen-Markierungen aus, ohne die Zeilen/Spalten-Auswahl selbst zu verändern',
+      '„Anzahl“ und „Inzucht“ jetzt zwei eigene, unabhängig sortierbare Spalten (vorher eine kombinierte Spalte) - so lässt sich z.B. gezielt nach der meisten Inzucht-Gefahr sortieren',
+    ],
+  },
+  {
     date: '2026-07-29T09:00', type: 'bugfix', title: 'Stammbaum von per Freitext eingelesenen Pferden war um 1 verschoben',
     points: [
       'Der Kopiertext wiederholt direkt unter "Stammbaum" noch einmal die eigene Kopfzeile des Pferds (Name, Rasse, Potenzial), bevor die echten Vorfahren folgen - dieser Wiederholungs-Eintrag wurde bisher nicht erkannt und fälschlich als erster "Vorfahre" mitgezählt',
