@@ -394,33 +394,133 @@ function fractionToPercent(scoreStr) {
 // -> mindestens ein Rn-Allel am KIT-Locus). Nur eindeutige Begriffe werden
 // ausgewertet - "Pinto" z.B. bleibt bewusst unberücksichtigt, da es für
 // Overo, Splashed, Tobiano oder Sabino stehen kann und sich nicht sicher
-// einem einzelnen Gen zuordnen lässt. "Varnish Roan" (Leopard-Musterung
-// ohne PATN) wird zuerst geprüft, damit es nicht fälschlich als das
-// cKit-Gen "Roan" erkannt wird.
+// einem einzelnen Gen zuordnen lässt.
+//
+// Reihenfolge ist wichtig: spezifischere/längere Begriffe zuerst, sonst
+// würde z.B. "Gold Bay" (reine Schattierung, KEINE Champagne) fälschlich
+// die generische "Gold"-Regel auslösen, und "Varnish Roan" nicht als das
+// separate cKit-Gen "Roan" erkannt werden. Jeder Treffer entfernt seinen
+// Text aus der Arbeitskopie, daher pro Eintrag ein Array "hints" - so kann
+// ein einzelner Treffer (z.B. "Amber") mehrere Gene gleichzeitig auslösen
+// (Extension + Agouti + Champagne), ohne dass ein zweiter Eintrag auf
+// denselben, bereits entfernten Text angewiesen wäre.
+//
+// Basisfarbe+Verdünnung-Namen (Amber/Gold/Classic/Sable = Champagne auf
+// Bay/Chestnut/Black/Sealbrown, Buckskin/Palomino/Perlino/Cremello/
+// Dunskin/Dunalino = Cream-Kombinationen, Grulla/Wildbay/Sealbrown/Bay =
+// reine Basisfarbe) folgen der MDR-Farbvererbung, angelehnt an den
+// Discord-Bot (discord-bot/src/mdrGenetics.js) - bei Änderungen hier auch
+// dort nachziehen (kein gemeinsames Modul zwischen den beiden separaten
+// Node-Projekten). WICHTIG, gegen echte Datenbankwerte verifiziert: Bay/
+// Sealbrown/Wildbay/Buckskin/Perlino/Dunskin/Amber/Sable/Classic/Brown
+// belegen zwar sicher, DASS der Agouti-Locus ein präsentes Allel trägt,
+// aber NICHT WELCHES (A1/At/Ap sind je nach Elterntieren austauschbar,
+// dieselbe Fellfarbe entsteht mit mehreren Agouti-Genotypen) - daher wird
+// hier bewusst KEIN Agouti-Hinweis abgeleitet (nur Extension, das ist
+// eindeutig).
 const PHENOTYPE_GENE_HINTS = [
-  { pattern: /varnish roan/i, locus: 'Appaloosa', allele: 'Lp', label: 'Varnish Roan' },
-  { pattern: /\bchampagne\b/i, locus: 'Champagne', allele: 'Ch', label: 'Champagne' },
-  { pattern: /\broan\b/i, locus: 'KIT', allele: 'Rn', label: 'Roan' },
+  { pattern: /\bgold chestnut\b/i, hints: [], label: 'Gold Chestnut (Schattierung, keine Champagne)' },
+  { pattern: /\bgold bay\b/i, hints: [{ locus: 'Extension', allele: 'E' }], label: 'Gold Bay (Schattierung, keine Champagne)' },
+  { pattern: /\bgold wildbay\b/i, hints: [{ locus: 'Extension', allele: 'E' }], label: 'Gold Wildbay (Schattierung, keine Champagne)' },
+  { pattern: /\bgold dun cream\b/i, hints: [{ locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'Cr' }], label: 'Gold Dun Cream (Chestnut-Dun-Champagne-Cream)' },
+  { pattern: /\bgold dun pearl\b/i, hints: [{ locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'plpl' }], label: 'Gold Dun Pearl (Chestnut-Dun-Champagne-Pearl)' },
+  { pattern: /\bamber dun cream\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'Cr' }], label: 'Amber Dun Cream (Bay-Dun-Champagne-Cream)' },
+  { pattern: /\bamber dun pearl\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'plpl' }], label: 'Amber Dun Pearl (Bay-Dun-Champagne-Pearl)' },
+  { pattern: /\bsable dun cream\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'Cr' }], label: 'Sable Dun Cream (Sealbrown-Dun-Champagne-Cream)' },
+  { pattern: /\bsable dun pearl\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'plpl' }], label: 'Sable Dun Pearl (Sealbrown-Dun-Champagne-Pearl)' },
+  { pattern: /\bsealbrown cream dun\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Sealbrown Cream Dun (Sealbrown-Dun-doppel-Cream)' },
+  { pattern: /\bsealbrown cream champagne\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Sealbrown Cream Champagne (Sealbrown-Champagne-doppel-Cream)' },
+  { pattern: /\bclassic dun cream\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Classic Dun Cream (Black-Dun-Champagne-doppel-Cream)' },
+  { pattern: /\bclassic dun pearl\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'plpl' }], label: 'Classic Dun Pearl (Black-Dun-Champagne-Pearl)' },
+  { pattern: /\bsmoky brown dun\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'Cr' }], label: 'Smoky Brown Dun (Sealbrown-Dun-Cream)' },
+  { pattern: /\bsmoky cream dun\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Smoky Cream Dun (Black-Dun-doppel-Cream)' },
+  { pattern: /\bpearl bay dun\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'plpl' }], label: 'Pearl Bay Dun (Bay-Dun-Pearl)' },
+  { pattern: /\bpearl brown dun\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'plpl' }], label: 'Pearl Brown Dun (Sealbrown-Dun-Pearl)' },
+  { pattern: /\bpearl black dun\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'plpl' }], label: 'Pearl Black Dun (Black-Dun-Pearl)' },
+  { pattern: /\bwild dunskin\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'Cr' }], label: 'Wild Dunskin (Wildbay-Dun-Cream)' },
+
+  { pattern: /\bsealbrown cream\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Sealbrown Cream (Sealbrown-doppel-Cream)' },
+  { pattern: /\bsmoky brown\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Cream', allele: 'Cr' }], label: 'Smoky Brown (Sealbrown-Cream)' },
+  { pattern: /\bsmoky black\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Cream', allele: 'Cr' }], label: 'Smoky Black (Black-Cream)' },
+  { pattern: /\bsmoky cream\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Smoky Cream (Black-doppel-Cream)' },
+  { pattern: /\bclassic dun\b/i, hints: [{ locus: 'Dun', allele: 'D' }], label: 'Classic Dun (Black-Dun)' },
+  { pattern: /\bsmoky grulla\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'Cr' }], label: 'Smoky Grulla (Black-Dun-Cream)' },
+
+  { pattern: /\bdunalino\b/i, hints: [{ locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'Cr' }], label: 'Dunalino (Chestnut-Dun-Cream)' },
+  { pattern: /\bgold dun\b/i, hints: [{ locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }], label: 'Gold Dun (Chestnut-Dun-Champagne)' },
+  { pattern: /\bgold cream\b/i, hints: [{ locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'Cr' }], label: 'Gold Cream (Chestnut-Champagne-Cream)' },
+  { pattern: /\bapricot dun\b/i, hints: [{ locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'plpl' }], label: 'Apricot Dun (Chestnut-Dun-Pearl)' },
+  { pattern: /\bgold pearl\b/i, hints: [{ locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'plpl' }], label: 'Gold Pearl (Chestnut-Champagne-Pearl)' },
+  { pattern: /\bcremello dun\b/i, hints: [{ locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Cremello Dun (Chestnut-Dun-doppel-Cream)' },
+  { pattern: /\bcremello champagne\b/i, hints: [{ locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Cremello Champagne (Chestnut-Champagne-doppel-Cream)' },
+  { pattern: /\bdunskin\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Cream', allele: 'Cr' }], label: 'Dunskin (Bay-Dun-Cream)' },
+  { pattern: /\bamber dun\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }], label: 'Amber Dun (Bay-Dun-Champagne)' },
+  { pattern: /\bamber cream\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'Cr' }], label: 'Amber Cream (Bay-Champagne-Cream)' },
+  { pattern: /\bperlino champagne\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Perlino Champagne (Bay-Champagne-doppel-Cream)' },
+  { pattern: /\bsable dun\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }, { locus: 'Champagne', allele: 'Ch' }], label: 'Sable Dun (Sealbrown-Dun-Champagne)' },
+  { pattern: /\bsable cream\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'Cr' }], label: 'Sable Cream (Sealbrown-Champagne-Cream)' },
+  { pattern: /\bsable pearl\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'plpl' }], label: 'Sable Pearl (Sealbrown-Champagne-Pearl)' },
+  { pattern: /\bclassic cream\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'Cr' }], label: 'Classic Cream (Black-Champagne-Cream)' },
+  { pattern: /\bclassic pearl\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }, { locus: 'Cream', allele: 'plpl' }], label: 'Classic Pearl (Black-Champagne-Pearl)' },
+
+  // Basisfarbe + Verdünnung: diese Namen setzen laut MDR-Farbvererbung
+  // Extension zwingend voraus - Agouti bewusst NICHT (siehe Hinweis oben).
+  { pattern: /\bgrulla\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Dun', allele: 'D' }], label: 'Grulla (Black-Dun)' },
+  { pattern: /\bwildbay\b/i, hints: [{ locus: 'Extension', allele: 'E' }], label: 'Wildbay' },
+  { pattern: /\bsealbrown\b|\bbrown\b/i, hints: [{ locus: 'Extension', allele: 'E' }], label: 'Sealbrown/Brown' },
+  { pattern: /\bbay\b/i, hints: [{ locus: 'Extension', allele: 'E' }], label: 'Bay' },
+
+  { pattern: /\bpalomino\b/i, hints: [{ locus: 'Cream', allele: 'Cr' }], label: 'Palomino (Chestnut-Cream)' },
+  { pattern: /\bcremello\b/i, hints: [{ locus: 'Cream', allele: 'CrCr' }], label: 'Cremello (Chestnut-doppel-Cream)' },
+  { pattern: /\bbuckskin\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Cream', allele: 'Cr' }], label: 'Buckskin (Bay-Cream)' },
+  { pattern: /\bperlino\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Cream', allele: 'CrCr' }], label: 'Perlino (Bay-doppel-Cream)' },
+  { pattern: /\bsmoky\b/i, hints: [{ locus: 'Cream', allele: 'Cr' }], label: 'Smoky' },
+
+  { pattern: /\bsable\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }], label: 'Sable (Sealbrown-Champagne)' },
+  { pattern: /\bgold\b/i, hints: [{ locus: 'Champagne', allele: 'Ch' }], label: 'Gold (Chestnut-Champagne)' },
+  { pattern: /\bamber\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }], label: 'Amber (Bay-Champagne)' },
+  { pattern: /\bclassic\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Champagne', allele: 'Ch' }], label: 'Classic (Black-Champagne)' },
+
+  { pattern: /varnish roan/i, hints: [{ locus: 'Appaloosa', allele: 'Lp' }], label: 'Varnish Roan' },
+  { pattern: /\bchampagne\b/i, hints: [{ locus: 'Champagne', allele: 'Ch' }], label: 'Champagne' },
+  { pattern: /\broan\b/i, hints: [{ locus: 'KIT', allele: 'Rn' }], label: 'Roan' },
+  { pattern: /\btovero\b/i, hints: [{ locus: 'KIT', allele: 'TO' }, { locus: 'Overo', allele: 'O' }], label: 'Tovero (Tobiano + Overo)' },
   // allele-Schreibweise ("TO"/"SB") passend zu den echten Rohwerten der
   // getesteten Loci gewählt (siehe COLOR_WISH_OPTIONS in js/verpaarung.js),
   // damit getestete und über die Fellfarbe abgeleitete Pferde einheitlich
   // erkannt werden.
-  { pattern: /\btobiano\b/i, locus: 'KIT', allele: 'TO', label: 'Tobiano' },
-  { pattern: /\bsabino\b/i, locus: 'KIT', allele: 'SB', label: 'Sabino' },
-  { pattern: /\bovero\b/i, locus: 'Overo', allele: 'O', label: 'Overo' },
-  { pattern: /\bsplashed\b/i, locus: 'Splashed', allele: 'SPL', label: 'Splashed White' },
-  { pattern: /\bdun\b/i, locus: 'Dun', allele: 'D', label: 'Dun' },
-  { pattern: /\bcream\b/i, locus: 'Cream', allele: 'Cr', label: 'Cream' },
-  { pattern: /\bpearl\b/i, locus: 'Cream', allele: 'pl', label: 'Pearl' },
-  { pattern: /\bgrey\b/i, locus: 'Grey', allele: 'G', label: 'Grey' },
-  { pattern: /\b(leopard|fewspot|blanket|snowcap)\b/i, locus: 'Appaloosa', allele: 'Lp', label: 'Leopard-Musterung' },
+  { pattern: /\btobiano\b/i, hints: [{ locus: 'KIT', allele: 'TO' }], label: 'Tobiano' },
+  { pattern: /\bsabino\b/i, hints: [{ locus: 'KIT', allele: 'SB' }], label: 'Sabino' },
+  { pattern: /\bovero\b/i, hints: [{ locus: 'Overo', allele: 'O' }], label: 'Overo' },
+  { pattern: /\bsplashed\b/i, hints: [{ locus: 'Splashed', allele: 'SPL' }], label: 'Splashed White' },
+  { pattern: /\bsilver\b/i, hints: [{ locus: 'Extension', allele: 'E' }, { locus: 'Silver', allele: 'Z' }], label: 'Silver' },
+  { pattern: /\bdun\b/i, hints: [{ locus: 'Dun', allele: 'D' }], label: 'Dun' },
+  { pattern: /\bcream\b/i, hints: [{ locus: 'Cream', allele: 'Cr' }], label: 'Cream' },
+  { pattern: /\b(pearl|apricot)\b/i, hints: [{ locus: 'Cream', allele: 'plpl' }], label: 'Pearl' },
+  { pattern: /\bgrey\b/i, hints: [{ locus: 'Grey', allele: 'G' }], label: 'Grey' },
+  { pattern: /\b(leopard|fewspot|blanket|snowcap|appaloosa)\b/i, hints: [{ locus: 'Appaloosa', allele: 'Lp' }], label: 'Leopard-Musterung' },
   // Flaxen hat keinen eigenen getesteten Locus in der Datenbank - nur als
   // Wort in der Fellfarbe erkennbar, wenn sichtbar (siehe COLOR_WISH_OPTIONS
   // in js/verpaarung.js für die Einschränkung, die daraus folgt). Sichtbar
   // heißt reinerbig (zwei Kopien) - daher "flfl", nicht nur "fl" (das
   // steht für eine einzelne, unsichtbare Trägerschaft-Kopie).
-  { pattern: /\bflaxen\b/i, locus: 'Flaxen', allele: 'flfl', label: 'Flaxen' },
+  { pattern: /\bflaxen\b/i, hints: [{ locus: 'Flaxen', allele: 'flfl' }], label: 'Flaxen' },
 ];
+
+// Anzeige-Reihenfolge (Grundfarbe/Aufhellungen/Sonderfarben/Scheckungen/
+// Flaxen) - rein kosmetisch, damit abgeleitete Gene nicht in zufälliger
+// Trefferreihenfolge zwischen den getesteten Loci auftauchen.
+const GENE_DISPLAY_ORDER = [
+  'Extension', 'Agouti', 'Cream', 'Dun', 'Champagne', 'Silver', 'Grey',
+  'KIT', 'Overo', 'Splashed', 'Appaloosa', 'PATN1', 'Flaxen',
+];
+function sortGenesForDisplay(genes) {
+  return [...genes].sort((a, b) => {
+    const ai = GENE_DISPLAY_ORDER.indexOf(a.locus);
+    const bi = GENE_DISPLAY_ORDER.indexOf(b.locus);
+    return (ai === -1 ? GENE_DISPLAY_ORDER.length : ai) - (bi === -1 ? GENE_DISPLAY_ORDER.length : bi);
+  });
+}
 
 // Gibt eine Liste { locus, allele, label } aller aus dem Fellfarbe-Namen
 // eindeutig ableitbaren Merkmale zurück. Bereits erkannte Textstellen
@@ -430,9 +530,9 @@ function inferGeneticHintsFromPhenotype(coatColorName) {
   if (!coatColorName) return [];
   let working = coatColorName;
   const hints = [];
-  for (const { pattern, locus, allele, label } of PHENOTYPE_GENE_HINTS) {
+  for (const { pattern, hints: entryHints, label } of PHENOTYPE_GENE_HINTS) {
     if (pattern.test(working)) {
-      hints.push({ locus, allele, label });
+      for (const h of entryHints) hints.push({ locus: h.locus, allele: h.allele, label });
       working = working.replace(pattern, ' ');
     }
   }
@@ -459,9 +559,11 @@ function extractPresentAlleles(rawValue) {
 
 // Fasst alle tatsächlich vorhandenen Gene eines Pferdes zusammen: zuerst
 // aus getesteten Loci (siehe extractPresentAlleles), dann - nur für Loci,
-// die nicht getestet wurden - aus Hinweisen im Fellfarbe-Namen und in der
-// Notiz (siehe inferGeneticHintsFromPhenotype).
-function presentGenesSummary(colorRows, coatColorName, notes) {
+// die nicht getestet wurden - aus Hinweisen im Fellfarbe-Namen, in der
+// Notiz UND im Anzeigenamen (siehe inferGeneticHintsFromPhenotype) -
+// manche Pferde tragen einen Farbhinweis nur im Namen, nicht im separaten
+// Fellfarbe-Feld.
+function presentGenesSummary(colorRows, coatColorName, notes, horseName) {
   const rows = colorRows || [];
   const confirmed = [];
   const testedLoci = new Set();
@@ -476,6 +578,7 @@ function presentGenesSummary(colorRows, coatColorName, notes) {
   const hints = [
     ...inferGeneticHintsFromPhenotype(coatColorName),
     ...inferGeneticHintsFromPhenotype(notes),
+    ...inferGeneticHintsFromPhenotype(horseName),
   ];
   const seen = new Set();
   const inferred = [];
@@ -487,7 +590,7 @@ function presentGenesSummary(colorRows, coatColorName, notes) {
     inferred.push({ locus: h.locus, alleles: h.allele, source: 'abgeleitet' });
   }
 
-  return [...confirmed, ...inferred];
+  return sortGenesForDisplay([...confirmed, ...inferred]);
 }
 
 if (typeof module !== 'undefined' && module.exports) {

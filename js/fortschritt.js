@@ -28,6 +28,16 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-07-31T09:00', type: 'bugfix', title: 'Genetik-Ableitung bei ungetesteten Pferden stark erweitert und korrigiert',
+    points: [
+      'Bei nicht getesteten Pferden leitet das Tool bekannte Gene aus dem Fellfarbe-Namen ab - viele Basisfarbe+Verdünnung-Namen fehlten bisher komplett: Silver, Amber, Gold, Sable, Classic, Grulla, Wildbay, Sealbrown/Brown, Bay, Buckskin, Perlino, Cremello, Dunskin, Dunalino, Palomino, Apricot, Tovero u.v.m. sowie diverse 3-4-Wort-Kombinationen (z.B. "Amber Dun Cream")',
+      'Betraf u.a. genau den gemeldeten Fall "Amber" (fehlende Champagne-Erkennung) sowie alle Kinder von Pferden mit ähnlichen Namen - wirkt sich auf die Genetik-Spalte (Zuchtbuch, Zuchtplaner, Turnierplaner) UND auf die Farbwünsche-Filterung im Verpaarungsratgeber aus (dort bisher ein echter Funktionsfehler: ungetestete Wunschfarben wurden oft gar nicht gefunden)',
+      'Dabei auch eine Übergenauigkeit entdeckt und entfernt: frühere Testversion behauptete für Bay/Sealbrown/Wildbay/Buckskin/Perlino/Dunskin/Amber/Sable/Classic ein festes Agouti-Allel (z.B. immer "A1" bei Amber) - das stimmte bei echten getesteten Pferden oft nicht (A1/At/Ap sind austauschbar). Jetzt bewusst nur noch Extension abgeleitet, nie ein konkretes Agouti-Allel',
+      'Ebenfalls berücksichtigt: der Anzeigename des Pferds selbst (nicht nur Fellfarbe/Notiz)',
+      'Gegen alle 648 vollständig getesteten Pferde der echten Datenbank verifiziert - 0 Widersprüche zwischen abgeleiteten und echten Werten',
+    ],
+  },
+  {
     date: '2026-07-29T11:00', type: 'feature', title: 'Verwandtschaftsmatrix: Top-Beschränkung nach Sortierung + Hengste↔Stuten',
     points: [
       'Beschränkung ("1.-30." usw.) bedeutet bei Sortierung nach "Anzahl"/"Inzucht" jetzt die Top-Werte aus ALLEN gefilterten Zeilen-Pferden statt der alphabetisch ersten 30 - z.B. zeigt "1.-30." bei Sortierung nach Inzucht die 30 Pferde mit der höchsten Inzuchtzahl',

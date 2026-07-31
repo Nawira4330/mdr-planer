@@ -353,7 +353,7 @@ function parentSummaryHtml(label, horse) {
   const extAvg = averageScore(horse.exterior_descriptive, scoreExteriorTerm);
   const extPct = horse.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(horse.temperament, scoreTemperamentTerm);
-  const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes);
+  const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes, horse.name);
   const genetik = genetikWithFlaxen(horse, genes.map((g) => g.alleles).join(' '));
 
   return `<div class="result-card">
@@ -736,7 +736,7 @@ function candidateCardHtml(rank, c, mare, stallion, weaknessOwnerLabel) {
   const extAvg = averageScore(h.exterior_descriptive, scoreExteriorTerm);
   const extPct = h.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(h.temperament, scoreTemperamentTerm);
-  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes);
+  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes, h.name);
   const genetik = genetikWithFlaxen(h, genes.map((g) => g.alleles).join(' '));
 
   return `<div class="result-card">

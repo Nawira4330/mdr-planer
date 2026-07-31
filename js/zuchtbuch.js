@@ -175,7 +175,7 @@ function onHorseSelect(id) {
 
 function computeDerived(h) {
   const gpRaw = h.tournament_potential?.['Gesamtpotenzial'];
-  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes);
+  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes, h.name);
   return {
     presentGenes: genes.map((g) => g.alleles).join(' '),
     gp: gpRaw != null && gpRaw !== '' ? Number(gpRaw) : null,
