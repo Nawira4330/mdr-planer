@@ -1,19 +1,24 @@
 // Schlagwort-Vorschlag: schreibt einen Eintrag in die "tag_suggestions"-
-// Tabelle der MDR-Datenbank (migration_023_tag_suggestions.sql) - KEIN
-// Login nötig (anon-Insert dort extra freigeschaltet, genau wie beim
-// Verpaarungs-Log/Decksprung-Button, siehe decksprungButtonHtml in
-// js/zuchtplaner.js). MDR-Planer selbst liest/ändert horses.tags NICHT -
-// der Vorschlag erscheint nur als Hinweis in der MDR-Datenbank zum
-// manuellen Übernehmen oder Verwerfen. Labels sind bewusst eine feste
-// Auswahl (kein Freitext), identisch zu HORSE_TAG_OPTIONS in der
-// MDR-Datenbank (js/parser.js dort).
+// Tabelle der MDR-Datenbank (migration_023_tag_suggestions.sql +
+// migration_024_tag_suggestions_authenticated.sql). Nutzerwunsch: nur für
+// in der Pferdedatenbank eingeloggte Nutzer sichtbar/nutzbar (siehe
+// js/authStatus.js) - anders als der ältere Decksprung-Button
+// (js/zuchtplaner.js), der bewusst auch ohne Login funktioniert. MDR-
+// Planer selbst liest/ändert horses.tags NICHT - der Vorschlag erscheint
+// nur als Hinweis in der MDR-Datenbank zum manuellen Übernehmen oder
+// Verwerfen. Labels sind bewusst eine feste Auswahl (kein Freitext),
+// identisch zu HORSE_TAG_OPTIONS in der MDR-Datenbank (js/parser.js dort).
 const TAG_SUGGESTION_LABELS = ['Verkauf', 'Reserviert', 'Bleibt', 'Zuchttier', 'Gnadenbrot'];
 
 // horseId fehlt bei datenbankfremden (per Freitext eingelesenen) Pferden -
 // dafür gibt es keinen Vorschlag-Button, da tag_suggestions.horse_id eine
-// echte Pferde-ID braucht.
+// echte Pferde-ID braucht. Ohne Login gibt es statt des Buttons nur einen
+// Hinweistext (die Datenbank würde den Insert ohnehin per RLS ablehnen).
 function tagSuggestButtonHtml(horseId) {
   if (!horseId) return '';
+  if (!isLoggedIn()) {
+    return '<span class="small muted">Schlagwort vorschlagen: nur für in der Pferdedatenbank eingeloggte Nutzer.</span>';
+  }
   const options = TAG_SUGGESTION_LABELS.map((l) => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
   return `<span class="tag-suggest-wrap" data-horse-id="${escapeHtml(horseId)}">
     <button type="button" class="btn secondary tag-suggest-toggle">Schlagwort vorschlagen</button>

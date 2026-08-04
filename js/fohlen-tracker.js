@@ -28,6 +28,7 @@ async function init() {
   topBreedFilter = createBreedFilter(document.querySelector('#top-breed-drop'), { onChange: renderTop });
   wireTopToggle();
   wireTagSuggestHandlers('Fohlen-Tracker');
+  await initAuthStatus();
   await loadHorses();
 }
 

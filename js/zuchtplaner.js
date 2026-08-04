@@ -106,6 +106,7 @@ async function init() {
   });
   wireFarbwunschDropdown();
   document.addEventListener('click', onDecksprungClick);
+  await initAuthStatus();
   await loadHorses();
   loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert die Seite nicht
   // Erst NACH mareSelect/stallionSelect + loadHorses() aktivieren, da

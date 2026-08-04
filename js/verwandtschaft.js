@@ -59,6 +59,7 @@ async function init() {
   document.querySelector('#matrix-inzucht-filter-select').addEventListener('change', renderMatrix);
   wireMatrixSortableHeaders();
   wireTagSuggestHandlers('Verwandtschaftsmatrix');
+  await initAuthStatus();
   await loadHorses();
 }
 

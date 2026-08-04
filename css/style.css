@@ -86,6 +86,8 @@ a:hover { color: var(--accent-dark); }
   align-items: center;
 }
 
+#auth-status { white-space: nowrap; }
+
 main.container {
   max-width: 1200px;
   margin: 0 auto;

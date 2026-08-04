@@ -20,6 +20,7 @@ async function init() {
   breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect });
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   document.querySelector('#parse-btn').addEventListener('click', onParse);
+  await initAuthStatus();
   await loadHorses();
 }
 

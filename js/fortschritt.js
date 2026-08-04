@@ -28,10 +28,20 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-08-04T13:00', type: 'feature', title: 'Login-Status in MDR-Planer + Schlagwort-Vorschlag nur für eingeloggte Nutzer',
+    points: [
+      'MDR-Planer und die Pferdedatenbank laufen unter derselben Domain (nawira4330.github.io, nur andere Unterpfade) - eine dort bestehende eingeloggte Session wird jetzt bewusst erkannt und oben in der Kopfzeile angezeigt ("Angemeldet als: E-Mail" bzw. "Angemeldet als: Gast"). MDR-Planer selbst hat weiterhin kein eigenes Login',
+      '"Schlagwort vorschlagen" (Zuchtbuch/Fohlen-Tracker/Verwandtschaftsmatrix) ist jetzt nur für eingeloggte Nutzer sichtbar und nutzbar - ohne Login erscheint statt des Buttons nur ein Hinweistext',
+      'Grund: der ursprünglich anonyme Insert schlug fehl, sobald man im selben Browser gleichzeitig in der Pferdedatenbank eingeloggt war ("new row violates row-level security policy") - jetzt richtet sich die Berechtigung nach dem echten Login-Status statt dagegen anzulaufen',
+      'Der bestehende "Decksprung nutzen"-Button bleibt bewusst weiterhin auch ohne Login nutzbar (unverändert) - zusätzlich jetzt auch für eingeloggte Nutzer freigeschaltet, falls man beides gleichzeitig nutzt',
+      'Mit simuliertem Gast- und Login-Zustand verifiziert (Hinweistext bzw. Formular korrekt je nach Status)',
+    ],
+  },
+  {
     date: '2026-08-04T10:00', type: 'feature', title: 'Schlagwort-Vorschläge aus Zuchtbuch, Fohlen-Tracker und Verwandtschaftsmatrix',
     points: [
       'Neuer Button "Schlagwort vorschlagen" beim jeweils angezeigten Pferd - eines der 5 festen Schlagwörter (Verkauf, Reserviert, Bleibt, Zuchttier, Gnadenbrot) plus optionaler Zusatztext auswählen und abschicken',
-      'Trägt den Vorschlag in die neue Tabelle "tag_suggestions" der Pferdedatenbank ein (kein Login in MDR-Planer nötig, wie schon beim Decksprung-Button) - wird dort manuell geprüft und auf das Pferd übernommen oder verworfen, MDR-Planer selbst ändert nichts direkt',
+      'Trägt den Vorschlag in die neue Tabelle "tag_suggestions" der Pferdedatenbank ein - wird dort manuell geprüft und auf das Pferd übernommen oder verworfen, MDR-Planer selbst ändert nichts direkt',
       'Bei per Freitext eingelesenen (datenbankfremden) Pferden erscheint der Button bewusst nicht - dafür fehlt die nötige Pferde-ID',
     ],
   },

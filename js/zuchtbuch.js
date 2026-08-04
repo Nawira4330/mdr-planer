@@ -31,6 +31,7 @@ async function init() {
   document.querySelector('#rassefremde-select').addEventListener('change', render);
   wireSortableHeaders();
   wireTagSuggestHandlers('Zuchtbuch');
+  await initAuthStatus();
   await loadHorses();
 }
 
