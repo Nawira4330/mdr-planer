@@ -30,6 +30,7 @@ async function init() {
   applyFilterAlleState(); // Einzel-Häkchen passend zum Startzustand (an) deaktivieren
   document.querySelector('#rassefremde-select').addEventListener('change', render);
   wireSortableHeaders();
+  wireTagSuggestHandlers('Zuchtbuch');
   await loadHorses();
 }
 
@@ -396,6 +397,7 @@ function horseSummaryHtml(h, label) {
       &nbsp;·&nbsp; EKH: <strong>${ekh.length ? escapeHtml(ekh.join(', ')) : '-'}</strong>
       &nbsp;·&nbsp; Besitzer: <strong>${h.owner ? escapeHtml(h.owner) : '–'}</strong>
     </p>
+    <p class="small">${tagSuggestButtonHtml(h.id)}</p>
   </div>`;
 }
 

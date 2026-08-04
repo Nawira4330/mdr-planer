@@ -58,6 +58,7 @@ async function init() {
   document.querySelector('#matrix-modus-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-inzucht-filter-select').addEventListener('change', renderMatrix);
   wireMatrixSortableHeaders();
+  wireTagSuggestHandlers('Verwandtschaftsmatrix');
   await loadHorses();
 }
 
@@ -197,6 +198,7 @@ function renderFreitext() {
     ? `${countLabel} für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
     : `${countLabel} gefunden`;
   let html = `<div class="group-heading">${heading}</div>`;
+  html += `<p class="small">${tagSuggestButtonHtml(target.id)}</p>`;
   if (!related.length) {
     html += '<p class="small muted">Keine Verwandtschaft im sichtbaren Stammbaum gefunden.</p>';
     container.innerHTML = html;

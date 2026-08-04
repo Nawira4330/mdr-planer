@@ -28,6 +28,14 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-08-04T10:00', type: 'feature', title: 'Schlagwort-Vorschläge aus Zuchtbuch, Fohlen-Tracker und Verwandtschaftsmatrix',
+    points: [
+      'Neuer Button "Schlagwort vorschlagen" beim jeweils angezeigten Pferd - eines der 5 festen Schlagwörter (Verkauf, Reserviert, Bleibt, Zuchttier, Gnadenbrot) plus optionaler Zusatztext auswählen und abschicken',
+      'Trägt den Vorschlag in die neue Tabelle "tag_suggestions" der Pferdedatenbank ein (kein Login in MDR-Planer nötig, wie schon beim Decksprung-Button) - wird dort manuell geprüft und auf das Pferd übernommen oder verworfen, MDR-Planer selbst ändert nichts direkt',
+      'Bei per Freitext eingelesenen (datenbankfremden) Pferden erscheint der Button bewusst nicht - dafür fehlt die nötige Pferde-ID',
+    ],
+  },
+  {
     date: '2026-07-31T09:00', type: 'bugfix', title: 'Genetik-Ableitung bei ungetesteten Pferden stark erweitert und korrigiert',
     points: [
       'Bei nicht getesteten Pferden leitet das Tool bekannte Gene aus dem Fellfarbe-Namen ab - viele Basisfarbe+Verdünnung-Namen fehlten bisher komplett: Silver, Amber, Gold, Sable, Classic, Grulla, Wildbay, Sealbrown/Brown, Bay, Buckskin, Perlino, Cremello, Dunskin, Dunalino, Palomino, Apricot, Tovero u.v.m. sowie diverse 3-4-Wort-Kombinationen (z.B. "Amber Dun Cream")',

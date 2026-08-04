@@ -27,6 +27,7 @@ async function init() {
   document.querySelector('#top-gender-select').addEventListener('change', renderTop);
   topBreedFilter = createBreedFilter(document.querySelector('#top-breed-drop'), { onChange: renderTop });
   wireTopToggle();
+  wireTagSuggestHandlers('Fohlen-Tracker');
   await loadHorses();
 }
 
@@ -145,6 +146,7 @@ function renderFoalResult() {
 
   const foals = childrenByParentName.get(normalizeName(currentHorse.name)) || [];
   let html = `<div class="group-heading">${foals.length} Fohlen gefunden</div>`;
+  html += `<p class="small">${tagSuggestButtonHtml(currentHorse.id)}</p>`;
   if (!foals.length) {
     html += '<p class="small muted">Keine Fohlen im sichtbaren Stammbaum der übrigen Pferde gefunden.</p>';
     container.innerHTML = html;
