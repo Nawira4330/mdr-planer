@@ -52,7 +52,7 @@ function renderSharedNav() {
     <div class="nav-dropdown">
       <button type="button" class="btn secondary nav-dropdown-toggle" id="auth-status-toggle">Angemeldet als: Gast</button>
       <div class="nav-dropdown-menu" hidden>
-        <a href="https://nawira4330.github.io/mdr-datenbank/" target="_blank" rel="noopener">Pferdedatenbank bearbeiten ↗</a>
+        <a href="https://nawira4330.github.io/mdr-datenbank/" target="_blank" rel="noopener">MDR-Datenbank ↗</a>
       </div>
     </div>
   `;
