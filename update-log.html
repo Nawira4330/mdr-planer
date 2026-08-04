@@ -6,17 +6,13 @@
   <meta name="color-scheme" content="light dark" />
   <title>Update-Log – MDR Zucht- &amp; Turnierplaner</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header class="topbar">
     <h1>📋 Update-Log</h1>
     <nav>
       <a class="btn secondary" href="index.html">← Zur Übersicht</a>
-      <a class="btn secondary" href="zuchtplaner.html">Zuchtplaner</a>
-      <a class="btn secondary" href="turnierplaner.html">Turnierplaner</a>
-      <a class="btn secondary" href="zuchtbuch.html">Zuchtbuch</a>
-      <a class="btn secondary" href="verwandtschaft.html">Verwandtschaft</a>
-      <a class="btn secondary" href="fohlen-tracker.html">Fohlen-Tracker</a>
     </nav>
   </header>
 
@@ -35,6 +31,10 @@
     </fieldset>
   </main>
 
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/authStatus.js"></script>
+  <script src="js/nav.js"></script>
   <script src="js/fortschritt.js"></script>
 </body>
 </html>

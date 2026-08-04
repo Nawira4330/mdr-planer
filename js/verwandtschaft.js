@@ -199,7 +199,7 @@ function renderFreitext() {
     ? `${countLabel} für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
     : `${countLabel} gefunden`;
   let html = `<div class="group-heading">${heading}</div>`;
-  html += `<p class="small">${tagSuggestButtonHtml(target.id)}</p>`;
+  html += `<p class="small">${tagSuggestButtonHtml(target.id, target.owner)}</p>`;
   if (!related.length) {
     html += '<p class="small muted">Keine Verwandtschaft im sichtbaren Stammbaum gefunden.</p>';
     container.innerHTML = html;

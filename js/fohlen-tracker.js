@@ -147,7 +147,7 @@ function renderFoalResult() {
 
   const foals = childrenByParentName.get(normalizeName(currentHorse.name)) || [];
   let html = `<div class="group-heading">${foals.length} Fohlen gefunden</div>`;
-  html += `<p class="small">${tagSuggestButtonHtml(currentHorse.id)}</p>`;
+  html += `<p class="small">${tagSuggestButtonHtml(currentHorse.id, currentHorse.owner)}</p>`;
   if (!foals.length) {
     html += '<p class="small muted">Keine Fohlen im sichtbaren Stammbaum der übrigen Pferde gefunden.</p>';
     container.innerHTML = html;

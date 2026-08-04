@@ -86,7 +86,45 @@ a:hover { color: var(--accent-dark); }
   align-items: center;
 }
 
-#auth-status { white-space: nowrap; }
+#auth-status-toggle { white-space: nowrap; }
+
+/* --- Nav-Dropdowns in der Kopfzeile (Tools/DB-Planer/Angemeldet als, siehe
+   js/nav.js) - 1:1 an die MDR-Datenbank angeglichen (dort: MDR-Planer/
+   MDR-DB/Konto), inkl. identischer Farben (--accent ist bewusst in beiden
+   Projekten gleich). */
+.nav-dropdown { position: relative; }
+.nav-dropdown-menu {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+.nav-dropdown-menu a,
+.nav-dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--text);
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu button:hover { background: rgba(107, 157, 0, 0.12); }
 
 main.container {
   max-width: 1200px;

@@ -9,26 +9,55 @@
 // Logout passiert ausschließlich in der Pferdedatenbank.
 
 let currentAuthSession = null;
+// initAuthStatus() wird jetzt von zwei Stellen aufgerufen: automatisch aus
+// js/nav.js (renderSharedNav(), deckt Seiten ohne eigenen Aufruf ab, z.B.
+// index.html) UND explizit aus der init() der 5 Werkzeug-Seiten (die
+// currentAuthSession synchron VOR ihrem eigenen ersten Laden brauchen,
+// siehe z.B. loadVerpaarungLogEnabled() in js/zuchtplaner.js). Das
+// gecachte Promise verhindert doppelte Arbeit/doppelte
+// onAuthStateChange-Abos, wenn beide Aufrufer zusammentreffen.
+let authStatusInitPromise = null;
 
-async function initAuthStatus() {
-  const { data } = await supabaseClient.auth.getSession();
-  currentAuthSession = data.session;
-  renderAuthStatus();
-  // Falls sich der Login-Status in einem anderen Tab (Pferdedatenbank)
-  // ändert, während diese Seite offen bleibt - selten, aber kostenlos
-  // abzudecken.
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    currentAuthSession = session;
+function initAuthStatus() {
+  if (authStatusInitPromise) return authStatusInitPromise;
+  authStatusInitPromise = (async () => {
+    const { data } = await supabaseClient.auth.getSession();
+    currentAuthSession = data.session;
     renderAuthStatus();
-  });
+    // Falls sich der Login-Status in einem anderen Tab (Pferdedatenbank)
+    // ändert, während diese Seite offen bleibt - selten, aber kostenlos
+    // abzudecken.
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      currentAuthSession = session;
+      renderAuthStatus();
+    });
+  })();
+  return authStatusInitPromise;
 }
 
 function isLoggedIn() {
   return !!currentAuthSession?.user;
 }
 
+// Vergleicht das eingeloggte Konto mit einem Besitzer-Namen (horses.owner) -
+// gleiches Muster wie currentIdentity/onOnlyMyHorses in js/list.js der
+// MDR-Datenbank: Benutzername ist der Teil der E-Mail vor dem "@", Groß-/
+// Kleinschreibung im "Besitzer"-Feld ist nicht garantiert einheitlich,
+// deshalb case-insensitiv verglichen. Für "Schlagwort vorschlagen"
+// (js/tagSuggest.js) - nur der Besitzer eines Pferdes soll dafür Vorschläge
+// machen können, nicht jedes eingeloggte Konto.
+function isOwnerOf(owner) {
+  if (!isLoggedIn() || !owner) return false;
+  const identity = currentAuthSession.user.email.split('@')[0];
+  return identity.toLowerCase() === owner.toLowerCase();
+}
+
+// Beschriftet den dritten Nav-Dropdown (siehe js/nav.js) statt eines
+// eigenen Textelements - der Dropdown-Inhalt selbst (Link zur
+// Pferdedatenbank) hängt fest in nav.js, hier wird nur die
+// Toggle-Beschriftung aktualisiert.
 function renderAuthStatus() {
-  const el = document.querySelector('#auth-status');
+  const el = document.querySelector('#auth-status-toggle');
   if (!el) return;
   el.textContent = isLoggedIn()
     ? `Angemeldet als: ${currentAuthSession.user.email || currentAuthSession.user.id}`

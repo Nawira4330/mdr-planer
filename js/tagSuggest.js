@@ -14,11 +14,17 @@ const TAG_SUGGESTION_LABELS = ['Verkauf', 'Reserviert', 'Bleibt', 'Zuchttier', '
 // dafür gibt es keinen Vorschlag-Button, da tag_suggestions.horse_id eine
 // echte Pferde-ID braucht. Ohne Login gibt es statt des Buttons nur einen
 // Hinweistext (die Datenbank würde den Insert ohnehin per RLS ablehnen).
-function tagSuggestButtonHtml(horseId) {
+// Nutzerwunsch: der Button soll außerdem nur für den Besitzer des jeweiligen
+// Pferdes erscheinen, nicht für jedes eingeloggte Konto (siehe isOwnerOf in
+// js/authStatus.js) - bei fremden Pferden erscheint dafür gar nichts (kein
+// Hinweistext), um die Liste bei vielen fremden Pferden nicht mit sich
+// wiederholenden Hinweisen zuzumüllen.
+function tagSuggestButtonHtml(horseId, owner) {
   if (!horseId) return '';
   if (!isLoggedIn()) {
     return '<span class="small muted">Schlagwort vorschlagen: nur für in der Pferdedatenbank eingeloggte Nutzer.</span>';
   }
+  if (!isOwnerOf(owner)) return '';
   const options = TAG_SUGGESTION_LABELS.map((l) => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
   return `<span class="tag-suggest-wrap" data-horse-id="${escapeHtml(horseId)}">
     <button type="button" class="btn secondary tag-suggest-toggle">Schlagwort vorschlagen</button>

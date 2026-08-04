@@ -398,7 +398,7 @@ function horseSummaryHtml(h, label) {
       &nbsp;·&nbsp; EKH: <strong>${ekh.length ? escapeHtml(ekh.join(', ')) : '-'}</strong>
       &nbsp;·&nbsp; Besitzer: <strong>${h.owner ? escapeHtml(h.owner) : '–'}</strong>
     </p>
-    <p class="small">${tagSuggestButtonHtml(h.id)}</p>
+    <p class="small">${tagSuggestButtonHtml(h.id, h.owner)}</p>
   </div>`;
 }
 

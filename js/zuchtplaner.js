@@ -50,6 +50,15 @@ let flaxenLookup = null;
 // Reverse-Index dazu (Name -> bekannte Nachkommen) für die zusätzliche
 // Trägerschaftsprüfung über Nachkommen, siehe hasFlaxenTrait.
 let flaxenChildrenByName = null;
+// Der "Decksprung nutzen"-Button schreibt in dieselbe "pairings"-Tabelle wie
+// das Verpaarungs-Log in der MDR-Datenbank (verpaarung.html) - ist dieses
+// Log für das aktuell eingeloggte Konto dort ausgeblendet (Einstellung in
+// einstellungen.html, siehe user_settings.verpaarung_enabled und js/nav.js
+// in der MDR-Datenbank), macht der Button hier auch keinen Sinn mehr und
+// wird ebenfalls ausgeblendet. Für Gäste (kein Login) bleibt er unverändert
+// sichtbar, da es dort kein Konto/keine Einstellung gibt, auf die sich
+// "ausgeblendet" beziehen könnte.
+let verpaarungLogEnabled = true;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -107,6 +116,7 @@ async function init() {
   wireFarbwunschDropdown();
   document.addEventListener('click', onDecksprungClick);
   await initAuthStatus();
+  await loadVerpaarungLogEnabled();
   await loadHorses();
   loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert die Seite nicht
   // Erst NACH mareSelect/stallionSelect + loadHorses() aktivieren, da
@@ -115,6 +125,24 @@ async function init() {
   // Fehler, der die komplette init()-Funktion abbrach - Suchfelder
   // blieben dann funktionslos, z.B. via "zuchtplaner.html?tab=auswahl").
   activateTabFromUrl();
+}
+
+// Fragt das Verpaarungs-Log-Setting des eingeloggten Kontos ab (nur bei
+// bestehender Session sinnvoll/möglich, siehe RLS-Policy
+// "user_settings_select_own" in migration_017 - erlaubt select nur für
+// auth.uid() = user_id, kein anon-Zugriff). Fehlt die Zeile (nie in
+// einstellungen.html gespeichert) oder schlägt die Abfrage fehl, bleibt es
+// beim Standard "sichtbar", exakt wie js/nav.js in der MDR-Datenbank.
+async function loadVerpaarungLogEnabled() {
+  if (!isLoggedIn()) return;
+  const { data, error } = await supabaseClient
+    .from('user_settings')
+    .select('verpaarung_enabled')
+    .eq('user_id', currentAuthSession.user.id)
+    .maybeSingle();
+  if (!error && data && data.verpaarung_enabled === false) {
+    verpaarungLogEnabled = false;
+  }
 }
 
 // Lädt ALLE Pferde (unabhängig von ZZL/Geschlecht) einmalig, um daraus die
@@ -490,6 +518,7 @@ function empiricalRowHtml(mare, stallion) {
 // verpaarung.html der MDR-Datenbank (siehe Klick-Handler in init()).
 function decksprungButtonHtml(mare, stallion) {
   if (!mare?.name || !stallion?.name) return '';
+  if (!verpaarungLogEnabled) return '';
   return `<div class="decksprung-wrap">
     <button type="button" class="btn secondary decksprung-btn" data-mare="${escapeHtml(mare.name)}" data-stallion="${escapeHtml(stallion.name)}" data-owner="${escapeHtml(mare.owner || '')}" style="margin-top:0.4rem;">Decksprung nutzen</button>
     <span class="small muted decksprung-status"></span>
