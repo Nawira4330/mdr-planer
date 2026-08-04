@@ -55,11 +55,16 @@ function isOwnerOf(owner) {
 // Beschriftet den dritten Nav-Dropdown (siehe js/nav.js) statt eines
 // eigenen Textelements - der Dropdown-Inhalt selbst (Link zur
 // Pferdedatenbank) hängt fest in nav.js, hier wird nur die
-// Toggle-Beschriftung aktualisiert.
+// Toggle-Beschriftung aktualisiert. Zeigt den Benutzernamen (Teil der
+// E-Mail vor dem "@", siehe isOwnerOf) statt der vollen E-Mail-Adresse -
+// gleiches Muster wie die Konto-Beschriftung in js/nav.js der
+// MDR-Datenbank. Ohne Login (bzw. wenn niemand in der Pferdedatenbank
+// angemeldet ist) bleibt es bei "Gast" - technisch weiterhin ein
+// unangemeldeter/anonymer Nutzer, nur eben so betitelt.
 function renderAuthStatus() {
   const el = document.querySelector('#auth-status-toggle');
   if (!el) return;
   el.textContent = isLoggedIn()
-    ? `Angemeldet als: ${currentAuthSession.user.email || currentAuthSession.user.id}`
+    ? `Angemeldet als: ${currentAuthSession.user.email ? currentAuthSession.user.email.split('@')[0] : currentAuthSession.user.id}`
     : 'Angemeldet als: Gast';
 }
