@@ -6,7 +6,7 @@
 // werden.
 
 const ZUCHTBUCH_FIELDS =
-  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct';
+  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags';
 
 let allHorses = [];
 let horseSelect;
@@ -23,6 +23,8 @@ async function init() {
   );
   breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect });
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
+  document.querySelector('#gender-select').addEventListener('change', populateHorseSelect);
+  document.querySelector('#zzl-select').addEventListener('change', populateHorseSelect);
   ['filter-vater', 'filter-mutter', 'filter-kinder', 'filter-nachkommen'].forEach((id) => {
     document.querySelector(`#${id}`).addEventListener('change', render);
   });
@@ -157,7 +159,15 @@ async function loadHorses() {
 
 function populateHorseSelect() {
   const owner = document.querySelector('#owner-select').value;
-  const filtered = allHorses.filter((h) => (!owner || h.owner === owner) && breedFilter.matches(h));
+  const gender = document.querySelector('#gender-select').value;
+  const zzl = document.querySelector('#zzl-select').value;
+  const filtered = allHorses.filter((h) => {
+    if (owner && h.owner !== owner) return false;
+    if (gender && h.gender !== gender) return false;
+    if (zzl === 'zzl' && h.breeding_allowed !== true) return false;
+    if (zzl === 'ohne' && h.breeding_allowed === true) return false;
+    return breedFilter.matches(h);
+  });
   horseSelect.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
 }
 
@@ -382,7 +392,7 @@ function horseSummaryHtml(h, label) {
   const ekh = affectedDiseaseLabels(h);
   const heading = label ? `${escapeHtml(label)}: ${escapeHtml(h.name || '(ohne Name)')}` : escapeHtml(h.name || '(ohne Name)');
   return `<div class="result-card">
-    <h2>${heading}</h2>
+    <h2 class="name-with-tags">${heading}${tagsBadgesHtml(h.tags)}</h2>
     <p class="small muted">
       GP: <strong>${d.gp != null ? d.gp : '–'}</strong>
       &nbsp;·&nbsp; Ext: <strong>${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</strong>
@@ -492,7 +502,7 @@ function relativeRowHtml(r) {
   const ekh = affectedDiseaseLabels(h);
   return `<tr>
     <td data-label="Beziehung">${escapeHtml(r.beziehung)}</td>
-    <td data-label="Name">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="name-with-tags">${escapeHtml(h.name || '(ohne Name)')}${tagsBadgesHtml(h.tags)}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '')}</td>
     <td data-label="Genetik" class="small" style="font-family: ui-monospace, monospace;">${escapeHtml(d.presentGenes)}</td>

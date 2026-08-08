@@ -593,6 +593,34 @@ function presentGenesSummary(colorRows, coatColorName, notes, horseName) {
   return sortGenesForDisplay([...confirmed, ...inferred]);
 }
 
+// Schlagwörter (horses.tags), 1:1 aus MDR-Datenbank/js/parser.js portiert,
+// damit dieselben Labels/Farben wie dort verwendet werden (dort gepflegt,
+// hier nur lesend zur Anzeige gebraucht - MDR-Planer legt selbst keine
+// Schlagwörter an, siehe js/tagSuggest.js für den separaten
+// Vorschlags-Mechanismus).
+const HORSE_TAG_OPTIONS = [
+  { label: 'Verkauf', color: 'var(--danger)' },
+  { label: 'Reserviert', color: 'var(--warning)' },
+  { label: 'Bleibt', color: 'var(--success)' },
+  { label: 'Zuchttier', color: 'var(--tag-blue)' },
+  { label: 'Gnadenbrot', color: 'var(--tag-purple)' },
+];
+
+function tagColor(label) {
+  return HORSE_TAG_OPTIONS.find((t) => t.label === label)?.color || 'var(--muted)';
+}
+
+// Rendert die zugewiesenen Schlagwörter eines Pferds als farbige Badges -
+// "escapeHtml" wird erst beim tatsächlichen Aufruf gebraucht (nicht beim
+// Laden von parser.js selbst) und ist dann bereits durch das jeweilige
+// Seiten-Skript global definiert.
+function tagsBadgesHtml(tags) {
+  return (tags || []).map((tag) => {
+    const text = tag.note ? `${tag.label}: ${tag.note}` : tag.label;
+    return `<span class="horse-tag-badge" style="background:${tagColor(tag.label)}">${escapeHtml(text)}</span>`;
+  }).join('');
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseHorseText };
+  module.exports = { parseHorseText, HORSE_TAG_OPTIONS, tagColor, tagsBadgesHtml };
 }

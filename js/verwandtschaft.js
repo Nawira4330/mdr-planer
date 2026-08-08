@@ -4,7 +4,7 @@
 // Kombination). Nutzt findRelations/areRelated aus js/breeding.js - muss
 // also nach parser.js/breeding.js eingebunden werden.
 
-const RELATION_FIELDS = 'id,name,owner,gender,breed,purebred_pct,pedigree,breeding_allowed';
+const RELATION_FIELDS = 'id,name,owner,gender,breed,purebred_pct,pedigree,breeding_allowed,tags';
 
 // Ab wie vielen Zellen (Zeilen × Spalten) die Matrix aus Performance- und
 // Übersichtlichkeitsgründen nicht mehr gerendert wird.
@@ -31,7 +31,7 @@ let allHorses = [];
 let horseSelect;
 let currentTarget = null;
 let foreignTarget = null; // per Freitext eingelesenes, nicht in der DB gespeichertes Pferd
-let matrixRowBreedFilter, matrixColBreedFilter;
+let matrixRowBreedFilter, matrixColBreedFilter, relationBreedFilter;
 let matrixSort = { field: 'count', dir: 'desc' };
 
 document.addEventListener('DOMContentLoaded', init);
@@ -42,6 +42,9 @@ async function init() {
     { onChange: onTargetChange },
   );
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
+  relationBreedFilter = createBreedFilter(document.querySelector('#relation-breed-drop'), { onChange: populateHorseSelect });
+  document.querySelector('#relation-gender-select').addEventListener('change', populateHorseSelect);
+  document.querySelector('#relation-zzl-select').addEventListener('change', populateHorseSelect);
   document.querySelector('#foreign-horse-parse-btn').addEventListener('click', onForeignHorseParse);
   // Zeilen (1. Spalte) und Spalten (1. Zeile) der Matrix lassen sich
   // unabhängig voneinander filtern - z.B. "Stuten von Besitzer A" gegen
@@ -111,13 +114,22 @@ async function loadHorses() {
 
   matrixRowBreedFilter.setHorses(allHorses);
   matrixColBreedFilter.setHorses(allHorses);
+  relationBreedFilter.setHorses(allHorses);
   populateHorseSelect();
   renderMatrix();
 }
 
 function populateHorseSelect() {
   const owner = document.querySelector('#owner-select').value;
-  const filtered = owner ? allHorses.filter((h) => h.owner === owner) : allHorses;
+  const gender = document.querySelector('#relation-gender-select').value;
+  const zzl = document.querySelector('#relation-zzl-select').value;
+  const filtered = allHorses.filter((h) => {
+    if (owner && h.owner !== owner) return false;
+    if (gender && h.gender !== gender) return false;
+    if (zzl === 'zzl' && h.breeding_allowed !== true) return false;
+    if (zzl === 'ohne' && h.breeding_allowed === true) return false;
+    return relationBreedFilter.matches(h);
+  });
   horseSelect.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
 }
 
@@ -226,7 +238,7 @@ function relationRowHtml(r, target) {
     ? '<span class="pill no">Inzucht-Gefahr</span>'
     : '<span class="pill yes">Unbedenklich</span>';
   return `<tr>
-    <td data-label="Pferd">${otherName}</td>
+    <td data-label="Pferd" class="name-with-tags">${otherName}${tagsBadgesHtml(r.horse.tags)}</td>
     <td data-label="Besitzer">${r.horse.owner ? escapeHtml(r.horse.owner) : '–'}</td>
     <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetName}: ${escapeHtml(m.positionA)}, bei ${otherName}: ${escapeHtml(m.positionB)})</td>
     <td data-label="Bei Verpaarung">${pill}</td>

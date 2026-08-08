@@ -16,6 +16,11 @@
   --success: #6b9d00;
   --info: #3b7dc4;
   --warning: #c47a1f;
+  /* Nur für Schlagwort-Badges (siehe HORSE_TAG_OPTIONS in js/parser.js,
+     1:1 aus der MDR-Datenbank übernommen) - Verkauf/Reserviert/Bleibt
+     decken sich bereits mit danger/warning/success. */
+  --tag-blue: #3f7fbf;
+  --tag-purple: #8a5fb0;
   --radius: 8px;
   --font-heading: "Courgette", cursive;
   --font-body: "Source Sans 3", "Source Sans Pro", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -35,6 +40,8 @@
     --success: #89b957;
     --info: #7aaee0;
     --warning: #e0a862;
+    --tag-blue: #7fb0e0;
+    --tag-purple: #b98fd9;
   }
 }
 
@@ -557,6 +564,18 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
   margin: 1rem 0;
 }
 .result-card .pill { font-size: 0.95rem; padding: 0.2rem 0.7rem; margin-bottom: 0.5rem; }
+
+/* --- Schlagwort-Badges (siehe tagsBadgesHtml in js/parser.js), 1:1 aus
+   der MDR-Datenbank übernommen. --- */
+.horse-tag-badge {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: #fff;
+  white-space: nowrap;
+}
+.name-with-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 
 /* --- Durchsuchbares Auswahlfeld (Zuchtplaner/Turnierplaner Pferdeauswahl) --- */
 .searchselect { position: relative; }

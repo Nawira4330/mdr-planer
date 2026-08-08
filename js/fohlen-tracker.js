@@ -5,7 +5,7 @@
 // DB) - selbes Muster wie js/zuchtbuch.js.
 
 const FOAL_FIELDS =
-  'id,name,owner,gender,breed,pedigree,breeding_allowed,coat_color,colors,notes,' +
+  'id,name,owner,gender,breed,pedigree,breeding_allowed,coat_color,colors,notes,tags,' +
   'tournament_potential,exterior_genetics,exterior_descriptive,temperament';
 
 let allHorses = [];
@@ -25,6 +25,7 @@ async function init() {
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   document.querySelector('#top-owner-select').addEventListener('change', renderTop);
   document.querySelector('#top-gender-select').addEventListener('change', renderTop);
+  document.querySelector('#top-zzl-select').addEventListener('change', renderTop);
   topBreedFilter = createBreedFilter(document.querySelector('#top-breed-drop'), { onChange: renderTop });
   wireTopToggle();
   wireTagSuggestHandlers('Fohlen-Tracker');
@@ -169,7 +170,7 @@ function renderFoalResult() {
 
 function foalRowHtml(h) {
   return `<tr>
-    <td data-label="Name">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="name-with-tags">${escapeHtml(h.name || '(ohne Name)')}${tagsBadgesHtml(h.tags)}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
@@ -181,10 +182,13 @@ function renderTop() {
   const container = document.querySelector('#top-result');
   const owner = document.querySelector('#top-owner-select').value;
   const gender = document.querySelector('#top-gender-select').value;
+  const zzl = document.querySelector('#top-zzl-select').value;
 
   const candidates = allHorses.filter((h) => {
     if (owner && h.owner !== owner) return false;
     if (gender && h.gender !== gender) return false;
+    if (zzl === 'zzl' && h.breeding_allowed !== true) return false;
+    if (zzl === 'ohne' && h.breeding_allowed === true) return false;
     if (!topBreedFilter.matches(h)) return false;
     return true;
   });
@@ -224,7 +228,7 @@ function topRowHtml(r, rank) {
   let html = `<tr class="top-row" data-id="${escapeHtml(h.id)}" style="cursor:pointer;">
     <td>${expanded ? '▾' : '▸'}</td>
     <td data-label="Rang">${rank}</td>
-    <td data-label="Name">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="name-with-tags">${escapeHtml(h.name || '(ohne Name)')}${tagsBadgesHtml(h.tags)}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
@@ -259,7 +263,7 @@ function foalSubTableHtml(foals) {
 function foalSubRowHtml(h) {
   const d = computeDerived(h);
   return `<tr>
-    <td data-label="Name">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="name-with-tags">${escapeHtml(h.name || '(ohne Name)')}${tagsBadgesHtml(h.tags)}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="GP">${d.gp != null ? Math.round(d.gp) : '–'}</td>
