@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   wireTabButtons();
+  wireGenderTabs();
   mareSelect = createSearchableSelect(
     document.querySelector('#mare-search'), document.querySelector('#mare-panel'),
     { onChange: onMareChange },
@@ -280,6 +281,23 @@ function wireTabButtons() {
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+}
+
+// Stute/Hengst-Auswahl (Besitzer/Suche/Rasse) teilen sich jetzt eine Box
+// mit einem Reiter-Umschalter oben (Nutzerwunsch: weniger Platzverbrauch,
+// vorher zwei separate, immer gleichzeitig sichtbare Boxen). Rein optisch -
+// beide Auswahlen bleiben unabhängig vom aktiven Reiter erhalten und
+// fließen unverändert in Inzuchtprüfung/Verpaarungsratgeber ein.
+function wireGenderTabs() {
+  document.querySelectorAll('.subtab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => activateGenderTab(btn.dataset.genderTab));
+  });
+}
+
+function activateGenderTab(gender) {
+  document.querySelectorAll('.subtab-btn').forEach((b) => b.classList.toggle('active', b.dataset.genderTab === gender));
+  document.querySelector('#gender-panel-stute').hidden = gender !== 'stute';
+  document.querySelector('#gender-panel-hengst').hidden = gender !== 'hengst';
 }
 
 // Erlaubt einen Direktlink auf einen bestimmten Tab, z.B. von der

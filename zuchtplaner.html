@@ -26,48 +26,51 @@
     </p>
 
     <fieldset>
-      <legend>Stute</legend>
-      <div class="form-grid">
-        <div>
-          <label for="mare-owner-select">Besitzer</label>
-          <select id="mare-owner-select"><option value="">Alle</option></select>
-        </div>
-        <div>
-          <label for="mare-search">Stute auswählen</label>
-          <div class="searchselect">
-            <input type="text" id="mare-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
-            <div class="searchselect-panel" id="mare-panel" hidden></div>
+      <div class="subtabs">
+        <button type="button" class="subtab-btn active" data-gender-tab="stute">Stute</button>
+        <button type="button" class="subtab-btn" data-gender-tab="hengst">Hengst</button>
+      </div>
+      <div id="gender-panel-stute" class="subtab-panel">
+        <div class="form-grid">
+          <div>
+            <label for="mare-owner-select">Besitzer</label>
+            <select id="mare-owner-select"><option value="">Alle</option></select>
           </div>
-        </div>
-        <div>
-          <label>Rasse</label>
-          <div class="checkdrop" id="mare-breed-drop">
-            <button type="button" class="checkdrop-toggle">Alle</button>
-            <div class="checkdrop-panel" hidden></div>
+          <div>
+            <label for="mare-search">Stute auswählen</label>
+            <div class="searchselect">
+              <input type="text" id="mare-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
+              <div class="searchselect-panel" id="mare-panel" hidden></div>
+            </div>
+          </div>
+          <div>
+            <label>Rasse</label>
+            <div class="checkdrop" id="mare-breed-drop">
+              <button type="button" class="checkdrop-toggle">Alle</button>
+              <div class="checkdrop-panel" hidden></div>
+            </div>
           </div>
         </div>
       </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Hengst</legend>
-      <div class="form-grid">
-        <div>
-          <label for="stallion-owner-select">Besitzer</label>
-          <select id="stallion-owner-select"><option value="">Alle</option></select>
-        </div>
-        <div>
-          <label for="stallion-search">Hengst auswählen</label>
-          <div class="searchselect">
-            <input type="text" id="stallion-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
-            <div class="searchselect-panel" id="stallion-panel" hidden></div>
+      <div id="gender-panel-hengst" class="subtab-panel" hidden>
+        <div class="form-grid">
+          <div>
+            <label for="stallion-owner-select">Besitzer</label>
+            <select id="stallion-owner-select"><option value="">Alle</option></select>
           </div>
-        </div>
-        <div>
-          <label>Rasse</label>
-          <div class="checkdrop" id="stallion-breed-drop">
-            <button type="button" class="checkdrop-toggle">Alle</button>
-            <div class="checkdrop-panel" hidden></div>
+          <div>
+            <label for="stallion-search">Hengst auswählen</label>
+            <div class="searchselect">
+              <input type="text" id="stallion-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
+              <div class="searchselect-panel" id="stallion-panel" hidden></div>
+            </div>
+          </div>
+          <div>
+            <label>Rasse</label>
+            <div class="checkdrop" id="stallion-breed-drop">
+              <button type="button" class="checkdrop-toggle">Alle</button>
+              <div class="checkdrop-panel" hidden></div>
+            </div>
           </div>
         </div>
       </div>
