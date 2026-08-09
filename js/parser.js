@@ -334,11 +334,17 @@ function parsePedigree(lines, ownName) {
 // eigene Begriffe wie Speckhals/Hirschhals). Reihenfolge der Prüfung ist
 // wichtig: spezifischere/extremere Begriffe zuerst, sonst würde z.B.
 // "viel zu klein" schon bei der Prüfung auf "zu klein" (4) hängen bleiben.
+// "hoch" wird bei Beugung (z.B. "zu hoher Halsansatz") zu "hoh-" (das
+// zweite "c" fällt weg) - "hoh" deckt das zusätzlich zur unveränderten
+// Form ab. "eng" fehlte bisher komplett (z.B. "Zu enge Brust"), dadurch
+// wurden solche Zeilen von averageScore() stillschweigend übersprungen
+// statt als schlechter Wert gezählt - hat den Ext-Durchschnitt künstlich
+// zu gut aussehen lassen.
 const EXTERIOR_TERM_SCORES = [
-  [/viel zu (klein|groß|tief|hoch|flach|steil|schmal|breit|kurz|lang|weich|hart)/i, 5],
+  [/viel zu (klein|groß|tief|hoch|hoh|flach|steil|schmal|breit|eng|kurz|lang|weich|hart)/i, 5],
   [/starker (unterbiss|überbiss|senkrücken|karpfenrücken)/i, 5],
   [/speckhals|hirschhals|zeheneng|zehenweit/i, 5],
-  [/zu (klein|groß|tief|hoch|flach|steil|schmal|breit|kurz|lang|weich|hart)/i, 4],
+  [/zu (klein|groß|tief|hoch|hoh|flach|steil|schmal|breit|eng|kurz|lang|weich|hart)/i, 4],
   [/unterbiss|überbiss|senkrücken|karpfenrücken|schwanenhals|dicker hals|bodeneng|bodenweit/i, 4],
   [/passab/i, 3],
   [/exzellent/i, 1],
