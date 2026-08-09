@@ -609,7 +609,7 @@ const HORSE_TAG_OPTIONS = [
   { label: 'Reserviert', color: 'var(--warning)' },
   { label: 'Bleibt', color: 'var(--success)' },
   { label: 'Zuchttier', color: 'var(--tag-blue)' },
-  { label: 'Gnadenbrot', color: 'var(--tag-purple)' },
+  { label: 'GBH', color: 'var(--tag-purple)' },
 ];
 
 function tagColor(label) {
@@ -627,6 +627,25 @@ function tagsBadgesHtml(tags) {
   }).join('');
 }
 
+// Geburtsdatum (horses.birthdate, "JJJJ-MM-TT") -> Alter in vollen
+// Spieljahren (abgerundet), 1:1 aus MDR-Datenbank/js/parser.js portiert -
+// im Spiel entsprechen 30 reale Tage einem Spieljahr, nicht die reale
+// Kalenderzeit. Referenzdatum ist immer "heute", das Alter wird also bei
+// jedem Aufruf neu berechnet statt gespeichert. Gibt null zurück, wenn
+// kein/ein ungültiges Datum vorliegt.
+const REAL_DAYS_PER_GAME_YEAR = 30;
+function gameAgeDays(birthdateIso) {
+  if (!birthdateIso) return null;
+  const birth = new Date(birthdateIso);
+  if (Number.isNaN(birth.getTime())) return null;
+  const daysSinceBirth = Math.floor((Date.now() - birth.getTime()) / 86400000);
+  return daysSinceBirth < 0 ? null : daysSinceBirth;
+}
+function gameAgeYears(birthdateIso) {
+  const days = gameAgeDays(birthdateIso);
+  return days == null ? null : Math.floor(days / REAL_DAYS_PER_GAME_YEAR);
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseHorseText, HORSE_TAG_OPTIONS, tagColor, tagsBadgesHtml };
+  module.exports = { parseHorseText, HORSE_TAG_OPTIONS, tagColor, tagsBadgesHtml, gameAgeYears };
 }

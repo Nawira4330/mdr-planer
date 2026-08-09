@@ -2,7 +2,7 @@
 // Kennzahlen und den Verpaarungsratgeber (inkl. GP-Formel und
 // Genotyp-basierter Fohlen-Vorhersage) gebraucht werden.
 const HORSE_SELECT_FIELDS =
-  'id,name,owner,gender,breed,purebred_pct,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases';
+  'id,name,owner,gender,breed,purebred_pct,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,birthdate';
 
 // Leichtere Feldauswahl für die Datenbank-Schätzung (computeEmpiricalDeviations):
 // braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
@@ -236,9 +236,14 @@ async function loadHorses() {
   // Nur Pferde mit ZZL (Zuchtzulassung) - der Zuchtplaner soll bei der
   // tatsächlichen Zuchtplanung helfen, das setzt eine bereits erteilte
   // Zuchtzulassung voraus (Gegenteil vom Turnierplaner, der bewusst nur
-  // Pferde OHNE ZZL zeigt).
-  mares = (mareRes.data || []).filter((h) => h.breeding_allowed === true);
-  stallions = (stallionRes.data || []).filter((h) => h.breeding_allowed === true);
+  // Pferde OHNE ZZL zeigt). Zusätzlich Pferde ab 25 Spieljahren komplett
+  // aus der Auswahl ausgeschlossen (Nutzerwunsch, gleicher Schwellwert
+  // wie "über 25 Jahre" = zu alt für Zucht in der MDR-Datenbank, siehe
+  // checkAgeNotices in js/list.js dort) - Pferde ohne bekanntes
+  // Geburtsdatum bleiben unbeeinträchtigt (gameAgeYears liefert dann
+  // null), damit fehlende Daten niemand fälschlich ausschließen.
+  mares = (mareRes.data || []).filter((h) => h.breeding_allowed === true && !isTooOldForBreeding(h));
+  stallions = (stallionRes.data || []).filter((h) => h.breeding_allowed === true && !isTooOldForBreeding(h));
   fillOwnerSelect('#mare-owner-select', mares);
   fillOwnerSelect('#stallion-owner-select', stallions);
   mareBreedFilter.setHorses(mares);
@@ -401,6 +406,23 @@ function genetikWithFlaxen(horse, genetik) {
   return genetik;
 }
 
+const MAX_BREEDING_AGE = 25;
+const BREEDING_AGE_WARNING = 24;
+
+function isTooOldForBreeding(horse) {
+  const years = gameAgeYears(horse.birthdate);
+  return years != null && years >= MAX_BREEDING_AGE;
+}
+
+// Ab BREEDING_AGE_WARNING (noch wählbar, aber bald zu alt) - Pferde ab
+// MAX_BREEDING_AGE tauchen dank isTooOldForBreeding() gar nicht mehr in
+// mares/stallions auf, hier also nie mit diesem Alter erreichbar.
+function ageWarningHtml(horse) {
+  const years = gameAgeYears(horse.birthdate);
+  if (years == null || years < BREEDING_AGE_WARNING) return '';
+  return `<div class="notice notice-caution">⚠️ ${escapeHtml(horse.name || 'Dieses Pferd')} ist ${years} Spieljahre alt - ab ${MAX_BREEDING_AGE} Jahren nicht mehr in der Zuchtplaner-Auswahl.</div>`;
+}
+
 function parentSummaryHtml(label, horse) {
   if (!horse) return '';
   const gp = horse.tournament_potential?.['Gesamtpotenzial'];
@@ -420,6 +442,7 @@ function parentSummaryHtml(label, horse) {
       &nbsp;·&nbsp; Genetik: <strong>${genetik ? escapeHtml(genetik) : '–'}</strong>
     </p>
     <p class="small muted">Besitzer: <strong>${horse.owner ? escapeHtml(horse.owner) : '–'}</strong></p>
+    ${ageWarningHtml(horse)}
   </div>`;
 }
 
@@ -790,6 +813,7 @@ function candidateCardHtml(rank, c, mare, stallion, weaknessOwnerLabel) {
       &nbsp;·&nbsp; Besitzer: <strong>${h.owner ? escapeHtml(h.owner) : '–'}</strong>
     </p>
     ${ekhWarningHtml(mare, stallion)}
+    ${ageWarningHtml(h)}
     <p class="small">
       Fohlen best case: GP <strong>${fmtGp(c.gpBest)}</strong>
       &nbsp;·&nbsp; Ext <strong>${fmtScore(c.extBest)}</strong>
