@@ -93,6 +93,17 @@ a:hover { color: var(--accent-dark); }
   align-items: center;
 }
 
+/* Eigener Flex-Container statt "display: contents" (siehe js/nav.js) -
+   erbt dieselben Wrap-/Gap-Eigenschaften wie "nav" selbst, damit sich
+   die drei Dropdowns unabhängig vom "← Zur Übersicht"-Link umbrechen
+   können. */
+.nav-dropdowns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
 #auth-status-toggle { white-space: nowrap; }
 
 /* --- Nav-Dropdowns in der Kopfzeile (Tools/DB-Planer/Angemeldet als, siehe
@@ -491,6 +502,14 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
 
 @media (max-width: 640px) {
   .topbar { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+  /* align-items:flex-start lässt Flex-Items sonst auf ihre eigene
+     max-content-Breite schrumpfen - bei "nav" (mit mehreren Dropdown-
+     Buttons/Links, siehe js/nav.js) verhindert das ein sauberes internes
+     Umbrechen (flex-wrap greift erst, NACHDEM die Breite feststeht) und
+     drückt die Seite dadurch breiter als den Viewport (horizontales
+     Scrollen). "width: 100%" gibt nav die volle verfügbare Breite, damit
+     die eigenen Kinder korrekt umbrechen können. */
+  .topbar nav { width: 100%; }
 
   /* Turniertabelle/Zuchtbuch-Verwandtentabelle: statt seitlichem Scrollen
      wird jede Zeile zu einer Karte mit beschrifteten Werten (Beschriftung

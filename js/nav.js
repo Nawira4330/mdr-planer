@@ -34,9 +34,16 @@ function renderSharedNav() {
     .map(({ label, url }) => `<a href="${url}">${navEscapeHtml(label)}</a>`)
     .join('');
 
+  // "display: contents" wurde hier bewusst NICHT verwendet - das
+  // verursachte auf schmalen Bildschirmen einen Layout-Bug (der
+  // umgebende <nav> berechnete seine Breite anhand der UNGEWRAPPTEN
+  // Gesamtbreite aller Dropdown-Buttons statt korrekt intern
+  // umzubrechen, was zu horizontalem Scrollen führte). Stattdessen ist
+  // "nav-dropdowns" selbst ein eigener Flex-Container (wie "nav"), der
+  // als EIN Flex-Item in "nav" landet und seine drei Dropdowns
+  // eigenständig umbricht.
   const wrap = document.createElement('div');
   wrap.className = 'nav-dropdowns';
-  wrap.style.display = 'contents';
   wrap.innerHTML = `
     <div class="nav-dropdown">
       <button type="button" class="btn secondary nav-dropdown-toggle">Tools</button>
