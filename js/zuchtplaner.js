@@ -248,8 +248,14 @@ async function loadHorses() {
   fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select', stallionBreedFilter);
 }
 
+// Behält die bisherige Auswahl bei, falls sie unter den neuen Optionen
+// weiterhin existiert - wichtig für #hengst-besitzer-select, das bei
+// jedem Rendern des Verpaarungsratgebers neu befüllt wird (siehe
+// renderBestMatches), damit die Besitzer-Auswahl dabei nicht verloren
+// geht.
 function fillOwnerSelect(selector, horses) {
   const sel = document.querySelector(selector);
+  const prevValue = sel.value;
   const owners = [...new Set(horses.map((h) => h.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
   sel.innerHTML = '<option value="">Alle</option>';
   for (const owner of owners) {
@@ -258,6 +264,7 @@ function fillOwnerSelect(selector, horses) {
     opt.textContent = owner;
     sel.appendChild(opt);
   }
+  sel.value = [...sel.options].some((o) => o.value === prevValue) ? prevValue : '';
 }
 
 function fillHorseSelect(select, horses, ownerSelector, breedFilter) {
@@ -610,18 +617,6 @@ function foalPedigreeHtml(nodes, dupNames) {
 
 // --- Tab 2: Verpaarungsratgeber ---
 
-// Zeigt in den Options-Labels konkret den Besitzernamen des aktuell
-// gewählten "primären" Pferds (Stute bei Richtung "stute", Hengst bei
-// Richtung "hengst") an ("Nur eigene (Wilder Wolf)" statt nur "Nur
-// eigene"), damit klar ist, worauf sich "eigene"/"fremde" bezieht - es
-// gibt kein Login auf dieser Seite, "eigene" heißt also "gleicher
-// Besitzer wie das oben gewählte Pferd".
-function updateHengstBesitzerLabels(primary) {
-  const owner = primary.owner || 'unbekannt';
-  document.querySelector('#hengst-besitzer-select option[value="eigene"]').textContent = `Nur eigene (${owner})`;
-  document.querySelector('#hengst-besitzer-select option[value="fremde"]').textContent = `Nur fremde (nicht ${owner})`;
-}
-
 // "2. Kriterium"/"Gewichtung" sind nur bei sortMode "combo" relevant -
 // werden sonst versteckt, damit sie bei den anderen Sortiermodi nicht
 // verwirren.
@@ -667,16 +662,12 @@ function renderBestMatches() {
     return;
   }
 
-  updateHengstBesitzerLabels(primary);
+  fillOwnerSelect('#hengst-besitzer-select', candidatePool);
   auswahlStallionBreedFilter.setHorses(candidatePool);
-  const besitzerMode = document.querySelector('#hengst-besitzer-select').value;
+  const besitzerFilter = document.querySelector('#hengst-besitzer-select').value;
   const filteredCandidates = candidatePool
     .filter((h) => auswahlStallionBreedFilter.matches(h))
-    .filter((h) => {
-      if (besitzerMode === 'eigene') return h.owner === primary.owner;
-      if (besitzerMode === 'fremde') return h.owner !== primary.owner;
-      return true;
-    });
+    .filter((h) => !besitzerFilter || h.owner === besitzerFilter);
   // rankStallions ist bereits vollständig symmetrisch (Ext/Int/GP/
   // Datenbank-Schätzung/Ausschlüsse rechnen unabhängig davon, welche
   // Rolle "mare"/"stallion" biologisch tatsächlich hat) - bei Richtung
