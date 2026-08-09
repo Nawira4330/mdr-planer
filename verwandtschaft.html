@@ -119,8 +119,8 @@
       </div>
 
       <div class="form-grid" style="margin-top:0.8rem;">
-        <fieldset>
-          <legend>Zeilen (Pferde in der 1. Spalte)</legend>
+        <details class="collapsible">
+          <summary>Zeilen (Pferde in der 1. Spalte)</summary>
           <div class="form-grid">
             <div>
               <label for="matrix-row-owner-select">Besitzer</label>
@@ -141,17 +141,11 @@
                 <option value="ohne">Nur ohne ZZL</option>
               </select>
             </div>
-            <div>
-              <label for="matrix-row-limit-select">Beschränkung</label>
-              <select id="matrix-row-limit-select">
-                <option value="">Alle</option>
-              </select>
-            </div>
           </div>
-        </fieldset>
+        </details>
 
-        <fieldset>
-          <legend>Spalten (Pferde in der 1. Zeile)</legend>
+        <details class="collapsible">
+          <summary>Spalten (Pferde in der 1. Zeile)</summary>
           <div class="form-grid">
             <div>
               <label for="matrix-col-owner-select">Besitzer</label>
@@ -172,18 +166,26 @@
                 <option value="ohne">Nur ohne ZZL</option>
               </select>
             </div>
-            <div>
-              <label for="matrix-col-limit-select">Beschränkung</label>
-              <select id="matrix-col-limit-select">
-                <option value="">Alle</option>
-              </select>
-            </div>
           </div>
-        </fieldset>
+        </details>
       </div>
 
       <p id="matrix-hint" class="muted small"></p>
       <div id="matrix-result"></div>
+      <div class="matrix-pagination">
+        <div class="matrix-pagination-axis">
+          <span class="small muted">Zeilen:</span>
+          <button type="button" id="matrix-row-prev" class="btn secondary">←</button>
+          <select id="matrix-row-page-select"></select>
+          <button type="button" id="matrix-row-next" class="btn secondary">→</button>
+        </div>
+        <div class="matrix-pagination-axis">
+          <span class="small muted">Spalten:</span>
+          <button type="button" id="matrix-col-prev" class="btn secondary">←</button>
+          <select id="matrix-col-page-select"></select>
+          <button type="button" id="matrix-col-next" class="btn secondary">→</button>
+        </div>
+      </div>
     </fieldset>
 
     <p id="load-error" class="error"></p>

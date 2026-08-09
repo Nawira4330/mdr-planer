@@ -466,6 +466,13 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
 
 .form-actions { display: flex; gap: 0.6rem; margin: 1.2rem 0; }
 
+/* --- Umblätter-Steuerung unter der Verwandtschaftsmatrix (ersetzt die
+   frühere "Beschränkung"-Dropdown je Achse) --- */
+.matrix-pagination { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-top: 0.8rem; }
+.matrix-pagination-axis { display: flex; align-items: center; gap: 0.4rem; }
+.matrix-pagination-axis select { width: auto; min-width: 8rem; }
+.matrix-pagination-axis .btn { padding-left: 0.7rem; padding-right: 0.7rem; }
+
 .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.4rem 0; }
 
 /* --- Lösch-Bestätigungs-Popup --- */
@@ -549,8 +556,8 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
 }
 
 /* --- Tabs (Zuchtplaner, Turnierplaner) --- */
-.tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
-.tab-btn {
+.tabs, .subtabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.tab-btn, .subtab-btn {
   font: inherit;
   padding: 0.55rem 1rem;
   border: none;
@@ -560,8 +567,14 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
   cursor: pointer;
   border-radius: 0;
 }
-.tab-btn:hover { background: rgba(107, 157, 0, 0.08); color: var(--text); }
-.tab-btn.active { color: var(--accent-dark); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-btn:hover, .subtab-btn:hover { background: rgba(107, 157, 0, 0.08); color: var(--text); }
+.tab-btn.active, .subtab-btn.active { color: var(--accent-dark); border-bottom-color: var(--accent); font-weight: 600; }
+/* Eigene Klasse statt Wiederverwendung von .tab-btn/.tab-panel (siehe
+   zuchtplaner.html Stute/Hengst-Umschalter) - sonst würde wireTabButtons()
+   in js/zuchtplaner.js (selektiert ALLE .tab-btn) diese Buttons
+   fälschlich mit activateTab() (Inzuchtprüfung/Verpaarungsratgeber)
+   verdrahten statt mit dem eigenen Handler. */
+.subtabs { margin-bottom: 0.8rem; }
 
 /* --- Hinweis-Banner (z.B. vorläufige Berechnung im Turnierplaner) --- */
 .notice {
