@@ -18,7 +18,7 @@
 
   <main class="container">
     <p class="muted small">
-      Sechs Werkzeuge, ein gemeinsamer Datenbestand: Diese Seite geht jedes
+      Acht Werkzeuge, ein gemeinsamer Datenbestand: Diese Seite geht jedes
       Werkzeug einzeln durch – Schritt für Schritt, mit jeder Funktion im
       Detail und den Datenfeldern, auf die sie zurückgreift. Gespeichert oder
       verändert wird dabei nirgends etwas (Ausnahmen: „Decksprung nutzen“,
@@ -38,6 +38,8 @@
       <a class="btn secondary" href="#zuchtbuch-anleitung">Zuchtbuch</a>
       <a class="btn secondary" href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>
       <a class="btn secondary" href="#fohlen-tracker-anleitung">Fohlen-Tracker</a>
+      <a class="btn secondary" href="#fohlenpruefung-anleitung">Fohlenprüfung</a>
+      <a class="btn secondary" href="#aussortierhilfe-anleitung">Aussortierhilfe</a>
       <a class="btn secondary" href="#bausteine">Gemeinsame Bedienelemente</a>
       <a class="btn secondary" href="#technik">Woher die Daten kommen</a>
     </div>
@@ -684,6 +686,121 @@
       </div>
     </fieldset>
 
+    <fieldset id="fohlenpruefung-anleitung">
+      <h2>🐣 Fohlenprüfung</h2>
+      <p class="muted small">
+        Betrachtet ein ausgewähltes Pferd als Fohlen: Werte- und
+        Farbvergleich mit Eltern und Voll-/Halbgeschwistern, Turnierwerte
+        und LP-Prognose für das Fohlen selbst. Dieselbe Pferdeauswahl
+        gehört auch zum Reiter „Aussortierhilfe“ weiter unten.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Oben ein beliebiges Pferd auswählen (auch ohne ZZL) - optional über Besitzer/Rasse eingrenzen.</li>
+        <li>Im Reiter „Fohlenprüfung“ den Werte-Vergleich zu Eltern/Geschwistern durchsehen (per Spaltenklick sortierbar).</li>
+        <li>Darunter den Farbvergleich der 9 geprüften Sondergene ansehen.</li>
+        <li>Ganz unten Turnierwerte (alle 28 Disziplinen, sortierbar) und LP-Prognose für das Fohlen selbst.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Werte-Vergleich</th>
+          <td>
+            Zeigt GP/Ext/Ext%/Int des Fohlens (fett, Referenzzeile) sowie
+            von Vater, Mutter und allen Voll-/Halbgeschwistern (über
+            Namensabgleich im Stammbaum, wie im Zuchtbuch). Jede Zeile ist
+            gegenüber dem Fohlen eingefärbt: grün = besser, rot =
+            schlechter, gelb = exakt gleich (Richtung je Metrik: bei GP/
+            Ext% ist höher besser, bei Ext/Int niedriger). Ist ein
+            Elternteil dem Namen nach bekannt, aber nicht in der Datenbank
+            auflösbar, erscheint die Zeile trotzdem mit Hinweis, nur ohne
+            Werte.
+          </td>
+        </tr>
+        <tr>
+          <th>Farbvergleich</th>
+          <td>
+            Prüft für Fohlen/Vater/Mutter/Geschwister genau 9 "Sondergene"
+            (Champagne, Silver, Pearl, Flaxen, Cream, Tobiano, Splashed,
+            Sabino, Overo - dieselbe Prüfung wie die Farbwünsche im
+            Verpaarungsratgeber) und zeigt darüber zusammenfassend, wie
+            viele der beim Fohlen vorhandenen Sondergene sich auf Vater
+            und/oder Mutter zurückführen lassen.
+          </td>
+        </tr>
+        <tr>
+          <th>Turnierwerte + LP-Prognose</th>
+          <td>
+            Exakt dieselbe Berechnung wie im Turnierplaner (alle 28
+            Disziplinen mit Wert/Interieur/LK, sortierbar, plus die
+            inoffizielle LP-Einschätzung), hier direkt für das im oberen
+            Bereich gewählte Fohlen.
+          </td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> Tabelle <em>horses</em>, ohne ZZL-
+        Filter beim Laden (Fohlen haben oft noch keine ZZL). Genutzte
+        Felder wie im Zuchtbuch plus die Turnierfelder des Turnierplaners
+        (traits, disciplines, genetic_diseases).
+      </div>
+    </fieldset>
+
+    <fieldset id="aussortierhilfe-anleitung">
+      <h2>🐣 Aussortierhilfe</h2>
+      <p class="muted small">
+        Betrachtet dasselbe oben gewählte Pferd als (potenziellen)
+        Elternteil - Entscheidungshilfe, ob es weiter in der Zucht bleiben
+        sollte: eigene Fohlenanzahl, Werte-Vergleich der Fohlen mit dem
+        Elternteil, und wie viele Fohlen noch beim aktuellen Besitzer sind.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Oben dasselbe Pferd wie bei der Fohlenprüfung auswählen (oder direkt über die Startseiten-Karte "Aussortierhilfe" mit vorausgewähltem Reiter einsteigen).</li>
+        <li>Zum Reiter „Aussortierhilfe“ wechseln.</li>
+        <li>Fohlenanzahl, Werte-Vergleich und Besitzer-Verbleib durchsehen.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Fohlenanzahl</th>
+          <td>
+            Wie im Fohlen-Tracker: ein Pferd gilt als Fohlen, sobald der
+            gewählte Name im Stammbaum-Feld als Vater ODER Mutter
+            hinterlegt ist (nur Generation 1, kein Enkel/Urenkel).
+          </td>
+        </tr>
+        <tr>
+          <th>Werte-Vergleich Fohlen vs. Elternteil</th>
+          <td>
+            Eine Zeile pro Fohlen (GP/Ext/Ext%/Int) plus das Elternteil
+            selbst als fette Referenzzeile - dieselbe grün/rot/gelb-
+            Einfärbung wie im Reiter "Fohlenprüfung", hier bezogen auf das
+            Elternteil statt auf ein einzelnes Fohlen.
+          </td>
+        </tr>
+        <tr>
+          <th>Fohlen beim aktuellen Besitzer</th>
+          <td>
+            Vergleicht den Besitzer jedes Fohlens mit dem aktuellen
+            Besitzer des Elternteils und listet beide Gruppen getrennt auf
+            (noch beim Besitzer / nicht mehr).
+          </td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> dieselbe Tabelle <em>horses</em> wie
+        im Reiter "Fohlenprüfung" (eine gemeinsame Pferdeauswahl für
+        beide Reiter).
+      </div>
+    </fieldset>
+
     <fieldset id="bausteine">
       <legend>Gemeinsame Bedienelemente</legend>
       <p class="small">Diese Elemente verhalten sich auf allen vier Werkzeugen identisch.</p>
@@ -725,7 +842,7 @@
     <fieldset id="technik">
       <legend>Woher die Daten kommen</legend>
       <p class="small">
-        Alle vier Werkzeuge lesen live aus derselben Datenbank wie die
+        Alle Werkzeuge lesen live aus derselben Datenbank wie die
         Pferdedatenbank – über einen öffentlichen, nur-lesenden Zugang ohne
         Login. Es gibt keinen eigenen Datenbestand des MDR-Planers. Neu
         angelegte oder geänderte Pferde in der Pferdedatenbank erscheinen

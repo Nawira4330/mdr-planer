@@ -39,16 +39,24 @@ function isLoggedIn() {
   return !!currentAuthSession?.user;
 }
 
+// Benutzername (Teil der E-Mail vor dem "@") des eingeloggten Kontos, oder
+// null ohne Login - gleiches Muster wie currentIdentity in js/list.js der
+// MDR-Datenbank. Eigenständig abrufbar (nicht nur über isOwnerOf), z.B.
+// für "wie viele der hier gezeigten Pferde gehören MIR", unabhängig vom
+// Besitzer eines konkret ausgewählten Pferdes (siehe js/fohlenpruefung.js).
+function currentIdentity() {
+  if (!isLoggedIn()) return null;
+  return currentAuthSession.user.email.split('@')[0];
+}
+
 // Vergleicht das eingeloggte Konto mit einem Besitzer-Namen (horses.owner) -
-// gleiches Muster wie currentIdentity/onOnlyMyHorses in js/list.js der
-// MDR-Datenbank: Benutzername ist der Teil der E-Mail vor dem "@", Groß-/
-// Kleinschreibung im "Besitzer"-Feld ist nicht garantiert einheitlich,
+// Groß-/Kleinschreibung im "Besitzer"-Feld ist nicht garantiert einheitlich,
 // deshalb case-insensitiv verglichen. Für "Schlagwort vorschlagen"
 // (js/tagSuggest.js) - nur der Besitzer eines Pferdes soll dafür Vorschläge
 // machen können, nicht jedes eingeloggte Konto.
 function isOwnerOf(owner) {
-  if (!isLoggedIn() || !owner) return false;
-  const identity = currentAuthSession.user.email.split('@')[0];
+  const identity = currentIdentity();
+  if (!identity || !owner) return false;
   return identity.toLowerCase() === owner.toLowerCase();
 }
 
@@ -65,6 +73,6 @@ function renderAuthStatus() {
   const el = document.querySelector('#auth-status-toggle');
   if (!el) return;
   el.textContent = isLoggedIn()
-    ? `Angemeldet als: ${currentAuthSession.user.email ? currentAuthSession.user.email.split('@')[0] : currentAuthSession.user.id}`
+    ? `Angemeldet als: ${currentIdentity() || currentAuthSession.user.id}`
     : 'Angemeldet als: Gast';
 }

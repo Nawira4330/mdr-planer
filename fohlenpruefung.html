@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Fohlenprüfung – MDR Zucht- &amp; Turnierplaner</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>🐣 Fohlenprüfung</h1>
+    <nav>
+      <a class="btn secondary" href="index.html">← Zur Übersicht</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p class="muted small">
+      Nur lesender Zugriff auf die Pferdedatenbank – hier wird nichts
+      gespeichert oder verändert. Ein ausgewähltes Pferd lässt sich sowohl
+      als Fohlen (Werte-/Farbvergleich mit Eltern und Geschwistern,
+      Turnierwerte + LP-Prognose) als auch als Elternteil (eigene Fohlen,
+      Aussortierhilfe) betrachten - je nach Reiter unten.
+    </p>
+
+    <fieldset>
+      <legend>Pferd auswählen</legend>
+      <div class="form-grid">
+        <div>
+          <label for="owner-select">Besitzer</label>
+          <select id="owner-select"><option value="">Alle</option></select>
+        </div>
+        <div>
+          <label for="horse-search">Pferd auswählen</label>
+          <div class="searchselect">
+            <input type="text" id="horse-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
+            <div class="searchselect-panel" id="horse-panel" hidden></div>
+          </div>
+        </div>
+        <div>
+          <label>Rasse</label>
+          <div class="checkdrop" id="breed-drop">
+            <button type="button" class="checkdrop-toggle">Alle</button>
+            <div class="checkdrop-panel" hidden></div>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="fohlenpruefung">Fohlenprüfung</button>
+      <button type="button" class="tab-btn" data-tab="aussortierhilfe">Aussortierhilfe</button>
+    </div>
+
+    <section id="tab-fohlenpruefung" class="tab-panel">
+      <div id="fohlen-result">
+        <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
+      </div>
+    </section>
+
+    <section id="tab-aussortierhilfe" class="tab-panel" hidden>
+      <div id="aussortieren-result">
+        <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
+      </div>
+    </section>
+
+    <p id="load-error" class="error"></p>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/authStatus.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/breeding.js"></script>
+  <script src="js/tournamentScoring.js"></script>
+  <script src="js/verpaarung.js"></script>
+  <script src="js/searchableSelect.js"></script>
+  <script src="js/breedFilter.js"></script>
+  <script src="js/tagSuggest.js"></script>
+  <script src="js/fohlenpruefung.js"></script>
+</body>
+</html>

@@ -646,6 +646,20 @@ function gameAgeYears(birthdateIso) {
   return days == null ? null : Math.floor(days / REAL_DAYS_PER_GAME_YEAR);
 }
 
+// Formatiert ein Geburtsdatum als Alter in Spieljahren ("X Jahre, Y
+// Monate"), 1:1 aus MDR-Datenbank/js/parser.js portiert.
+function formatAge(birthdateIso) {
+  const daysSinceBirth = gameAgeDays(birthdateIso);
+  if (daysSinceBirth == null) return '';
+  const years = Math.floor(daysSinceBirth / REAL_DAYS_PER_GAME_YEAR);
+  const remainderDays = daysSinceBirth % REAL_DAYS_PER_GAME_YEAR;
+  const months = Math.floor(remainderDays / (REAL_DAYS_PER_GAME_YEAR / 12));
+  const parts = [];
+  if (years > 0) parts.push(`${years} Jahr${years === 1 ? '' : 'e'}`);
+  if (months > 0 || !years) parts.push(`${months} Monat${months === 1 ? '' : 'e'}`);
+  return parts.join(', ');
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseHorseText, HORSE_TAG_OPTIONS, tagColor, tagsBadgesHtml, gameAgeYears };
+  module.exports = { parseHorseText, HORSE_TAG_OPTIONS, tagColor, tagsBadgesHtml, gameAgeYears, formatAge };
 }

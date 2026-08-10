@@ -12,6 +12,7 @@ const PROGRESS = [
   { label: 'Verpaarungsratgeber', percent: 90 },
   { label: 'Fohlen-Tracker', percent: 90 },
   { label: 'Verwandtschaftsmatrix', percent: 90 },
+  { label: 'Fohlenprüfung / Aussortierhilfe', percent: 80 },
 ];
 
 // Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
@@ -27,6 +28,17 @@ const TYPE_META = {
 // nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
+  {
+    date: '2026-08-10T11:20', type: 'feature', title: 'Neues Werkzeug: Fohlenprüfung + Aussortierhilfe',
+    points: [
+      'Ein Pferd auswählen und über zwei Reiter betrachten: "Fohlenprüfung" (als Fohlen) und "Aussortierhilfe" (als Elternteil) - dieselbe Auswahl gilt für beide, direkter Einstieg über die Startseiten-Karten',
+      'Fohlenprüfung: Werte-Vergleich (GP/Ext/Ext%/Int) mit Vater, Mutter und allen Voll-/Halbgeschwistern, grün/rot/gelb eingefärbt je nachdem ob besser/schlechter/gleich wie das Fohlen',
+      'Fohlenprüfung: Farbvergleich für 9 "Sondergene" (Champagne, Silver, Pearl, Flaxen, Cream, Tobiano, Splashed, Sabino, Overo) - zeigt, welche davon beim Fohlen vorhandenen Merkmale sich auf Vater und/oder Mutter zurückführen lassen',
+      'Fohlenprüfung: Turnierwerte (alle 28 Disziplinen) + LP-Prognose für das Fohlen selbst, exakt dieselbe Berechnung wie im Turnierplaner',
+      'Aussortierhilfe: eigene Fohlenanzahl, Werte-Vergleich aller Fohlen mit dem Elternteil (dieselbe Grün/Rot/Gelb-Einfärbung, hier bezogen auf das Elternteil), und wie viele Fohlen noch beim aktuellen Besitzer des Elternteils sind',
+      'Erste Version - Rückmeldung erwünscht, insbesondere zur Farbvergleich-Logik (Locus-Ebene, keine exakte Allel-für-Allel-Zuordnung)',
+    ],
+  },
   {
     date: '2026-08-04T13:00', type: 'feature', title: 'Login-Status in MDR-Planer + Schlagwort-Vorschlag nur für eingeloggte Nutzer',
     points: [

@@ -18,6 +18,7 @@ const PLANER_TOOL_LINKS = [
   { label: 'Zuchtbuch', url: 'zuchtbuch.html' },
   { label: 'Fohlen-Tracker', url: 'fohlen-tracker.html' },
   { label: 'Verwandtschaft', url: 'verwandtschaft.html' },
+  { label: 'Fohlenprüfung', url: 'fohlenpruefung.html' },
 ];
 
 function navEscapeHtml(str) {
