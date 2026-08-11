@@ -177,6 +177,13 @@ button:disabled:hover, .btn:disabled:hover { background: transparent; }
 button.danger { background: var(--danger); border-color: var(--danger); }
 
 /* --- Schlagwort-Vorschlag (Zuchtbuch/Fohlen-Tracker/Verwandtschaftsmatrix) --- */
+/* Der "Schlagwort vorschlagen"-Button macht mit normaler Button-Höhe die
+   Zeile in einer Tabelle spürbar höher als alle anderen Zeilen ohne Button
+   (unterschiedliche Zeilenhöhen lassen die Trennlinien der Tabelle "springen"
+   statt gleichmäßig durchzulaufen, Nutzer-Feedback) - innerhalb einer
+   Tabellenzelle deshalb kompakter, damit die Zeilenhöhe möglichst nah an
+   einer reinen Text-Zeile bleibt. */
+td .tag-suggest-toggle { padding: 0.15rem 0.5rem; font-size: 0.85rem; }
 .tag-suggest-wrap { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .tag-suggest-form { display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .tag-suggest-form select, .tag-suggest-form input[type="text"] {

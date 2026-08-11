@@ -23,6 +23,12 @@ const SPECIAL_COLOR_WISHES = COLOR_WISH_OPTIONS.filter((o) => SPECIAL_COLOR_LABE
 // die Boolean-Zuordnung selbst gebraucht wird).
 const METRIC_HIGHER_IS_BETTER = { gp: true, ext: false, extpct: true, int: false };
 
+// Dieselben Schwellen wie in js/zuchtplaner.js (MAX_BREEDING_AGE/
+// BREEDING_AGE_WARNING) - hier nur als Hinweis, keine Auswahl-Beschränkung
+// (diese Seite hat bewusst keinen ZZL-/Alters-Zwang).
+const MAX_BREEDING_AGE = 25;
+const BREEDING_AGE_WARNING = 24;
+
 let allHorses = [];
 let horseSelect;
 let breedFilter;
@@ -265,6 +271,16 @@ function affectedDiseaseLabels(horse) {
   return (horse.genetic_diseases || []).filter((d) => isDiseaseCarrierOrAffected(d.value)).map((d) => d.label);
 }
 
+// Alters-Hinweis, 1:1 aus ageWarningHtml in js/zuchtplaner.js übernommen
+// (gleiche Schwellen/gleicher Text), hier ohne Auswahl-Ausschluss - nur ein
+// Hinweis in der Aussortierhilfe, da ein altes Zuchttier der Kernfall für
+// "sollte es weiter in der Zucht bleiben?" ist.
+function ageWarningHtml(horse) {
+  const years = gameAgeYears(horse.birthdate);
+  if (years == null || years < BREEDING_AGE_WARNING) return '';
+  return `<div class="notice notice-caution">⚠️ ${escapeHtml(horse.name || 'Dieses Pferd')} ist ${years} Spieljahre alt - ab ${MAX_BREEDING_AGE} Jahren nicht mehr in der Zuchtplaner-Auswahl.</div>`;
+}
+
 // Kurze Werte-Zeile direkt unter dem Pferdenamen (wie parentSummaryHtml in
 // js/zuchtplaner.js) - zeigt die eigenen Werte, Farbe/Genetik, Alter und
 // EKH (falls vorhanden) des oben gewählten Pferdes auf einen Blick,
@@ -315,6 +331,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
     ...r,
     gender: r.horse ? r.horse.gender : null,
     owner: r.horse ? r.horse.owner : null,
+    ekh: r.horse ? affectedDiseaseLabels(r.horse) : [],
     gp: r.horse ? horseGP(r.horse) : null,
     ext: r.horse ? horseExt(r.horse) : null,
     extpct: r.horse ? horseExtPct(r.horse) : null,
@@ -342,6 +359,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
       <td data-label="Beziehung">${escapeHtml(row.label)}</td>
       <td data-label="Name" class="name-with-tags">${escapeHtml(name)}${row.horse ? tagsBadgesHtml(row.horse.tags) : ''}</td>
       <td data-label="Geschlecht">${row.gender ? escapeHtml(row.gender) : '–'}</td>
+      <td data-label="EKH" style="${row.ekh.length ? 'color:var(--danger); font-weight:600;' : ''}">${row.ekh.length ? escapeHtml(row.ekh.join(', ')) : '–'}</td>
       ${ownerCell}
       ${cell('gp', 0)}
       ${cell('ext', 2)}
@@ -357,6 +375,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
       <th>Beziehung</th>
       <th>Name</th>
       <th data-sort="gender">Geschlecht${sortArrow(sort, 'gender')}</th>
+      <th>EKH</th>
       ${ownerHeader}
       <th data-sort="gp">GP${sortArrow(sort, 'gp')}</th>
       <th data-sort="ext">Ext${sortArrow(sort, 'ext')}</th>
@@ -409,6 +428,42 @@ function colorInheritanceSummary(rows) {
     <strong>${traceable.length} von ${present.length}</strong> beim Fohlen vorhandene Sondergene lassen sich auf Vater und/oder Mutter zurückführen
     (${escapeHtml(present.map((w) => w.label).join(', '))}).
   </p>`;
+}
+
+// Gegenrichtung für die Aussortierhilfe: nicht "woher hat das Fohlen sein
+// Sondergen", sondern "wie viele der eigenen Fohlen haben je Sondergen des
+// Elternteils ebenfalls dieses Gen" - je Sondergen des Elternteils eine
+// Quote. Bewusst KEINE Kausalitätsaussage ("vererbt von diesem Elternteil"),
+// da ein Fohlen das Gen theoretisch auch vom anderen Elternteil haben
+// könnte - nur die reine Vorkommensquote unter den eigenen Fohlen.
+function colorPassOnSummary(parentHorse, foals) {
+  const present = SPECIAL_COLOR_WISHES.filter((wish) => colorWishPossible(parentHorse, wish, flaxenLookup, flaxenChildrenByName));
+  if (!present.length) {
+    return '<p class="small muted">Elternteil trägt keines der geprüften Sondergene (Champagne/Silver/Pearl/Flaxen/Cream/Tobiano/Splashed/Sabino/Overo).</p>';
+  }
+  const items = present.map((wish) => {
+    const count = foals.filter((f) => colorWishPossible(f, wish, flaxenLookup, flaxenChildrenByName)).length;
+    const pct = foals.length ? Math.round((count / foals.length) * 100) : 0;
+    return `<li>${escapeHtml(wish.label)}: <strong>${count} von ${foals.length}</strong> Fohlen (${pct}%)</li>`;
+  }).join('');
+  return `<p class="small">Sondergene des Elternteils - wie viele Fohlen haben dasselbe Gen ebenfalls:</p><ul class="small">${items}</ul>`;
+}
+
+// Analog zu colorPassOnSummary, aber für Erbkrankheiten (EKH) - zeigt je
+// Krankheit des Elternteils, wie viele Fohlen ebenfalls Träger/betroffen
+// sind (isDiseaseCarrierOrAffected, wie in affectedDiseaseLabels), als
+// grobe Einschätzung für die Weiterzucht-Entscheidung.
+function diseaseInheritanceSummary(parentHorse, foals) {
+  const parentDiseases = affectedDiseaseLabels(parentHorse);
+  if (!parentDiseases.length) return '';
+  const items = parentDiseases.map((label) => {
+    const count = foals.filter((f) => affectedDiseaseLabels(f).includes(label)).length;
+    const pct = foals.length ? Math.round((count / foals.length) * 100) : 0;
+    return `<li>${escapeHtml(label)}: <strong>${count} von ${foals.length}</strong> Fohlen (${pct}%) Träger oder betroffen</li>`;
+  }).join('');
+  return `<div class="group-heading">Erbkrankheiten (EKH) im Vergleich</div>
+    <p class="small">Erbkrankheiten des Elternteils - wie viele Fohlen tragen dieselbe(n) ebenfalls:</p>
+    <ul class="small">${items}</ul>`;
 }
 
 // --- Turnierwerte + LP (1:1 aus js/turnierplaner.js) ---
@@ -519,6 +574,7 @@ function renderAussortierenTab() {
   const foals = childrenByParentName.get(normalizeName(currentHorse.name)) || [];
   let html = `<h2 class="name-with-tags">${escapeHtml(currentHorse.name || '(ohne Name)')}${tagsBadgesHtml(currentHorse.tags)}</h2>`;
   html += horseStatsLineHtml(currentHorse);
+  html += ageWarningHtml(currentHorse);
   html += `<p class="small">${tagSuggestButtonHtml(currentHorse.id, currentHorse.owner)}</p>`;
   html += `<div class="group-heading">${foals.length} Fohlen gefunden</div>`;
 
@@ -544,6 +600,12 @@ function renderAussortierenTab() {
 
   const rows = foals.map((f) => ({ label: 'Fohlen', horse: f, resolved: true }));
   html += valueComparisonTableHtml('foals-table', rows, currentHorse, foalsSort, owner);
+
+  html += '<div class="group-heading">Farbvergleich (Sondergene)</div>';
+  html += colorPassOnSummary(currentHorse, foals);
+  html += colorComparisonTableHtml([{ label: 'Ausgewähltes Pferd', horse: currentHorse, isReference: true }, ...rows]);
+
+  html += diseaseInheritanceSummary(currentHorse, foals);
 
   container.innerHTML = html;
 }

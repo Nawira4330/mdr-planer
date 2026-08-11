@@ -402,7 +402,7 @@
         </tr>
         <tr>
           <th>Schlagwort vorschlagen</th>
-          <td>Nur für in der Pferdedatenbank eingeloggte Nutzer (siehe „Angemeldet als“ oben rechts) - Button unter dem ausgewählten Pferd: eines der 5 festen Schlagwörter (Verkauf, Reserviert, Bleibt, Zuchttier, Gnadenbrot) plus optionaler Zusatztext auswählen und abschicken - trägt den Vorschlag in die Pferdedatenbank ein, wo er manuell geprüft und übernommen oder verworfen wird. MDR-Planer ändert nichts direkt am Pferd.</td>
+          <td>Nur für in der Pferdedatenbank eingeloggte Nutzer (siehe „Angemeldet als“ oben rechts) - Button unter dem ausgewählten Pferd: eines der 5 festen Schlagwörter (Verkauf, Reserviert, Bleibt, Zuchttier, GBH) plus optionaler Zusatztext auswählen und abschicken - trägt den Vorschlag in die Pferdedatenbank ein, wo er manuell geprüft und übernommen oder verworfen wird. MDR-Planer ändert nichts direkt am Pferd.</td>
         </tr>
         <tr>
           <th>Angezeigte Verwandte (Häkchen)</th>
@@ -536,7 +536,7 @@
             zusätzlich die Gesamtzahl mit Inzucht-Gefahr in Klammern.
             Button „Schlagwort vorschlagen“ (nur für in der Pferdedatenbank
             eingeloggte Nutzer) trägt einen Vorschlag (Verkauf/Reserviert/
-            Bleibt/Zuchttier/Gnadenbrot + optionaler Zusatztext) in die
+            Bleibt/Zuchttier/GBH + optionaler Zusatztext) in die
             Pferdedatenbank ein - dort manuell zu prüfen, siehe unten. Nur
             beim Dropdown-Pferd verfügbar, nicht beim datenbankfremden.
           </td>
@@ -648,7 +648,7 @@
         </tr>
         <tr>
           <th>Schlagwort vorschlagen</th>
-          <td>Nur für in der Pferdedatenbank eingeloggte Nutzer - Button unter dem Ergebnis der Einzelsuche: eines der 5 festen Schlagwörter (Verkauf, Reserviert, Bleibt, Zuchttier, Gnadenbrot) plus optionaler Zusatztext auswählen und abschicken - trägt den Vorschlag in die Pferdedatenbank ein, wo er manuell geprüft und übernommen oder verworfen wird.</td>
+          <td>Nur für in der Pferdedatenbank eingeloggte Nutzer - Button unter dem Ergebnis der Einzelsuche: eines der 5 festen Schlagwörter (Verkauf, Reserviert, Bleibt, Zuchttier, GBH) plus optionaler Zusatztext auswählen und abschicken - trägt den Vorschlag in die Pferdedatenbank ein, wo er manuell geprüft und übernommen oder verworfen wird.</td>
         </tr>
         <tr>
           <th>Fohlenanzahl eines Pferds</th>
@@ -708,21 +708,21 @@
         <tr>
           <th>Werte-Vergleich</th>
           <td>
-            Zeigt GP/Ext/Ext%/Int des Fohlens (fett, Referenzzeile) sowie
-            von Vater, Mutter und allen Voll-/Halbgeschwistern (über
-            Namensabgleich im Stammbaum, wie im Zuchtbuch). Jede Zeile ist
-            gegenüber dem Fohlen eingefärbt: grün = besser, rot =
-            schlechter, gelb = exakt gleich (Richtung je Metrik: bei GP/
-            Ext% ist höher besser, bei Ext/Int niedriger). Ist ein
-            Elternteil dem Namen nach bekannt, aber nicht in der Datenbank
-            auflösbar, erscheint die Zeile trotzdem mit Hinweis, nur ohne
-            Werte.
+            Zeigt GP/Ext/Ext%/Int von Vater, Mutter und allen Voll-/
+            Halbgeschwistern (über Namensabgleich im Stammbaum, wie im
+            Zuchtbuch) im Vergleich zu den eigenen Werten des Fohlens
+            (siehe Werte-Zeile oben unter dem Namen). Jede Zeile ist
+            eingefärbt: grün = besser, rot = schlechter, schwarz = exakt
+            gleich (Richtung je Metrik: bei GP/Ext% ist höher besser, bei
+            Ext/Int niedriger). Ist ein Elternteil dem Namen nach bekannt,
+            aber nicht in der Datenbank auflösbar, erscheint die Zeile
+            trotzdem mit Hinweis, nur ohne Werte.
           </td>
         </tr>
         <tr>
           <th>Farbvergleich</th>
           <td>
-            Prüft für Fohlen/Vater/Mutter/Geschwister genau 9 "Sondergene"
+            Prüft für Vater/Mutter/Geschwister genau 9 "Sondergene"
             (Champagne, Silver, Pearl, Flaxen, Cream, Tobiano, Splashed,
             Sabino, Overo - dieselbe Prüfung wie die Farbwünsche im
             Verpaarungsratgeber) und zeigt darüber zusammenfassend, wie
@@ -762,7 +762,7 @@
       <ol class="small">
         <li>Oben dasselbe Pferd wie bei der Fohlenprüfung auswählen (oder direkt über die Startseiten-Karte "Aussortierhilfe" mit vorausgewähltem Reiter einsteigen).</li>
         <li>Zum Reiter „Aussortierhilfe“ wechseln.</li>
-        <li>Fohlenanzahl, Werte-Vergleich und Besitzer-Verbleib durchsehen.</li>
+        <li>Fohlenanzahl, Werte-Vergleich, Farbvergleich, EKH-Vergleich und Besitzer-Verbleib durchsehen. Ist das Elternteil 24 Jahre oder älter, erscheint zusätzlich ein Alters-Hinweis.</li>
       </ol>
 
       <div class="group-heading">Funktionen im Detail</div>
@@ -778,18 +778,42 @@
         <tr>
           <th>Werte-Vergleich Fohlen vs. Elternteil</th>
           <td>
-            Eine Zeile pro Fohlen (GP/Ext/Ext%/Int) plus das Elternteil
-            selbst als fette Referenzzeile - dieselbe grün/rot/gelb-
-            Einfärbung wie im Reiter "Fohlenprüfung", hier bezogen auf das
-            Elternteil statt auf ein einzelnes Fohlen.
+            Eine Zeile pro Fohlen (GP/Ext/Ext%/Int) im Vergleich zu den
+            eigenen Werten des Elternteils (Werte-Zeile oben unter dem
+            Namen) - dieselbe grün/rot/schwarz-Einfärbung wie im Reiter
+            "Fohlenprüfung". Eine eigene Besitzer-Spalte markiert Fohlen,
+            die noch beim aktuellen Besitzer des Elternteils sind; ist man
+            selbst eingeloggt und Besitzer eines anderen Kontos, wird
+            zusätzlich gezählt, wie viele Fohlen beim eigenen Konto
+            gelandet sind.
           </td>
         </tr>
         <tr>
-          <th>Fohlen beim aktuellen Besitzer</th>
+          <th>Farbvergleich</th>
           <td>
-            Vergleicht den Besitzer jedes Fohlens mit dem aktuellen
-            Besitzer des Elternteils und listet beide Gruppen getrennt auf
-            (noch beim Besitzer / nicht mehr).
+            Zeigt je Sondergen des Elternteils (dieselben 9 wie im Reiter
+            "Fohlenprüfung"), wie viele der eigenen Fohlen dasselbe Gen
+            ebenfalls tragen - als grobe "Weitergabequote", keine Aussage
+            darüber, von welchem Elternteil ein einzelnes Fohlen sein Gen
+            tatsächlich hat.
+          </td>
+        </tr>
+        <tr>
+          <th>Erbkrankheiten (EKH) im Vergleich</th>
+          <td>
+            Erscheint nur, wenn das Elternteil selbst mindestens eine
+            Erbkrankheit trägt oder ausgeprägt hat - zeigt je Krankheit,
+            wie viele der eigenen Fohlen ebenfalls Träger oder betroffen
+            sind, als Einschätzung für die Weiterzucht-Entscheidung.
+          </td>
+        </tr>
+        <tr>
+          <th>Alters-Hinweis</th>
+          <td>
+            Ab 24 Spielejahren erscheint derselbe Hinweis wie im
+            Zuchtplaner ("ab 25 Jahren nicht mehr in der
+            Zuchtplaner-Auswahl") - hier ohne Auswahl-Einschränkung, nur
+            als Entscheidungshilfe.
           </td>
         </tr>
       </table>
