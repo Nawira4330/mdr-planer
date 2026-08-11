@@ -608,7 +608,6 @@ const HORSE_TAG_OPTIONS = [
   { label: 'Verkauf', color: 'var(--danger)' },
   { label: 'Reserviert', color: 'var(--warning)' },
   { label: 'Bleibt', color: 'var(--success)' },
-  { label: 'Zuchttier', color: 'var(--tag-blue)' },
   { label: 'GBH', color: 'var(--tag-purple)' },
 ];
 
