@@ -506,6 +506,29 @@
           </td>
         </tr>
         <tr>
+          <th>Verwandtschaftsgrad</th>
+          <td>
+            Zusätzlich zur roten/grünen Einordnung zeigt sowohl jede Matrix-
+            Zelle als auch die Einzelansicht den tatsächlichen
+            Verwandtschaftsgrad in Prozent - den erwarteten
+            Inzuchtkoeffizienten eines hypothetischen gemeinsamen Fohlens
+            beider Pferde (Wright'sche Pfad-Methode: jeder gemeinsame
+            Vorfahre trägt mit (0,5)<sup>Generationen+1</sup> bei, je Pferd
+            summiert über ALLE gemeinsamen Vorfahren - nicht nur die im
+            Stammbaum sichtbaren 14 Plätze, sondern verkettet über den
+            gesamten Bestand, soweit sich Vorfahren-Namen auf andere
+            gespeicherte Pferde auflösen lassen). Vollgeschwister liegen
+            typischerweise bei 25%, Halbgeschwister bei 12,5%, Eltern/Kind
+            ebenfalls bei 25% (ein Rück-Fohlen mit dem eigenen Elternteil
+            wäre genauso eingezüchtet wie eines aus Vollgeschwister-
+            Verpaarung) - in tatsächlich schon mehrfach verwandten Linien
+            kann der Wert durch zusätzliche gemeinsame Vorfahren weiter
+            ansteigen. In der Matrix zusätzlich als eigene, sortierbare
+            Spalte „Ø Verwandtschaftsgrad“ (Mittelwert über alle verwandten
+            Spalten-Pferde einer Zeile).
+          </td>
+        </tr>
+        <tr>
           <th>Filter „Bei Verpaarung (Fohlen)“</th>
           <td>
             Blendet in der Matrix wahlweise nur die roten Zellen („Nur mit
@@ -716,7 +739,15 @@
             gleich (Richtung je Metrik: bei GP/Ext% ist höher besser, bei
             Ext/Int niedriger). Ist ein Elternteil dem Namen nach bekannt,
             aber nicht in der Datenbank auflösbar, erscheint die Zeile
-            trotzdem mit Hinweis, nur ohne Werte.
+            trotzdem mit Hinweis, nur ohne Werte. Eine eigene, sortierbare
+            Spalte „Verwandtschaftsgrad“ zeigt zusätzlich den erwarteten
+            Inzuchtkoeffizienten eines hypothetischen gemeinsamen Fohlens
+            aus Fohlen + jeweiliger Vergleichszeile in Prozent (Wright'sche
+            Pfad-Methode über den gesamten Bestand, dieselbe Berechnung wie
+            in der <a href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>) -
+            Vater/Mutter liegen dabei erwartungsgemäß bei 25%, echte
+            Vollgeschwister ebenfalls bei rund 25%, Halbgeschwister bei
+            rund 12,5%.
           </td>
         </tr>
         <tr>
@@ -785,7 +816,11 @@
             die noch beim aktuellen Besitzer des Elternteils sind; ist man
             selbst eingeloggt und Besitzer eines anderen Kontos, wird
             zusätzlich gezählt, wie viele Fohlen beim eigenen Konto
-            gelandet sind.
+            gelandet sind. Wie im Reiter „Fohlenprüfung“ zeigt eine eigene,
+            sortierbare Spalte „Verwandtschaftsgrad“ den erwarteten
+            Inzuchtkoeffizienten eines hypothetischen Rück-Fohlens aus
+            Elternteil + jeweiligem eigenem Fohlen (typischerweise rund
+            25%, wie bei jeder direkten Eltern-Kind-Beziehung).
           </td>
         </tr>
         <tr>

@@ -29,6 +29,17 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-08-13T12:00', type: 'feature', title: 'Verwandtschaftsgrad (Inzuchtkoeffizient in %) in Verwandtschaftsmatrix, Fohlenprüfung und Aussortierhilfe',
+    points: [
+      'Neu berechneter, echter Verwandtschaftsgrad in Prozent (Inzuchtkoeffizient eines hypothetischen gemeinsamen Fohlens, Wright\'sche Pfad-Methode) zusätzlich zur bisherigen roten/grünen Ja-Nein-Einordnung - Vorbild war die entsprechende Berechnung im separaten HorseReality-Datenbank-Projekt (js/pedigree.js)',
+      'Anders als die bisherige Prüfung (nur die 14 sichtbaren Stammbaum-Plätze: Eltern/Großeltern/Urgroßeltern) verkettet die neue Berechnung Vorfahren-Namen über den GESAMTEN Bestand hinweg, soweit sie sich auf andere gespeicherte Pferde auflösen lassen (bis zu 10 Generationen tief) - findet dadurch auch weiter zurückliegende gemeinsame Vorfahren',
+      'Verwandtschaftsmatrix: jede Zelle zeigt jetzt den COI% statt eines bloßen "✕", neue sortierbare Spalte "Ø Verwandtschaftsgrad" (Mittelwert über alle verwandten Spalten-Pferde einer Zeile), Einzelansicht ("Pferd nachschlagen") hat eine neue Spalte "Verwandtschaftsgrad"',
+      'Fohlenprüfung: neue Spalte "Verwandtschaftsgrad" in der Werte-Vergleichstabelle (Fohlen gegen Vater/Mutter/Geschwister)',
+      'Aussortierhilfe: dieselbe neue Spalte in der Werte-Vergleichstabelle (Elternteil gegen seine eigenen Fohlen)',
+      'Die alte rote/grüne Einordnung (Inzucht-Gefahr bei einem gemeinsamen Fohlen ja/nein) bleibt unverändert bestehen, der Prozentwert ergänzt sie nur',
+    ],
+  },
+  {
     date: '2026-08-10T11:20', type: 'feature', title: 'Neues Werkzeug: Fohlenprüfung + Aussortierhilfe',
     points: [
       'Ein Pferd auswählen und über zwei Reiter betrachten: "Fohlenprüfung" (als Fohlen) und "Aussortierhilfe" (als Elternteil) - dieselbe Auswahl gilt für beide, direkter Einstieg über die Startseiten-Karten',

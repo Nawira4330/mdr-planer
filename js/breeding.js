@@ -206,10 +206,127 @@ function sharedDiseaseRisks(mare, stallion) {
     .map((d) => d.label);
 }
 
+// --- Verwandtschaftsgrad (Inzuchtkoeffizient nach Wright'scher Pfad-Methode) ---
+//
+// Anders als findRelations/findSharedNames (die nur den SICHTBAREN,
+// höchstens 3 Generationen tiefen Stammbaum jedes Pferds für sich
+// betrachten) rechnet dies einen echten Verwandtschaftsgrad in Prozent aus:
+// jeder gemeinsame Vorfahre trägt mit (0.5)^(nA+nB+1) bei (nA/nB =
+// Generationen-Abstand zu Pferd A bzw. B), aufsummiert über alle
+// gemeinsamen Vorfahren - das entspricht dem erwarteten Inzuchtkoeffizienten
+// eines hypothetischen gemeinsamen Fohlens von A und B. Vom Prinzip her 1:1
+// aus js/pedigree.js (estimateCOI) im separaten HorseReality-Datenbank-
+// Projekt übernommen, hier an das hiesige, flachere Stammbaum-Format
+// angepasst: dort gibt es Spiel-IDs und einen gespeicherten eigenen
+// COI-Wert je Pferd (der als F_Vorfahre-Korrektur einfließt), hier nur die
+// 14 sichtbaren Vorfahren-NAMEN je Pferd (siehe pedigreeAncestorNames) -
+// die F_Vorfahre-Korrektur entfällt deshalb hier (wird wie 0 behandelt),
+// und die Verkettung über mehrere Generationen läuft per Namensabgleich
+// gegen einen übergebenen Pferde-Pool statt über Spiel-IDs.
+
+// Bis zu welcher Generation die Kette über mehrfach im Bestand gespeicherte
+// Vorfahren weiterverfolgt wird - der Beitrag eines gemeinsamen Vorfahren
+// schrumpft mit (0.5)^Generation, ab hier praktisch vernachlässigbar
+// (< 0.1%).
+const COI_MAX_GENERATION = 10;
+
+// Generation eines der 14 sichtbaren Vorfahren-Plätze relativ zum Pferd
+// selbst (0/1 = Elternteil, 2-5 = Großeltern, 6-13 = Urgroßeltern), siehe
+// pedigreeAncestorNames.
+function ancestorLocalGeneration(index) {
+  return index < 2 ? 1 : index < 6 ? 2 : 3;
+}
+
+// Index Name -> Pferd über einen beliebigen Pferde-Pool (z.B. alle auf der
+// jeweiligen Seite geladenen Pferde) - für die Verkettung über mehrere
+// Generationen hinweg (siehe buildDeepPedigree). Nur der jeweils erste
+// Treffer je Name zählt (wie überall sonst bei Namensabgleich in diesem
+// Repo).
+function buildPedigreeNameIndex(pool) {
+  const index = new Map();
+  for (const h of pool || []) {
+    const key = normalizeName(h.name);
+    if (key && !index.has(key)) index.set(key, h);
+  }
+  return index;
+}
+
+// Baut den tiefen Stammbaum eines Pferds als flache Liste { name,
+// generation }, EINSCHLIESSLICH des Pferds selbst (generation 0 - wichtig,
+// damit z.B. ein direkter Eltern-Kind-Vergleich über findDeepCommonAncestors
+// erkannt wird: das Elternteil taucht dann als "gemeinsamer Vorfahre" bei
+// sich selbst mit Generation 0 und beim Kind mit Generation 1 auf). Darüber
+// hinaus wird für jeden der 14 sichtbaren Vorfahren, der sich per Name auf
+// ein anderes Pferd im "nameIndex" auflösen lässt, dessen eigener
+// Stammbaum ebenfalls angehängt (Generation entsprechend verschoben) -
+// rekursiv bis maxGeneration. Ein Name, der im eigenen Pfad schon vorkam,
+// wird nicht erneut aufgelöst (schützt vor Endlosschleifen bei
+// fehlerhaften/zirkulären Angaben).
+function buildDeepPedigree(horse, nameIndex, maxGeneration = COI_MAX_GENERATION) {
+  const result = horse?.name ? [{ name: horse.name, generation: 0 }] : [];
+  const visited = new Set(horse?.name ? [normalizeName(horse.name)] : []);
+  function walk(h, offset) {
+    pedigreeAncestorNames(h).forEach((name, i) => {
+      const key = normalizeName(name);
+      if (!key || key === 'unbekannt') return;
+      const generation = offset + ancestorLocalGeneration(i);
+      result.push({ name, generation });
+      if (generation >= maxGeneration || visited.has(key)) return;
+      const resolved = nameIndex.get(key);
+      if (!resolved) return;
+      visited.add(key);
+      walk(resolved, generation);
+    });
+  }
+  walk(horse, 0);
+  return result;
+}
+
+// Gemeinsame Vorfahren zweier tiefer Stammbäume (siehe buildDeepPedigree) -
+// jedes Namens-Vorkommen auf beiden Seiten zählt einzeln (ein Vorfahre kann
+// auf einer Seite über mehrere Pfade auftauchen, falls dort schon Inzucht
+// vorliegt).
+function findDeepCommonAncestors(pedigreeA, pedigreeB) {
+  const byNameA = new Map();
+  for (const n of pedigreeA) {
+    const key = normalizeName(n.name);
+    if (!byNameA.has(key)) byNameA.set(key, []);
+    byNameA.get(key).push(n);
+  }
+  const common = [];
+  for (const b of pedigreeB) {
+    const matches = byNameA.get(normalizeName(b.name));
+    if (!matches) continue;
+    for (const a of matches) common.push({ name: b.name, generationA: a.generation, generationB: b.generation });
+  }
+  return common;
+}
+
+function coiFromCommonAncestors(commonAncestors) {
+  let coi = 0;
+  for (const c of commonAncestors) coi += Math.pow(0.5, c.generationA + c.generationB + 1);
+  return Math.round(coi * 1000) / 10;
+}
+
+// Verwandtschaftsgrad zweier Pferde in Prozent (Inzuchtkoeffizient eines
+// hypothetischen gemeinsamen Fohlens) - "pool" ist der Pferde-Bestand, über
+// den Vorfahren-Namen zu tatsächlich gespeicherten Pferden aufgelöst werden
+// (siehe buildDeepPedigree). null, wenn eines der beiden Pferde fehlt oder
+// beide dasselbe Pferd sind.
+function estimateRelatedness(horseA, horseB, pool, maxGeneration = COI_MAX_GENERATION) {
+  if (!horseA || !horseB) return null;
+  if (horseA === horseB || (horseA.id && horseB.id && horseA.id === horseB.id)) return null;
+  const nameIndex = buildPedigreeNameIndex(pool);
+  const pedA = buildDeepPedigree(horseA, nameIndex, maxGeneration);
+  const pedB = buildDeepPedigree(horseB, nameIndex, maxGeneration);
+  return coiFromCommonAncestors(findDeepCommonAncestors(pedA, pedB));
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     pedigreeAncestorNames, pedigreeDepth, foalPedigreeNodes, findSharedNames, hasOveroGene,
     isDiseaseCarrierOrAffected, sharedDiseaseRisks,
     pedigreeNamePool, findRelations, areRelated,
+    buildPedigreeNameIndex, buildDeepPedigree, findDeepCommonAncestors, coiFromCommonAncestors, estimateRelatedness,
   };
 }

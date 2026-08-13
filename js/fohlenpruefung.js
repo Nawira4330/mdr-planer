@@ -336,6 +336,14 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
     ext: r.horse ? horseExt(r.horse) : null,
     extpct: r.horse ? horseExtPct(r.horse) : null,
     int: r.horse ? horseInt(r.horse) : null,
+    // Erwarteter Inzuchtkoeffizient eines hypothetischen gemeinsamen
+    // Fohlens von referenceHorse und dieser Zeile (Wright'sche
+    // Pfad-Methode über den gesamten Bestand, siehe estimateRelatedness in
+    // js/breeding.js) - z.B. Fohlenprüfung: referenceHorse=Fohlen,
+    // Zeile=Vater/Mutter/Geschwister (Vater/Mutter erwartungsgemäß 25%,
+    // ein hypothetisches Rück-Fohlen mit dem eigenen Elternteil wäre so
+    // stark eingezüchtet wie eines aus Vollgeschwister-Verpaarung).
+    coiPct: r.horse ? estimateRelatedness(referenceHorse, r.horse, allHorses) : null,
   }));
   const ref = { gp: horseGP(referenceHorse), ext: horseExt(referenceHorse), extpct: horseExtPct(referenceHorse), int: horseInt(referenceHorse) };
 
@@ -358,6 +366,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
     return `<tr${isRef ? ' style="font-weight:600;"' : ''}>
       <td data-label="Beziehung">${escapeHtml(row.label)}</td>
       <td data-label="Name" class="name-with-tags">${escapeHtml(name)}${row.horse ? tagsBadgesHtml(row.horse.tags) : ''}</td>
+      <td data-label="Verwandtschaftsgrad">${row.coiPct != null ? row.coiPct.toFixed(1) + '%' : '–'}</td>
       <td data-label="Geschlecht">${row.gender ? escapeHtml(row.gender) : '–'}</td>
       <td data-label="EKH" style="${row.ekh.length ? 'color:var(--danger); font-weight:600;' : ''}">${row.ekh.length ? escapeHtml(row.ekh.join(', ')) : '–'}</td>
       ${ownerCell}
@@ -374,6 +383,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
     <thead><tr>
       <th>Beziehung</th>
       <th>Name</th>
+      <th data-sort="coiPct" title="Erwarteter Inzuchtkoeffizient eines hypothetischen gemeinsamen Fohlens (Wright'sche Pfad-Methode über den gesamten Bestand)">Verwandtschaftsgrad${sortArrow(sort, 'coiPct')}</th>
       <th data-sort="gender">Geschlecht${sortArrow(sort, 'gender')}</th>
       <th>EKH</th>
       ${ownerHeader}

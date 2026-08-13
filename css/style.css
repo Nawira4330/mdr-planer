@@ -372,6 +372,11 @@ td.actions-cell { display: flex; gap: 0.4rem; }
   color: var(--success);
   font-weight: 700;
 }
+/* Zellen zeigen seit Einführung des Verwandtschaftsgrads den COI%-Wert
+   statt eines einzelnen "✕"-Zeichens - etwas kleinere Schrift, damit z.B.
+   "12.5%" nicht breiter wirkt als die (senkrecht geschriebenen)
+   Spaltenköpfe erlauben. */
+#matrix-table td.related-cell, #matrix-table td.related-cell-safe { font-size: 0.78rem; white-space: nowrap; }
 
 /* --- Form --- */
 .form-grid {
