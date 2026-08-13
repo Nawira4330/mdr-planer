@@ -302,10 +302,68 @@ function findDeepCommonAncestors(pedigreeA, pedigreeB) {
   return common;
 }
 
-function coiFromCommonAncestors(commonAncestors) {
+// Eigener Inzuchtkoeffizient eines Pferds (als Bruchteil 0..1, nicht
+// Prozent) - der COI zwischen SEINEN EIGENEN beiden Eltern. Das ist der
+// "F_Vorfahre"-Korrekturfaktor aus der vollständigen Formel: taucht dieses
+// Pferd selbst als gemeinsamer Vorfahre zweier anderer Pferde auf, zählt
+// sein Beitrag umso mehr, je stärker es selbst schon eingezüchtet ist (ein
+// bereits eingezüchteter Vorfahre gibt praktisch "doppelte" Erbanlagen
+// weiter). "coiCache" wird über eine ganze Berechnung hinweg (auch über
+// mehrere coiFraction-Aufrufe) geteilt, da derselbe Vorfahre in vielen
+// verschiedenen Pfaden auftauchen kann - ohne Cache würde sein eigener
+// Stammbaum entsprechend oft neu aufgebaut. Der Cache wird VOR der
+// eigentlichen Berechnung mit 0 vorbelegt (schützt vor Endlosschleifen bei
+// zirkulären/fehlerhaften Angaben, z.B. ein Pferd, das versehentlich sich
+// selbst als Vorfahren führt).
+function ownCoiFraction(horse, nameIndex, coiCache) {
+  if (!horse?.id) return 0;
+  if (coiCache.has(horse.id)) return coiCache.get(horse.id);
+  coiCache.set(horse.id, 0);
+  const [fatherName, motherName] = pedigreeAncestorNames(horse);
+  const resolve = (name) => (name && normalizeName(name) !== 'unbekannt' ? nameIndex.get(normalizeName(name)) : null);
+  const father = resolve(fatherName);
+  const mother = resolve(motherName);
+  const fraction = (father && mother) ? coiFraction(father, mother, nameIndex, coiCache) : 0;
+  coiCache.set(horse.id, fraction);
+  return fraction;
+}
+
+// Inzuchtkoeffizient (als Bruchteil 0..1) einer gedachten Verpaarung
+// zweier Pferde - Wright'sche Pfad-Methode: für jeden gemeinsamen
+// Vorfahren (siehe findDeepCommonAncestors) wird
+// (0,5)^(Generation bei A + Generation bei B + 1) × (1 + eigener COI des
+// Vorfahren) aufsummiert (der eigene COI des Vorfahren kommt aus
+// ownCoiFraction, 0 falls der Vorfahre nicht auf ein gespeichertes Pferd
+// auflösbar ist - "unbekannt" wird wie überall nicht als "sicher 0"
+// behandelt, sondern schlicht nicht eingerechnet). Interne Bruchteil-
+// Variante ohne Rundung/Prozent-Umrechnung, wird von estimateRelatedness/
+// ownCoiFraction/estimateBreedRelatedness gebraucht.
+function coiFraction(horseA, horseB, nameIndex, coiCache, maxGeneration = COI_MAX_GENERATION) {
+  if (!horseA || !horseB) return 0;
+  if (horseA === horseB || (horseA.id && horseB.id && horseA.id === horseB.id)) return 0;
+  const pedA = buildDeepPedigree(horseA, nameIndex, maxGeneration);
+  const pedB = buildDeepPedigree(horseB, nameIndex, maxGeneration);
   let coi = 0;
-  for (const c of commonAncestors) coi += Math.pow(0.5, c.generationA + c.generationB + 1);
-  return Math.round(coi * 1000) / 10;
+  for (const c of findDeepCommonAncestors(pedA, pedB)) {
+    const ancestorHorse = nameIndex.get(normalizeName(c.name));
+    const fa = ancestorHorse ? ownCoiFraction(ancestorHorse, nameIndex, coiCache) : 0;
+    coi += Math.pow(0.5, c.generationA + c.generationB + 1) * (1 + fa);
+  }
+  return coi;
+}
+
+// Wie coiFraction, aber aus bereits fertig gebauten tiefen Stammbäumen
+// (siehe buildDeepPedigree) - für Aufrufer, die diese ohnehin schon
+// gecacht vorliegen haben (z.B. die Verwandtschaftsmatrix, die denselben
+// Stammbaum über viele Zeilen/Spalten hinweg wiederverwendet).
+function coiFractionFromDeepPedigrees(pedigreeA, pedigreeB, nameIndex, coiCache) {
+  let coi = 0;
+  for (const c of findDeepCommonAncestors(pedigreeA, pedigreeB)) {
+    const ancestorHorse = nameIndex.get(normalizeName(c.name));
+    const fa = ancestorHorse ? ownCoiFraction(ancestorHorse, nameIndex, coiCache) : 0;
+    coi += Math.pow(0.5, c.generationA + c.generationB + 1) * (1 + fa);
+  }
+  return coi;
 }
 
 // Verwandtschaftsgrad zweier Pferde in Prozent (Inzuchtkoeffizient eines
@@ -317,9 +375,36 @@ function estimateRelatedness(horseA, horseB, pool, maxGeneration = COI_MAX_GENER
   if (!horseA || !horseB) return null;
   if (horseA === horseB || (horseA.id && horseB.id && horseA.id === horseB.id)) return null;
   const nameIndex = buildPedigreeNameIndex(pool);
-  const pedA = buildDeepPedigree(horseA, nameIndex, maxGeneration);
-  const pedB = buildDeepPedigree(horseB, nameIndex, maxGeneration);
-  return coiFromCommonAncestors(findDeepCommonAncestors(pedA, pedB));
+  const coiCache = new Map();
+  return Math.round(coiFraction(horseA, horseB, nameIndex, coiCache, maxGeneration) * 1000) / 10;
+}
+
+// Durchschnittlicher Verwandtschaftsgrad eines Pferds gegen ALLE ANDEREN
+// Pferde DERSELBEN RASSE im übergebenen Bestand (nicht nur eine aktuell im
+// UI gefilterte/angezeigte Auswahl) - ein eigener, separater Wert (anders
+// als die paarweisen Vergleiche), der zeigt, wie genetisch redundant ein
+// Pferd innerhalb seiner eigenen Rasse bereits ist: viele nahe Verwandte
+// in der eigenen Rasse bedeuten weniger genetische Vielfalt, die dieses
+// Pferd zusätzlich beisteuert. Rassenübergreifend verglichen wäre der COI
+// ohnehin praktisch immer 0% (keine gemeinsamen Vorfahren zwischen z.B.
+// Andalusier und American Paint Horse) und würde den Durchschnitt nur
+// künstlich verwässern - dieselbe Überlegung wie computeRelatedness in
+// js/sortierhilfe.js im HorseReality-Datenbank-Projekt. null, wenn das
+// Pferd fehlt oder es keine anderen Pferde derselben Rasse gibt.
+function estimateBreedRelatedness(horse, pool, maxGeneration = COI_MAX_GENERATION) {
+  if (!horse) return null;
+  const others = (pool || []).filter((h) => h.id !== horse.id && h.breed && h.breed === horse.breed);
+  if (!others.length) return null;
+  const nameIndex = buildPedigreeNameIndex(pool);
+  const coiCache = new Map();
+  const pedHorse = buildDeepPedigree(horse, nameIndex, maxGeneration);
+  const pedigreeCache = new Map();
+  let sum = 0;
+  for (const other of others) {
+    if (!pedigreeCache.has(other.id)) pedigreeCache.set(other.id, buildDeepPedigree(other, nameIndex, maxGeneration));
+    sum += coiFractionFromDeepPedigrees(pedHorse, pedigreeCache.get(other.id), nameIndex, coiCache);
+  }
+  return Math.round((sum / others.length) * 1000) / 10;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -327,6 +412,8 @@ if (typeof module !== 'undefined' && module.exports) {
     pedigreeAncestorNames, pedigreeDepth, foalPedigreeNodes, findSharedNames, hasOveroGene,
     isDiseaseCarrierOrAffected, sharedDiseaseRisks,
     pedigreeNamePool, findRelations, areRelated,
-    buildPedigreeNameIndex, buildDeepPedigree, findDeepCommonAncestors, coiFromCommonAncestors, estimateRelatedness,
+    buildPedigreeNameIndex, buildDeepPedigree, findDeepCommonAncestors,
+    ownCoiFraction, coiFraction, coiFractionFromDeepPedigrees,
+    estimateRelatedness, estimateBreedRelatedness,
   };
 }

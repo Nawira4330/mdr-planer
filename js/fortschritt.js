@@ -29,6 +29,14 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-08-13T13:30', type: 'update', title: 'Verwandtschaftsgrad: F-Vorfahre-Korrektur + neuer Ø-Wert gegen die gesamte Rasse',
+    points: [
+      'Die COI-Formel berücksichtigt jetzt auch den eigenen Inzuchtkoeffizienten jedes gemeinsamen Vorfahren (rekursiv aus dessen eigener Eltern-Verwandtschaft berechnet) - vorher wurde dieser Korrekturfaktor wie 0 behandelt. Ist ein gemeinsamer Vorfahre selbst schon eingezüchtet, fällt der Verwandtschaftsgrad jetzt entsprechend höher aus als vorher',
+      'Neuer, separater Wert "Ø Verwandtschaftsgrad zu allen [Rasse]-Pferden im Bestand" - der Durchschnitt gegen WIRKLICH ALLE anderen Pferde derselben Rasse in der Datenbank (nicht nur die paarweisen Vergleiche/Filterauswahl), zeigt in der Verwandtschaftsmatrix-Einzelansicht sowie in der Werte-Zeile von Fohlenprüfung/Aussortierhilfe',
+      'Mit Node-Unittests (Vollgeschwister 25%, Halbgeschwister 12,5%, Eltern-Kind 25%, sowie ein Fall mit einem selbst eingezüchteten gemeinsamen Vorfahren) und live gegen echte Datenbank-Pferde verifiziert',
+    ],
+  },
+  {
     date: '2026-08-13T12:00', type: 'feature', title: 'Verwandtschaftsgrad (Inzuchtkoeffizient in %) in Verwandtschaftsmatrix, Fohlenprüfung und Aussortierhilfe',
     points: [
       'Neu berechneter, echter Verwandtschaftsgrad in Prozent (Inzuchtkoeffizient eines hypothetischen gemeinsamen Fohlens, Wright\'sche Pfad-Methode) zusätzlich zur bisherigen roten/grünen Ja-Nein-Einordnung - Vorbild war die entsprechende Berechnung im separaten HorseReality-Datenbank-Projekt (js/pedigree.js)',

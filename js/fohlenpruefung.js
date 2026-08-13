@@ -292,6 +292,12 @@ function horseStatsLineHtml(horse) {
   const genetik = genes.map((g) => g.alleles).join(' ');
   const ekh = affectedDiseaseLabels(horse);
   const age = horse.birthdate ? formatAge(horse.birthdate) : '';
+  // Eigener, separater Wert (siehe estimateBreedRelatedness in
+  // js/breeding.js) - Ø-Verwandtschaftsgrad gegen ALLE anderen Pferde
+  // DERSELBEN RASSE im Bestand (nicht nur die Vergleichszeilen der
+  // Tabelle darunter, die nur Vater/Mutter/Geschwister bzw. eigene
+  // Fohlen zeigt).
+  const breedCoiPct = estimateBreedRelatedness(horse, allHorses);
   return `<p class="small muted">
     GP: <strong>${fmt(horseGP(horse), 0)}</strong>
     &nbsp;·&nbsp; Ext: <strong>${fmt(horseExt(horse), 2)}</strong>
@@ -304,6 +310,9 @@ function horseStatsLineHtml(horse) {
     &nbsp;·&nbsp; Farbe: <strong>${horse.coat_color ? escapeHtml(horse.coat_color) : '–'}</strong>
     &nbsp;·&nbsp; Alter: <strong>${age || '–'}</strong>${ekh.length ? ` &nbsp;·&nbsp; EKH: <strong style="color:var(--danger);">${escapeHtml(ekh.join(', '))}</strong>` : ''}
     &nbsp;·&nbsp; Besitzer: <strong>${horse.owner ? escapeHtml(horse.owner) : '–'}</strong>
+  </p>
+  <p class="small muted">
+    Ø Verwandtschaftsgrad zu allen ${horse.breed ? escapeHtml(horse.breed) : 'Pferden derselben Rasse'}-Pferden im Bestand: <strong>${breedCoiPct != null ? breedCoiPct.toFixed(1) + '%' : '–'}</strong>
   </p>`;
 }
 

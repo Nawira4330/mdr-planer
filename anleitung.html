@@ -513,19 +513,31 @@
             Verwandtschaftsgrad in Prozent - den erwarteten
             Inzuchtkoeffizienten eines hypothetischen gemeinsamen Fohlens
             beider Pferde (Wright'sche Pfad-Methode: jeder gemeinsame
-            Vorfahre trägt mit (0,5)<sup>Generationen+1</sup> bei, je Pferd
-            summiert über ALLE gemeinsamen Vorfahren - nicht nur die im
-            Stammbaum sichtbaren 14 Plätze, sondern verkettet über den
-            gesamten Bestand, soweit sich Vorfahren-Namen auf andere
-            gespeicherte Pferde auflösen lassen). Vollgeschwister liegen
+            Vorfahre trägt mit (0,5)<sup>Generationen+1</sup> × (1 + sein
+            eigener Inzuchtkoeffizient) bei, je Pferd summiert über ALLE
+            gemeinsamen Vorfahren - nicht nur die im Stammbaum sichtbaren 14
+            Plätze, sondern verkettet über den gesamten Bestand, soweit sich
+            Vorfahren-Namen auf andere gespeicherte Pferde auflösen lassen;
+            der "eigene Inzuchtkoeffizient" eines Vorfahren wird dafür
+            wiederum aus DESSEN Eltern-Verwandtschaft berechnet, rekursiv -
+            ist ein gemeinsamer Vorfahre selbst schon eingezüchtet, zählt
+            sein Beitrag entsprechend mehr). Vollgeschwister liegen
             typischerweise bei 25%, Halbgeschwister bei 12,5%, Eltern/Kind
             ebenfalls bei 25% (ein Rück-Fohlen mit dem eigenen Elternteil
             wäre genauso eingezüchtet wie eines aus Vollgeschwister-
             Verpaarung) - in tatsächlich schon mehrfach verwandten Linien
-            kann der Wert durch zusätzliche gemeinsame Vorfahren weiter
-            ansteigen. In der Matrix zusätzlich als eigene, sortierbare
-            Spalte „Ø Verwandtschaftsgrad“ (Mittelwert über alle verwandten
-            Spalten-Pferde einer Zeile).
+            kann der Wert durch zusätzliche und/oder selbst schon
+            eingezüchtete gemeinsame Vorfahren weiter ansteigen. In der
+            Matrix zusätzlich als eigene, sortierbare Spalte „Ø
+            Verwandtschaftsgrad“ (Mittelwert über alle verwandten
+            Spalten-Pferde einer Zeile, bezogen auf die aktuelle
+            Spalten-Auswahl/-Filterung). Zusätzlich zeigt die Einzelansicht
+            oben einen davon unabhängigen, festen Wert „Ø Verwandtschaftsgrad
+            zu allen [Rasse]-Pferden im Bestand“ - der Durchschnitt gegen
+            WIRKLICH ALLE anderen Pferde derselben Rasse in der Datenbank,
+            unabhängig von Filtern; andere Rassen fließen bewusst nicht mit
+            ein, da der COI zwischen ihnen ohnehin praktisch immer 0% wäre
+            und den Durchschnitt nur verwässern würde.
           </td>
         </tr>
         <tr>
@@ -751,6 +763,17 @@
           </td>
         </tr>
         <tr>
+          <th>Verwandtschaftsgrad zur Rasse</th>
+          <td>
+            In der Werte-Zeile direkt unter dem Namen des Fohlens steht
+            zusätzlich ein davon unabhängiger, fester Wert: der
+            durchschnittliche Verwandtschaftsgrad gegen WIRKLICH ALLE
+            anderen Pferde derselben Rasse im Bestand (nicht nur die
+            Vergleichszeilen der Tabelle) - Details siehe
+            <a href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>.
+          </td>
+        </tr>
+        <tr>
           <th>Farbvergleich</th>
           <td>
             Prüft für Vater/Mutter/Geschwister genau 9 "Sondergene"
@@ -820,7 +843,11 @@
             sortierbare Spalte „Verwandtschaftsgrad“ den erwarteten
             Inzuchtkoeffizienten eines hypothetischen Rück-Fohlens aus
             Elternteil + jeweiligem eigenem Fohlen (typischerweise rund
-            25%, wie bei jeder direkten Eltern-Kind-Beziehung).
+            25%, wie bei jeder direkten Eltern-Kind-Beziehung). Zusätzlich
+            zeigt die Werte-Zeile oben unter dem Namen des Elternteils den
+            davon unabhängigen, festen Wert „Ø Verwandtschaftsgrad zu allen
+            [Rasse]-Pferden im Bestand“ (siehe
+            <a href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>).
           </td>
         </tr>
         <tr>

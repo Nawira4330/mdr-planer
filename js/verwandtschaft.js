@@ -220,6 +220,15 @@ function renderFreitext() {
     ? `${countLabel} für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
     : `${countLabel} gefunden`;
   let html = `<div class="group-heading">${heading}</div>`;
+  // Eigener, separater Wert (siehe estimateBreedRelatedness in
+  // js/breeding.js) - Ø-Verwandtschaftsgrad gegen ALLE anderen Pferde
+  // DERSELBEN RASSE im Bestand, unabhängig von den obigen paarweisen
+  // Treffern (die nur Pferde mit mindestens einem gemeinsamen sichtbaren
+  // Namen auflisten).
+  const breedCoiPct = estimateBreedRelatedness(target, allHorses);
+  if (breedCoiPct != null) {
+    html += `<p class="small">Ø Verwandtschaftsgrad zu allen ${escapeHtml(target.breed || 'derselben Rasse')}-Pferden im Bestand: <strong>${formatCoi(breedCoiPct)}</strong></p>`;
+  }
   html += `<p class="small">${tagSuggestButtonHtml(target.id, target.owner)}</p>`;
   if (!related.length) {
     html += '<p class="small muted">Keine Verwandtschaft im sichtbaren Stammbaum gefunden.</p>';
@@ -399,14 +408,19 @@ function applyMatrixSort(rowData) {
 // Kategorien wird je verwandter Zelle der tatsächliche Verwandtschaftsgrad
 // (COI%, siehe estimateRelatedness in js/breeding.js - dort ohne die
 // Begrenzung auf sichtbare Vorfahren, verkettet stattdessen über den
-// gesamten Bestand) berechnet - "deepPedigreeOf" liefert dafür den
-// (gecachten) tiefen Stammbaum eines Pferds, siehe renderMatrix.
-function computeRowData(rowsSubset, colsFull, colStart, colEnd, deepPedigreeOf) {
+// gesamten Bestand, inkl. F_Vorfahre-Korrektur über den eigenen COI jedes
+// gemeinsamen Vorfahren) berechnet - "deepPedigreeOf" liefert dafür den
+// (gecachten) tiefen Stammbaum eines Pferds, "nameIndex"/"coiCache" werden
+// für die F_Vorfahre-Korrektur gebraucht (siehe ownCoiFraction in
+// js/breeding.js), beides von renderMatrix gebaut und über das gesamte
+// Rendern hinweg wiederverwendet.
+function computeRowData(rowsSubset, colsFull, colStart, colEnd, deepPedigreeOf, nameIndex, coiCache) {
   return rowsSubset.map((r) => {
     const cellsFull = colsFull.map((c) => {
       if (!areRelated(r, c)) return { state: 'none', coiPct: 0 };
       const state = findSharedNames(r, c).length > 0 ? 'inbreeding' : 'safe';
-      const coiPct = coiFromCommonAncestors(findDeepCommonAncestors(deepPedigreeOf(r), deepPedigreeOf(c)));
+      const coiFraction = coiFractionFromDeepPedigrees(deepPedigreeOf(r), deepPedigreeOf(c), nameIndex, coiCache);
+      const coiPct = Math.round(coiFraction * 1000) / 10;
       return { state, coiPct };
     });
     const relatedCells = cellsFull.filter((s) => s.state !== 'none');
@@ -458,6 +472,10 @@ function renderMatrix() {
     if (!deepPedigreeCache.has(h.id)) deepPedigreeCache.set(h.id, buildDeepPedigree(h, nameIndex));
     return deepPedigreeCache.get(h.id);
   };
+  // Eigener COI je Pferd (F_Vorfahre-Korrektur, siehe ownCoiFraction in
+  // js/breeding.js) - wie deepPedigreeCache über das gesamte Rendern
+  // hinweg geteilt, da derselbe Vorfahre in vielen Zellen auftauchen kann.
+  const coiCache = new Map();
 
   // Sortierung wirkt IMMER global über alle gefilterten Zeilen-Pferde,
   // nicht nur die aktuell sichtbare Seite (Nutzerwunsch). Bei "Anzahl"/
@@ -470,14 +488,14 @@ function renderMatrix() {
   const isRankedSort = matrixSort.field === 'count' || matrixSort.field === 'inbreedingCount' || matrixSort.field === 'avgCoiPct';
   let rowData;
   if (isRankedSort) {
-    const allRowData = computeRowData(rowsFull, colsFull, colStart, colEnd, deepPedigreeOf);
+    const allRowData = computeRowData(rowsFull, colsFull, colStart, colEnd, deepPedigreeOf, nameIndex, coiCache);
     applyMatrixSort(allRowData);
     const [rowStart, rowEnd] = pageRange(matrixRowPage, allRowData.length);
     rowData = allRowData.slice(rowStart, rowEnd);
   } else {
     const sortedRows = sortHorsesByField(rowsFull, matrixSort.field, matrixSort.dir);
     const [rowStart, rowEnd] = pageRange(matrixRowPage, sortedRows.length);
-    rowData = computeRowData(sortedRows.slice(rowStart, rowEnd), colsFull, colStart, colEnd, deepPedigreeOf);
+    rowData = computeRowData(sortedRows.slice(rowStart, rowEnd), colsFull, colStart, colEnd, deepPedigreeOf, nameIndex, coiCache);
   }
 
   renderMatrixPagination(rowsFull.length, colsFull.length);
