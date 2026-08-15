@@ -7,6 +7,7 @@ let currentProfile = null;
 let currentSort = { field: 'category', dir: 'asc' };
 let horseSelect;
 let breedFilter;
+let tagFilter;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -18,6 +19,7 @@ async function init() {
     { onChange: onHorseSelect },
   );
   breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect });
+  tagFilter = createTagFilter(document.querySelector('#tag-drop'), { onChange: populateHorseSelect });
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   document.querySelector('#parse-btn').addEventListener('click', onParse);
   await initAuthStatus();
@@ -56,7 +58,7 @@ async function loadHorses() {
 
 function populateHorseSelect() {
   const owner = document.querySelector('#owner-select').value;
-  const filtered = horses.filter((h) => (!owner || h.owner === owner) && breedFilter.matches(h));
+  const filtered = horses.filter((h) => (!owner || h.owner === owner) && breedFilter.matches(h) && tagFilter.matches(h));
   horseSelect.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
   document.querySelector('#horse-select-empty-hint').hidden = horses.length > 0;
 }

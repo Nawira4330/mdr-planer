@@ -14,6 +14,10 @@
   --accent-dark: #649200;
   --danger: #c84149;
   --success: #6b9d00;
+  /* Eigener Grünton für "durch Toleranz akzeptabel" (siehe cmpClass in
+     js/zuchtbuch.js) - deutlich von --success unterscheidbar, um nicht mit
+     "wirklich besser" verwechselt zu werden. */
+  --success-tolerance: #1f8f7a;
   --info: #3b7dc4;
   --warning: #c47a1f;
   /* Nur für Schlagwort-Badges (siehe HORSE_TAG_OPTIONS in js/parser.js,
@@ -21,6 +25,7 @@
      decken sich bereits mit danger/warning/success. */
   --tag-blue: #3f7fbf;
   --tag-purple: #8a5fb0;
+  --tag-slate: #5b7083;
   --radius: 8px;
   --font-heading: "Courgette", cursive;
   --font-body: "Source Sans 3", "Source Sans Pro", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -38,10 +43,12 @@
     --accent-dark: #a3ca79;
     --danger: #e0827f;
     --success: #89b957;
+    --success-tolerance: #4fc9b0;
     --info: #7aaee0;
     --warning: #e0a862;
     --tag-blue: #7fb0e0;
     --tag-purple: #b98fd9;
+    --tag-slate: #93aabb;
   }
 }
 
@@ -310,11 +317,39 @@ label {
 
 /* --- Table --- */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
-table { border-collapse: collapse; width: 100%; min-width: 900px; }
+/* width:100% füllt die Karte wie gewohnt aus (schmale Tabellen mit "width:
+   auto" ließen sichtbar Leerraum rechts stehen - sah kaputt aus). Kein
+   fester min-width mehr (früher pauschal 900px) - Tabellen mit vielen
+   Spalten wachsen weiterhin über .table-wrap hinaus und scrollen dort
+   horizontal, aber schmale Tabellen werden nicht mehr künstlich auf
+   mindestens 900px aufgeblasen. */
+table { border-collapse: collapse; width: 100%; }
 th, td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
-th { background: rgba(107, 157, 0, 0.08); cursor: pointer; user-select: none; }
+th { background: rgba(107, 157, 0, 0.08); user-select: none; }
+th[data-sort] { cursor: pointer; }
 tr:hover td { background: rgba(107, 157, 0, 0.05); }
 td.actions-cell { display: flex; gap: 0.4rem; }
+
+/* Name-Spalte bleibt beim horizontalen Scrollen breiter Tabellen sichtbar
+   (Nutzerwunsch) - eigene Klasse statt data-label-Selektor, da <th> kein
+   data-label hat. Eigene, deckende Hintergrundfarbe nötig, da sonst beim
+   Scrollen die übrigen Zellen derselben Zeile optisch "durchscheinen"
+   würden (alle Zellen einer Zeile liegen normalerweise im selben
+   Stapel-Kontext). */
+.sticky-name { position: sticky; left: var(--sticky-left, 0); z-index: 1; background: var(--surface); }
+th.sticky-name { z-index: 2; background: var(--surface); }
+tr:hover td.sticky-name { background: var(--border); }
+
+/* --- Ø-Vergleich (siehe cmpClass in js/zuchtbuch.js, Vorbild: MDR-
+   Datenbank/js/list.js) - drei Stufen: grün = besser als der Durchschnitt,
+   türkis = schlechter, aber innerhalb der persönlichen Toleranz, rot =
+   darüber hinaus schlechter. */
+td.cmp-good { background: rgba(107, 157, 0, 0.16); }
+td.cmp-good, td.cmp-good a { color: var(--success); font-weight: 600; }
+td.cmp-tolerance { background: rgba(31, 143, 122, 0.14); }
+td.cmp-tolerance, td.cmp-tolerance a { color: var(--success-tolerance); font-weight: 600; }
+td.cmp-bad { background: rgba(200, 65, 73, 0.14); }
+td.cmp-bad, td.cmp-bad a { color: var(--danger); font-weight: 600; }
 .pill {
   display: inline-block;
   padding: 0.1rem 0.5rem;

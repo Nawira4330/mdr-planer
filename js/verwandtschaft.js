@@ -31,7 +31,9 @@ let horseSelect;
 let currentTarget = null;
 let foreignTarget = null; // per Freitext eingelesenes, nicht in der DB gespeichertes Pferd
 let matrixRowBreedFilter, matrixColBreedFilter, relationBreedFilter;
+let matrixRowTagFilter, matrixColTagFilter, relationTagFilter;
 let matrixSort = { field: 'count', dir: 'desc' };
+let freitextSort = { field: 'name', dir: 'asc' };
 // Aktuelle Seite je Achse (0-indexiert), bleibt beim Umblättern erhalten
 // und wird beim Rendern auf die jeweils gültige Spanne begrenzt (z.B.
 // nach einer Filteränderung, die die Trefferzahl verkleinert hat).
@@ -41,12 +43,14 @@ let matrixColPage = 0;
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
+  document.querySelector('#tag-legend').innerHTML = tagLegendHtml();
   horseSelect = createSearchableSelect(
     document.querySelector('#relation-search'), document.querySelector('#relation-panel'),
     { onChange: onTargetChange },
   );
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   relationBreedFilter = createBreedFilter(document.querySelector('#relation-breed-drop'), { onChange: populateHorseSelect });
+  relationTagFilter = createTagFilter(document.querySelector('#relation-tag-drop'), { onChange: populateHorseSelect });
   document.querySelector('#relation-gender-select').addEventListener('change', populateHorseSelect);
   document.querySelector('#relation-zzl-select').addEventListener('change', populateHorseSelect);
   document.querySelector('#foreign-horse-parse-btn').addEventListener('click', onForeignHorseParse);
@@ -56,6 +60,8 @@ async function init() {
   // beiden Seiten.
   matrixRowBreedFilter = createBreedFilter(document.querySelector('#matrix-row-breed-drop'), { onChange: renderMatrix });
   matrixColBreedFilter = createBreedFilter(document.querySelector('#matrix-col-breed-drop'), { onChange: renderMatrix });
+  matrixRowTagFilter = createTagFilter(document.querySelector('#matrix-row-tag-drop'), { onChange: renderMatrix });
+  matrixColTagFilter = createTagFilter(document.querySelector('#matrix-col-tag-drop'), { onChange: renderMatrix });
   document.querySelector('#matrix-row-owner-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-col-owner-select').addEventListener('change', renderMatrix);
   document.querySelector('#matrix-row-zzl-select').addEventListener('change', renderMatrix);
@@ -64,6 +70,7 @@ async function init() {
   document.querySelector('#matrix-inzucht-filter-select').addEventListener('change', renderMatrix);
   wireMatrixPagination();
   wireMatrixSortableHeaders();
+  wireFreitextSortableHeaders();
   wireTagSuggestHandlers('Verwandtschaftsmatrix');
   await initAuthStatus();
   await loadHorses();
@@ -72,6 +79,40 @@ async function init() {
 // Delegiert auf document, da die <th> bei jedem Neu-Rendern der Matrix neu
 // erzeugt werden (kein erneutes Verdrahten pro Render nötig) - Muster wie
 // js/turnierplaner.js/js/zuchtbuch.js.
+function applySortGeneric(rows, sort, getValue) {
+  const mult = sort.dir === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const va = getValue(a, sort.field), vb = getValue(b, sort.field);
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return va.localeCompare(vb, 'de') * mult;
+    return (va - vb) * mult;
+  });
+}
+
+function freitextSortValue(row, field) {
+  switch (field) {
+    case 'name': return (row.horse.name || '').toLowerCase();
+    case 'owner': return (row.horse.owner || '').toLowerCase();
+    case 'ancestor': return (row.closest.name || '').toLowerCase();
+    case 'inbreeding': return row.inbreeding ? 1 : 0;
+    case 'tag': return tagSortValue(row.horse.tags);
+    default: return null;
+  }
+}
+
+function wireFreitextSortableHeaders() {
+  document.addEventListener('click', (e) => {
+    const th = e.target.closest('#freitext-table th[data-sort]');
+    if (!th) return;
+    const field = th.dataset.sort;
+    if (freitextSort.field === field) freitextSort.dir = freitextSort.dir === 'asc' ? 'desc' : 'asc';
+    else freitextSort = { field, dir: field === 'inbreeding' ? 'desc' : 'asc' };
+    renderFreitext();
+  });
+}
+
 function wireMatrixSortableHeaders() {
   document.addEventListener('click', (e) => {
     const th = e.target.closest('#matrix-table th[data-sort]');
@@ -80,10 +121,9 @@ function wireMatrixSortableHeaders() {
     if (matrixSort.field === field) {
       matrixSort.dir = matrixSort.dir === 'asc' ? 'desc' : 'asc';
     } else {
-      // Bei "Anzahl"/"Inzucht"/"Ø Verwandtschaftsgrad" ist absteigend
-      // (meiste/höchste zuerst) der sinnvollere Start, bei Name/Rasse
-      // aufsteigend (alphabetisch).
-      matrixSort = { field, dir: (field === 'count' || field === 'inbreedingCount' || field === 'avgCoiPct') ? 'desc' : 'asc' };
+      // Bei "Anzahl"/"Inzucht" ist absteigend (meiste zuerst) der
+      // sinnvollere Start, bei Name/Rasse aufsteigend (alphabetisch).
+      matrixSort = { field, dir: (field === 'count' || field === 'inbreedingCount') ? 'desc' : 'asc' };
     }
     // Sortierung wirkt nur auf die Zeilen (siehe applyMatrixSort) - nach
     // einer neuen Sortierung wieder bei Seite 1 der Zeilen starten, damit
@@ -136,7 +176,7 @@ function populateHorseSelect() {
     if (gender && h.gender !== gender) return false;
     if (zzl === 'zzl' && h.breeding_allowed !== true) return false;
     if (zzl === 'ohne' && h.breeding_allowed === true) return false;
-    return relationBreedFilter.matches(h);
+    return relationBreedFilter.matches(h) && relationTagFilter.matches(h);
   });
   horseSelect.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
 }
@@ -208,8 +248,7 @@ function renderFreitext() {
       const matches = findRelations(target, h);
       if (!matches.length) return null;
       const inbreeding = findSharedNames(target, h).length > 0;
-      const coiPct = estimateRelatedness(target, h, allHorses);
-      return { horse: h, closest: closestRelation(matches), inbreeding, coiPct };
+      return { horse: h, closest: closestRelation(matches), inbreeding };
     })
     .filter(Boolean)
     .sort((a, b) => relationCloseness(a.closest) - relationCloseness(b.closest) || (a.horse.name || '').localeCompare(b.horse.name || '', 'de'));
@@ -220,14 +259,14 @@ function renderFreitext() {
     ? `${countLabel} für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
     : `${countLabel} gefunden`;
   let html = `<div class="group-heading">${heading}</div>`;
-  // Eigener, separater Wert (siehe estimateBreedRelatedness in
+  // Ein einziger, zusammenfassender Wert (siehe estimateBreedRelatedness in
   // js/breeding.js) - Ø-Verwandtschaftsgrad gegen ALLE anderen Pferde
-  // DERSELBEN RASSE im Bestand, unabhängig von den obigen paarweisen
-  // Treffern (die nur Pferde mit mindestens einem gemeinsamen sichtbaren
-  // Namen auflisten).
+  // DERSELBEN RASSE im Bestand. Bewusst NICHT je einzelnem verwandten
+  // Pferd (das wäre schnell unübersichtlich) - nur dieser eine Wert pro
+  // nachgeschlagenem Pferd.
   const breedCoiPct = estimateBreedRelatedness(target, allHorses);
   if (breedCoiPct != null) {
-    html += `<p class="small">Ø Verwandtschaftsgrad zu allen ${escapeHtml(target.breed || 'derselben Rasse')}-Pferden im Bestand: <strong>${formatCoi(breedCoiPct)}</strong></p>`;
+    html += `<p class="small">Ø Verwandtschaftsgrad zu allen ${escapeHtml(target.breed || 'derselben Rasse')}-Pferden im Bestand: <strong>${breedCoiPct.toFixed(1)}%</strong></p>`;
   }
   html += `<p class="small">${tagSuggestButtonHtml(target.id, target.owner)}</p>`;
   if (!related.length) {
@@ -236,17 +275,23 @@ function renderFreitext() {
     return;
   }
 
+  const sortedRelated = applySortGeneric(related, freitextSort, freitextSortValue);
+  const th = (field, label) => `<th data-sort="${field}">${label}${sortArrowGeneric(freitextSort, field)}</th>`;
   html += `<div class="table-wrap"><table id="freitext-table">
     <thead><tr>
-      <th>Pferd</th>
-      <th>Besitzer</th>
-      <th>Nächster gemeinsamer Vorfahre</th>
-      <th title="Erwarteter Inzuchtkoeffizient eines gemeinsamen Fohlens (Wright'sche Pfad-Methode über alle gemeinsamen Vorfahren, nicht nur den nächsten)">Verwandtschaftsgrad</th>
-      <th>Bei Verpaarung</th>
+      ${th('name', 'Pferd')}
+      ${th('owner', 'Besitzer')}
+      ${th('ancestor', 'Nächster gemeinsamer Vorfahre')}
+      ${th('inbreeding', 'Bei Verpaarung')}
+      ${th('tag', 'Schlagwort')}
     </tr></thead>
-    <tbody>${related.map((r) => relationRowHtml(r, target)).join('')}</tbody>
+    <tbody>${sortedRelated.map((r) => relationRowHtml(r, target)).join('')}</tbody>
   </table></div>`;
   container.innerHTML = html;
+}
+
+function sortArrowGeneric(sort, field) {
+  return sort.field === field ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
 }
 
 function relationRowHtml(r, target) {
@@ -257,16 +302,12 @@ function relationRowHtml(r, target) {
     ? '<span class="pill no">Inzucht-Gefahr</span>'
     : '<span class="pill yes">Unbedenklich</span>';
   return `<tr>
-    <td data-label="Pferd" class="name-with-tags">${otherName}${tagsBadgesHtml(r.horse.tags)}</td>
+    <td data-label="Pferd" class="name-with-tags" style="${tagCellStyle(r.horse.tags)}">${otherName}</td>
     <td data-label="Besitzer">${r.horse.owner ? escapeHtml(r.horse.owner) : '–'}</td>
     <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetName}: ${escapeHtml(m.positionA)}, bei ${otherName}: ${escapeHtml(m.positionB)})</td>
-    <td data-label="Verwandtschaftsgrad">${formatCoi(r.coiPct)}</td>
     <td data-label="Bei Verpaarung">${pill}</td>
+    <td data-label="Schlagwort" style="${tagCellStyle(r.horse.tags)}">${tagCellText(r.horse.tags)}</td>
   </tr>`;
-}
-
-function formatCoi(pct) {
-  return pct != null ? `${pct.toFixed(1)}%` : '–';
 }
 
 // --- Verwandtschaftsmatrix ---
@@ -277,12 +318,14 @@ function matrixCandidates(gender, axis) {
   const ownerSel = axis === 'row' ? '#matrix-row-owner-select' : '#matrix-col-owner-select';
   const zzlSel = axis === 'row' ? '#matrix-row-zzl-select' : '#matrix-col-zzl-select';
   const breedFilter = axis === 'row' ? matrixRowBreedFilter : matrixColBreedFilter;
+  const tagFilter = axis === 'row' ? matrixRowTagFilter : matrixColTagFilter;
   const owner = document.querySelector(ownerSel).value;
   const zzl = document.querySelector(zzlSel).value;
   return allHorses.filter((h) => {
     if (gender && h.gender !== gender) return false;
     if (owner && h.owner !== owner) return false;
     if (!breedFilter.matches(h)) return false;
+    if (!tagFilter.matches(h)) return false;
     if (zzl === 'zzl' && h.breeding_allowed !== true) return false;
     if (zzl === 'ohne' && h.breeding_allowed === true) return false;
     return true;
@@ -316,9 +359,13 @@ function pageRange(page, total) {
 // was bei Rasse-Sortierung falsche Ergebnisse lieferte).
 function sortHorsesByField(horses, field, dir) {
   const mult = dir === 'asc' ? 1 : -1;
+  const key = (h) => {
+    if (field === 'breed') return (h.breed || '').toLowerCase();
+    if (field === 'owner') return (h.owner || '').toLowerCase();
+    return (h.name || '').toLowerCase();
+  };
   return [...horses].sort((a, b) => {
-    const va = field === 'breed' ? (a.breed || '').toLowerCase() : (a.name || '').toLowerCase();
-    const vb = field === 'breed' ? (b.breed || '').toLowerCase() : (b.name || '').toLowerCase();
+    const va = key(a), vb = key(b);
     if (va === vb) return (a.name || '').localeCompare(b.name || '', 'de');
     return va.localeCompare(vb, 'de') * mult;
   });
@@ -369,7 +416,6 @@ function matrixSortValue(rd, field) {
   if (field === 'name') return (rd.horse.name || '').toLowerCase();
   if (field === 'breed') return (rd.horse.breed || '').toLowerCase();
   if (field === 'inbreedingCount') return rd.inbreedingCount;
-  if (field === 'avgCoiPct') return rd.avgCoiPct;
   return rd.count;
 }
 
@@ -403,34 +449,17 @@ function applyMatrixSort(rowData) {
 // js/breeding.js - die jeweils eigenen Urgroßeltern beider Pferde fallen
 // dafür schon raus). 'inbreeding' = echte Inzucht-Gefahr bei gemeinsamem
 // Fohlen, 'safe' = verwandt, aber der gemeinsame Vorfahre liegt zu weit
-// zurück, um im Fohlen-Stammbaum aufzutauchen. Zusätzlich zu diesen beiden
-// (bewusst nur auf die 14 sichtbaren Vorfahren-Plätze beschränkten)
-// Kategorien wird je verwandter Zelle der tatsächliche Verwandtschaftsgrad
-// (COI%, siehe estimateRelatedness in js/breeding.js - dort ohne die
-// Begrenzung auf sichtbare Vorfahren, verkettet stattdessen über den
-// gesamten Bestand, inkl. F_Vorfahre-Korrektur über den eigenen COI jedes
-// gemeinsamen Vorfahren) berechnet - "deepPedigreeOf" liefert dafür den
-// (gecachten) tiefen Stammbaum eines Pferds, "nameIndex"/"coiCache" werden
-// für die F_Vorfahre-Korrektur gebraucht (siehe ownCoiFraction in
-// js/breeding.js), beides von renderMatrix gebaut und über das gesamte
-// Rendern hinweg wiederverwendet.
-function computeRowData(rowsSubset, colsFull, colStart, colEnd, deepPedigreeOf, nameIndex, coiCache) {
+// zurück, um im Fohlen-Stammbaum aufzutauchen.
+function computeRowData(rowsSubset, colsFull, colStart, colEnd) {
   return rowsSubset.map((r) => {
-    const cellsFull = colsFull.map((c) => {
-      if (!areRelated(r, c)) return { state: 'none', coiPct: 0 };
-      const state = findSharedNames(r, c).length > 0 ? 'inbreeding' : 'safe';
-      const coiFraction = coiFractionFromDeepPedigrees(deepPedigreeOf(r), deepPedigreeOf(c), nameIndex, coiCache);
-      const coiPct = Math.round(coiFraction * 1000) / 10;
-      return { state, coiPct };
+    const statesFull = colsFull.map((c) => {
+      if (!areRelated(r, c)) return 'none';
+      return findSharedNames(r, c).length > 0 ? 'inbreeding' : 'safe';
     });
-    const relatedCells = cellsFull.filter((s) => s.state !== 'none');
-    const count = relatedCells.length;
-    const inbreedingCount = cellsFull.filter((s) => s.state === 'inbreeding').length;
-    const avgCoiPct = relatedCells.length
-      ? Math.round((relatedCells.reduce((sum, s) => sum + s.coiPct, 0) / relatedCells.length) * 10) / 10
-      : 0;
-    const cells = cellsFull.slice(colStart, colEnd);
-    return { horse: r, cells, count, inbreedingCount, avgCoiPct };
+    const count = statesFull.filter((s) => s !== 'none').length;
+    const inbreedingCount = statesFull.filter((s) => s === 'inbreeding').length;
+    const cellStates = statesFull.slice(colStart, colEnd);
+    return { horse: r, cellStates, count, inbreedingCount };
   });
 }
 
@@ -459,43 +488,25 @@ function renderMatrix() {
   const [colStart, colEnd] = pageRange(matrixColPage, colsFull.length);
   const cols = colsFull.slice(colStart, colEnd);
 
-  // Tiefer Stammbaum je Pferd (für den Verwandtschaftsgrad/COI% je Zelle,
-  // siehe computeRowData) wird nur einmal pro Pferd gebaut und für den
-  // Rest dieses Renderns wiederverwendet (buildDeepPedigree ist teurer als
-  // die bisherige reine Namensabgleich-Prüfung, siehe areRelated/
-  // findSharedNames) - der Namens-Index selbst basiert bewusst auf ALLEN
-  // geladenen Pferden (nicht nur den gefilterten Zeilen/Spalten), damit die
-  // Verkettung auch über aktuell nicht angezeigte Pferde hinweg funktioniert.
-  const nameIndex = buildPedigreeNameIndex(allHorses);
-  const deepPedigreeCache = new Map();
-  const deepPedigreeOf = (h) => {
-    if (!deepPedigreeCache.has(h.id)) deepPedigreeCache.set(h.id, buildDeepPedigree(h, nameIndex));
-    return deepPedigreeCache.get(h.id);
-  };
-  // Eigener COI je Pferd (F_Vorfahre-Korrektur, siehe ownCoiFraction in
-  // js/breeding.js) - wie deepPedigreeCache über das gesamte Rendern
-  // hinweg geteilt, da derselbe Vorfahre in vielen Zellen auftauchen kann.
-  const coiCache = new Map();
-
   // Sortierung wirkt IMMER global über alle gefilterten Zeilen-Pferde,
   // nicht nur die aktuell sichtbare Seite (Nutzerwunsch). Bei "Anzahl"/
-  // "Inzucht"/"Ø Verwandtschaftsgrad" ist dafür zwingend die volle
-  // Zellen-Berechnung nötig (die Werte entstehen erst dabei, siehe
-  // computeRowData) - bei Name/Rasse reicht ein günstiger direkter
-  // Sortier-Vergleich auf den rohen Pferdedaten (siehe sortHorsesByField),
-  // die teure Zellen-Berechnung läuft dann erst NACH dem Umblättern nur
-  // noch für die sichtbaren (max. PAGE_SIZE) Zeilen.
-  const isRankedSort = matrixSort.field === 'count' || matrixSort.field === 'inbreedingCount' || matrixSort.field === 'avgCoiPct';
+  // "Inzucht" ist dafür zwingend die volle Zellen-Berechnung nötig (die
+  // Werte entstehen erst dabei, siehe computeRowData) - bei Name/Rasse
+  // reicht ein günstiger direkter Sortier-Vergleich auf den rohen
+  // Pferdedaten (siehe sortHorsesByField), die teure Zellen-Berechnung
+  // läuft dann erst NACH dem Umblättern nur noch für die sichtbaren
+  // (max. PAGE_SIZE) Zeilen.
+  const isRankedSort = matrixSort.field === 'count' || matrixSort.field === 'inbreedingCount';
   let rowData;
   if (isRankedSort) {
-    const allRowData = computeRowData(rowsFull, colsFull, colStart, colEnd, deepPedigreeOf, nameIndex, coiCache);
+    const allRowData = computeRowData(rowsFull, colsFull, colStart, colEnd);
     applyMatrixSort(allRowData);
     const [rowStart, rowEnd] = pageRange(matrixRowPage, allRowData.length);
     rowData = allRowData.slice(rowStart, rowEnd);
   } else {
     const sortedRows = sortHorsesByField(rowsFull, matrixSort.field, matrixSort.dir);
     const [rowStart, rowEnd] = pageRange(matrixRowPage, sortedRows.length);
-    rowData = computeRowData(sortedRows.slice(rowStart, rowEnd), colsFull, colStart, colEnd, deepPedigreeOf, nameIndex, coiCache);
+    rowData = computeRowData(sortedRows.slice(rowStart, rowEnd), colsFull, colStart, colEnd);
   }
 
   renderMatrixPagination(rowsFull.length, colsFull.length);
@@ -517,16 +528,16 @@ function renderMatrix() {
 
   const rowHint = `${rowData.length} von ${rowsFull.length}`;
   const colHint = `${cols.length} von ${colsFull.length}`;
-  hintEl.textContent = `${rowHint} × ${colHint} Pferde auf dieser Seite. "Anzahl" = Gesamt verwandt, "Inzucht" = davon mit Inzucht-Gefahr bei einem gemeinsamen Fohlen, "Ø Verwandtschaftsgrad" = mittlerer Inzuchtkoeffizient (COI%) eines hypothetischen Fohlens über alle verwandten Spalten-Pferde. Die Zellen selbst zeigen den COI% je Paar.`
+  hintEl.textContent = `${rowHint} × ${colHint} Pferde auf dieser Seite. "Anzahl" = Gesamt verwandt, "Inzucht" = davon mit Inzucht-Gefahr bei einem gemeinsamen Fohlen.`
     + (cols.length < colsFull.length
-      ? ' Alle drei Spalten zählen gegen alle gefilterten Spalten-Pferde, nicht nur den hier angezeigten Ausschnitt.'
+      ? ' Beide Spalten zählen gegen alle gefilterten Spalten-Pferde, nicht nur den hier angezeigten Ausschnitt.'
       : '')
     + (inzuchtFilter ? ' Zellen-Markierungen sind auf "Bei Verpaarung" gefiltert - die Zahlen-Spalten bleiben davon unberührt.' : '');
 
   let html = '<div class="table-wrap"><table id="matrix-table"><thead><tr>';
-  html += sortableMatrixHeaderHtml('name', 'Name') + '<th>Besitzer</th>'
+  html += sortableMatrixHeaderHtml('name', 'Name') + sortableMatrixHeaderHtml('owner', 'Besitzer')
     + sortableMatrixHeaderHtml('breed', 'Rasse') + sortableMatrixHeaderHtml('count', 'Anzahl')
-    + sortableMatrixHeaderHtml('inbreedingCount', 'Inzucht') + sortableMatrixHeaderHtml('avgCoiPct', 'Ø Verwandtschaftsgrad');
+    + sortableMatrixHeaderHtml('inbreedingCount', 'Inzucht');
   html += cols.map((c) => `<th class="col-header" title="${escapeHtml(c.owner || '')}">${escapeHtml(c.name || '(ohne Name)')}</th>`).join('');
   html += '</tr></thead><tbody>';
   html += rowData.map((rd) => `<tr>
@@ -535,8 +546,7 @@ function renderMatrix() {
     <td data-label="Rasse" title="${escapeHtml(rd.horse.breed || '')}">${escapeHtml(breedAbbreviation(rd.horse.breed))}</td>
     <td data-label="Anzahl">${rd.count}</td>
     <td data-label="Inzucht" title="Würde bei Verpaarung mit diesen Pferden Inzucht im gemeinsamen Fohlen verursachen">${rd.inbreedingCount}</td>
-    <td data-label="Ø Verwandtschaftsgrad" title="Mittlerer Inzuchtkoeffizient (COI%) eines hypothetischen Fohlens über alle verwandten Spalten-Pferde">${rd.count ? formatCoi(rd.avgCoiPct) : '–'}</td>
-    ${rd.cells.map((cell) => matrixCellHtml(cell, inzuchtFilter)).join('')}
+    ${rd.cellStates.map((state) => matrixCellHtml(state, inzuchtFilter)).join('')}
   </tr>`).join('');
   html += '</tbody></table></div>';
   container.innerHTML = html;
@@ -545,17 +555,13 @@ function renderMatrix() {
 // inzuchtFilter: '' (alle zeigen), 'inzucht' (nur rote Zellen zeigen, grüne
 // ausblenden) oder 'sicher' (nur grüne zeigen, rote ausblenden) - filtert
 // bewusst nur die Zellen-Markierungen, nicht die Zeilen/Spalten selbst oder
-// die Anzahl-/Inzucht-/Ø-Verwandtschaftsgrad-Zahlenspalten (die bleiben
-// immer die vollen, echten Zahlen, unabhängig vom Filter). Die Zelle
-// zeigt statt des früheren reinen "✕" jetzt den tatsächlichen
-// Verwandtschaftsgrad (COI%, siehe computeRowData) - Farbe/Hintergrund
-// bleiben wie gehabt an "state" (inbreeding/safe) gekoppelt.
-function matrixCellHtml(cell, inzuchtFilter) {
-  let state = cell.state;
+// die Anzahl-/Inzucht-Zahlenspalten (die bleiben immer die vollen, echten
+// Zahlen, unabhängig vom Filter).
+function matrixCellHtml(state, inzuchtFilter) {
   if (inzuchtFilter === 'inzucht' && state !== 'inbreeding') state = 'none';
   if (inzuchtFilter === 'sicher' && state !== 'safe') state = 'none';
-  if (state === 'inbreeding') return `<td class="related-cell" title="Würde bei einem gemeinsamen Fohlen Inzucht verursachen">${formatCoi(cell.coiPct)}</td>`;
-  if (state === 'safe') return `<td class="related-cell-safe" title="Verwandt, aber zu weit entfernt - würde bei einem gemeinsamen Fohlen keine Inzucht verursachen">${formatCoi(cell.coiPct)}</td>`;
+  if (state === 'inbreeding') return '<td class="related-cell" title="Würde bei einem gemeinsamen Fohlen Inzucht verursachen">✕</td>';
+  if (state === 'safe') return '<td class="related-cell-safe" title="Verwandt, aber zu weit entfernt - würde bei einem gemeinsamen Fohlen keine Inzucht verursachen">✕</td>';
   return '<td></td>';
 }
 

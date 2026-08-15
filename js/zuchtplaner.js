@@ -27,6 +27,7 @@ let foreignStallion = null; // per Freitext eingelesener, nicht gespeicherter He
 let activeTab = 'inzucht';
 let mareSelect, stallionSelect;
 let mareBreedFilter, stallionBreedFilter, auswahlStallionBreedFilter;
+let mareTagFilter, stallionTagFilter, auswahlStallionTagFilter;
 let schwerpunkt = 'gp';
 let sortMode = 'best';
 // Nur bei sortMode "combo" relevant (siehe rankStallions in
@@ -76,6 +77,7 @@ async function init() {
   document.querySelector('#mare-owner-select').addEventListener('change', onMareOwnerChange);
   document.querySelector('#stallion-owner-select').addEventListener('change', onStallionOwnerChange);
   mareBreedFilter = createBreedFilter(document.querySelector('#mare-breed-drop'), { onChange: onMareOwnerChange });
+  mareTagFilter = createTagFilter(document.querySelector('#mare-tag-drop'), { onChange: onMareOwnerChange });
   // Standardauswahl übernimmt einmalig die Rasse(n) der Stute (Kreuzungen
   // sind möglich, aber standardmäßig geht man von derselben Rasse aus) -
   // danach frei manuell änderbar, siehe createBreedFilter/initialSelection.
@@ -83,12 +85,14 @@ async function init() {
     onChange: onStallionOwnerChange,
     initialSelection: () => mareBreedFilter.getSelected(),
   });
+  stallionTagFilter = createTagFilter(document.querySelector('#stallion-tag-drop'), { onChange: onStallionOwnerChange });
   // Eigener, unabhängiger Rassen-Filter für den Hengst-Pool im
   // Verpaarungsratgeber (Top-10-Ranking) - Standard bleibt APH, unabhängig
   // von der Stuten-Auswahl (manuelles Umschalten nötig für z.B. Rasselos).
   auswahlStallionBreedFilter = createBreedFilter(document.querySelector('#auswahl-stallion-breed-drop'), {
     onChange: renderBestMatches,
   });
+  auswahlStallionTagFilter = createTagFilter(document.querySelector('#auswahl-stallion-tag-drop'), { onChange: renderBestMatches });
   document.querySelector('#stallion-parse-btn').addEventListener('click', onStallionParse);
   document.querySelector('#schwerpunkt-select').addEventListener('change', (e) => {
     schwerpunkt = e.target.value;
@@ -272,20 +276,21 @@ function fillOwnerSelect(selector, horses) {
   sel.value = [...sel.options].some((o) => o.value === prevValue) ? prevValue : '';
 }
 
-function fillHorseSelect(select, horses, ownerSelector, breedFilter) {
+function fillHorseSelect(select, horses, ownerSelector, breedFilter, tagFilter) {
   const owner = document.querySelector(ownerSelector).value;
   let filtered = owner ? horses.filter((h) => h.owner === owner) : horses;
   if (breedFilter) filtered = filtered.filter((h) => breedFilter.matches(h));
+  if (tagFilter) filtered = filtered.filter((h) => tagFilter.matches(h));
   select.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
 }
 
 function onMareOwnerChange() {
-  fillHorseSelect(mareSelect, mares, '#mare-owner-select', mareBreedFilter);
+  fillHorseSelect(mareSelect, mares, '#mare-owner-select', mareBreedFilter, mareTagFilter);
   mareSelect.clear(); // löst onMareChange('') aus und rendert damit die geleerte Auswahl
 }
 
 function onStallionOwnerChange() {
-  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select', stallionBreedFilter);
+  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select', stallionBreedFilter, stallionTagFilter);
   stallionSelect.clear(); // löst onStallionChange('') aus
 }
 
@@ -690,6 +695,7 @@ function renderBestMatches() {
   const besitzerFilter = document.querySelector('#hengst-besitzer-select').value;
   const filteredCandidates = candidatePool
     .filter((h) => auswahlStallionBreedFilter.matches(h))
+    .filter((h) => auswahlStallionTagFilter.matches(h))
     .filter((h) => !besitzerFilter || h.owner === besitzerFilter);
   // rankStallions ist bereits vollständig symmetrisch (Ext/Int/GP/
   // Datenbank-Schätzung/Ausschlüsse rechnen unabhängig davon, welche

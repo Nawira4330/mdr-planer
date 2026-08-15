@@ -8,11 +8,11 @@ const PROGRESS = [
   { label: 'Inzuchtprüfer', percent: 100 },
   { label: 'Turnierplaner', percent: 100 },
   { label: 'LP-Prognose', percent: 100 },
-  { label: 'Zuchtbuch', percent: 85 },
+  { label: 'Zuchtbuch / Aussortierhilfe', percent: 87 },
+  { label: 'Fohlen-Tracker', percent: 85 },
   { label: 'Verpaarungsratgeber', percent: 90 },
-  { label: 'Fohlen-Tracker', percent: 90 },
-  { label: 'Verwandtschaftsmatrix', percent: 90 },
-  { label: 'Fohlenprüfung / Aussortierhilfe', percent: 80 },
+  { label: 'Verwandtschaftsmatrix', percent: 92 },
+  { label: 'Fohlenprüfung', percent: 87 },
 ];
 
 // Art der Änderung: 'feature' (neue Funktion), 'update' (Änderung an
@@ -28,6 +28,28 @@ const TYPE_META = {
 // nach Datum) einen neuen Eintrag ergänzen. "date" im ISO-Format
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
+  {
+    date: '2026-08-15T18:00', type: 'feature', title: 'Schlagwörter-Filter überall, alle Tabellen sortierbar, Fohlen-Tracker mit Top-20-Reiter',
+    points: [
+      'Neuer Schlagwörter-Filter (dieselbe feste Liste wie in der Pferdedatenbank: Verkauf/Reserviert/Bleibt/GBH/LastFoal/??? plus "Kein Schlagwort") überall dort ergänzt, wo bisher schon ein Rassen-Filter stand - Zuchtbuch, Fohlen-Tracker (beide Reiter), Fohlenprüfung, Turnierplaner, Zuchtplaner (Stute/Hengst/Verpaarungsratgeber-Kandidaten) und Verwandtschaftsmatrix (Einzelansicht + Matrix-Zeilen/-Spalten getrennt). Dabei nebenbei die in MDR-Planer stehengebliebene, veraltete Schlagwort-Liste (fehlte "LastFoal"/"???") synchronisiert',
+      'Alle Tabellenüberschriften sind jetzt per Klick sortierbar (vorher fehlte das bei Genetik/EKH/Beziehung/Name in mehreren Tabellen sowie komplett bei den Fohlen-Tracker-Unter- und Top-Listen) - Ausnahme bleiben reine Aktionsspalten ohne Datenwert (Schlagwort-Button, Auf-/Zuklapp-Pfeil)',
+      'Tabellenbreite orientiert sich jetzt am tatsächlichen Inhalt statt an einer festen Mindestbreite - schmale Tabellen (z. B. Farbvergleich) nehmen nicht mehr unnötig Platz ein',
+      'Zuchtbuch: neues Freitextfeld "Fremdes Pferd" für datenbankfremde Pferde (wie bisher schon bei Zuchtplaner/Verwandtschaftsmatrix), neue Aussage "Verwandt mit X Pferden im Bestand, davon Y auf Inzuchtniveau" plus der wiederhergestellte Ø-Verwandtschaftsgrad-Wert, Spalte "Name" steht jetzt vor "Beziehung", Aussortierhilfe aus der Navigation entfernt (Abschnitt bleibt Teil der Zuchtbuch-Seite)',
+      'Fohlen-Tracker: die bisherige Liste unterhalb der Übersicht ist jetzt ein eigener Reiter "Top 20 - meiste Fohlen" (vorher Top 10, jetzt mit eigenem Schlagwörter-Filter) - die Haupttabelle zeigt standardmäßig nur Pferde mit ZZL',
+      'Nebenbei einen veralteten Link von der Fohlenprüfung zum Zuchtbuch korrigiert (zeigte noch auf die alte Reiter-URL)',
+    ],
+  },
+  {
+    date: '2026-08-15T14:00', type: 'feature', title: 'Zuchtbuch und Aussortierhilfe zusammengelegt, Fohlen-Tracker neu aufgebaut',
+    points: [
+      'Zuchtbuch und Aussortierhilfe drehen sich um dieselbe Frage ("sollte dieses Pferd in der Zucht bleiben?") - stehen jetzt auf einer gemeinsamen Seite mit einer Pferdeauswahl statt zwei getrennter Seiten/Reiter. Zuchtplaner, Turnierplaner, Fohlenprüfung, Fohlen-Tracker und Verwandtschaftsmatrix bleiben eigenständige, separate Seiten',
+      'Neu: Ø-Vergleich (bisher nur in der Pferdedatenbank) - Umschalter oben auf der Zuchtbuch/Aussortierhilfe-Seite. Standardmäßig sind GP/Ext/Ext%/Int gegen die eigenen Werte des ausgewählten Pferds eingefärbt; "Ø-Vergleich anzeigen" ERSETZT das durch eine Einfärbung gegen den Durchschnitt aller geladenen Pferde (grün/türkis/rot je nach persönlicher Toleranz aus den Einstellungen der Pferdedatenbank)',
+      'Neu: Schlagwort-Vorschlag jetzt auch pro Zeile in der Zuchtbuch-Verwandtschaftstabelle (vorher nur auf der Zusammenfassungskarte)',
+      'Fohlen-Tracker inhaltlich neu aufgebaut: eine filterbare Tabelle mit Spalten HF/SF (Hengst-/Stutfohlen) sowie "Verwandte" (weit: irgendein gemeinsamer Name im 14-Ahnen-Stammbaum) und "Inzucht" (eng: Name doppelt im sichtbaren Stammbaum eines hypothetischen gemeinsamen Fohlens, dieselbe Definition wie die Inzuchtprüfung im Zuchtplaner) - jede Zeile aufklappbar zu den eigenen Fohlen. Die bisherige Top-10-Liste bleibt darunter unverändert bestehen',
+      'Dabei außerdem eine kaputte, paarweise "Verwandtschaftsgrad"-Spalte aus der Aussortierhilfe entfernt (rief eine nicht mehr existierende Funktion auf)',
+      'Erste Version - Rückmeldung erwünscht, insbesondere zur neuen Verwandten-Zählung im Fohlen-Tracker',
+    ],
+  },
   {
     date: '2026-08-13T13:30', type: 'update', title: 'Verwandtschaftsgrad: F-Vorfahre-Korrektur + neuer Ø-Wert gegen die gesamte Rasse',
     points: [

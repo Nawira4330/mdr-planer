@@ -19,68 +19,112 @@
   <main class="container">
     <p class="muted small">
       Nur lesender Zugriff auf die Pferdedatenbank – hier wird nichts
-      gespeichert oder verändert. Fohlen werden ausschließlich über den
-      sichtbaren Stammbaum (Vater-/Mutter-Name) ermittelt, nicht über eine
-      feste Eltern-Kind-Verknüpfung in der Datenbank.
+      gespeichert oder verändert. Filterbare Übersicht mit Verwandten-
+      Zählung je Pferd, aufklappbar zu den eigenen Fohlen, dazu eine
+      Top 20 der Pferde mit den meisten Fohlen.
     </p>
+    <div id="tag-legend"></div>
 
-    <fieldset>
-      <legend>Fohlenanzahl eines Pferds</legend>
-      <div class="form-grid">
-        <div>
-          <label for="owner-select">Besitzer</label>
-          <select id="owner-select"><option value="">Alle</option></select>
-        </div>
-        <div>
-          <label for="horse-search">Pferd mit ZZL auswählen</label>
-          <div class="searchselect">
-            <input type="text" id="horse-search" autocomplete="off" placeholder="– bitte wählen – (Name eingeben zum Suchen)" />
-            <div class="searchselect-panel" id="horse-panel" hidden></div>
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="uebersicht">Übersicht</button>
+      <button type="button" class="tab-btn" data-tab="top">Top 20 - meiste Fohlen</button>
+    </div>
+
+    <section id="tab-uebersicht" class="tab-panel">
+      <fieldset>
+        <legend>Auswahl</legend>
+        <div class="form-grid">
+          <div>
+            <label for="owner-select">Besitzer</label>
+            <select id="owner-select"><option value="">Alle</option></select>
+          </div>
+          <div>
+            <label for="gender-select">Geschlecht</label>
+            <select id="gender-select">
+              <option value="">Alle</option>
+              <option value="Stute">Stuten</option>
+              <option value="Hengst">Hengste</option>
+            </select>
+          </div>
+          <div>
+            <label>Rasse</label>
+            <div class="checkdrop" id="breed-drop">
+              <button type="button" class="checkdrop-toggle">Alle</button>
+              <div class="checkdrop-panel" hidden></div>
+            </div>
+          </div>
+          <div>
+            <label>Schlagwörter</label>
+            <div class="checkdrop" id="tag-drop">
+              <button type="button" class="checkdrop-toggle">Alle</button>
+              <div class="checkdrop-panel" hidden></div>
+            </div>
+          </div>
+          <div>
+            <label for="zzl-select">ZZL</label>
+            <select id="zzl-select">
+              <option value="alle">Alle</option>
+              <option value="zzl" selected>Nur mit ZZL</option>
+              <option value="ohne">Nur ohne ZZL</option>
+            </select>
           </div>
         </div>
-      </div>
-      <div id="foal-result">
-        <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
-      </div>
-    </fieldset>
+        <p class="muted small" style="margin-top:0.5rem; margin-bottom:0;">
+          Diese Auswahl bestimmt auch, gegen welche Pferde die Verwandten-
+          Zählung in der Tabelle läuft. Standardmäßig nur Pferde mit ZZL.
+        </p>
+      </fieldset>
 
-    <fieldset>
-      <legend>Top 10 - meiste Fohlen</legend>
-      <p class="muted small">
-        Berücksichtigt alle Pferde (unabhängig von ZZL), da auch frühere
-        Deckhengste/Zuchtstuten ohne aktuelle ZZL noch Fohlen haben können.
-      </p>
-      <div class="form-grid">
-        <div>
-          <label for="top-owner-select">Besitzer</label>
-          <select id="top-owner-select"><option value="">Alle</option></select>
-        </div>
-        <div>
-          <label for="top-gender-select">Geschlecht</label>
-          <select id="top-gender-select">
-            <option value="">Alle</option>
-            <option value="Stute">Stuten</option>
-            <option value="Hengst">Hengste</option>
-          </select>
-        </div>
-        <div>
-          <label>Rasse</label>
-          <div class="checkdrop" id="top-breed-drop">
-            <button type="button" class="checkdrop-toggle">Alle</button>
-            <div class="checkdrop-panel" hidden></div>
+      <div class="group-heading">Übersicht mit Verwandten-Zählung</div>
+      <div id="tracker-result"></div>
+    </section>
+
+    <section id="tab-top" class="tab-panel" hidden>
+      <fieldset>
+        <legend>Top 20 - meiste Fohlen</legend>
+        <p class="muted small">
+          Berücksichtigt alle Pferde (unabhängig von ZZL), da auch frühere
+          Deckhengste/Zuchtstuten ohne aktuelle ZZL noch Fohlen haben können.
+        </p>
+        <div class="form-grid">
+          <div>
+            <label for="top-owner-select">Besitzer</label>
+            <select id="top-owner-select"><option value="">Alle</option></select>
+          </div>
+          <div>
+            <label for="top-gender-select">Geschlecht</label>
+            <select id="top-gender-select">
+              <option value="">Alle</option>
+              <option value="Stute">Stuten</option>
+              <option value="Hengst">Hengste</option>
+            </select>
+          </div>
+          <div>
+            <label>Rasse</label>
+            <div class="checkdrop" id="top-breed-drop">
+              <button type="button" class="checkdrop-toggle">Alle</button>
+              <div class="checkdrop-panel" hidden></div>
+            </div>
+          </div>
+          <div>
+            <label>Schlagwörter</label>
+            <div class="checkdrop" id="top-tag-drop">
+              <button type="button" class="checkdrop-toggle">Alle</button>
+              <div class="checkdrop-panel" hidden></div>
+            </div>
+          </div>
+          <div>
+            <label for="top-zzl-select">ZZL</label>
+            <select id="top-zzl-select">
+              <option value="alle">Alle</option>
+              <option value="zzl">Nur mit ZZL</option>
+              <option value="ohne">Nur ohne ZZL</option>
+            </select>
           </div>
         </div>
-        <div>
-          <label for="top-zzl-select">ZZL</label>
-          <select id="top-zzl-select">
-            <option value="alle">Alle</option>
-            <option value="zzl">Nur mit ZZL</option>
-            <option value="ohne">Nur ohne ZZL</option>
-          </select>
-        </div>
-      </div>
-      <div id="top-result"></div>
-    </fieldset>
+        <div id="top-result"></div>
+      </fieldset>
+    </section>
 
     <p id="load-error" class="error"></p>
   </main>
@@ -93,6 +137,7 @@
   <script src="js/breeding.js"></script>
   <script src="js/searchableSelect.js"></script>
   <script src="js/breedFilter.js"></script>
+  <script src="js/tagFilter.js"></script>
   <script src="js/tagSuggest.js"></script>
   <script src="js/fohlen-tracker.js"></script>
 </body>

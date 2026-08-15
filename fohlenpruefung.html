@@ -19,11 +19,12 @@
   <main class="container">
     <p class="muted small">
       Nur lesender Zugriff auf die Pferdedatenbank – hier wird nichts
-      gespeichert oder verändert. Ein ausgewähltes Pferd lässt sich sowohl
-      als Fohlen (Werte-/Farbvergleich mit Eltern und Geschwistern,
-      Turnierwerte + LP-Prognose) als auch als Elternteil (eigene Fohlen,
-      Aussortierhilfe) betrachten - je nach Reiter unten.
+      gespeichert oder verändert. Betrachtet ein ausgewähltes Pferd als
+      Fohlen: Werte-/Farbvergleich mit Eltern und Geschwistern, Turnierwerte
+      + LP-Prognose. Eigene Fohlen/Aussortierhilfe gibt es jetzt im
+      <a href="zuchtbuch.html#aussortierhilfe-abschnitt">Zuchtbuch</a>.
     </p>
+    <div id="tag-legend"></div>
 
     <fieldset>
       <legend>Pferd auswählen</legend>
@@ -46,25 +47,19 @@
             <div class="checkdrop-panel" hidden></div>
           </div>
         </div>
+        <div>
+          <label>Schlagwörter</label>
+          <div class="checkdrop" id="tag-drop">
+            <button type="button" class="checkdrop-toggle">Alle</button>
+            <div class="checkdrop-panel" hidden></div>
+          </div>
+        </div>
       </div>
     </fieldset>
 
-    <div class="tabs">
-      <button type="button" class="tab-btn active" data-tab="fohlenpruefung">Fohlenprüfung</button>
-      <button type="button" class="tab-btn" data-tab="aussortierhilfe">Aussortierhilfe</button>
+    <div id="fohlen-result">
+      <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
     </div>
-
-    <section id="tab-fohlenpruefung" class="tab-panel">
-      <div id="fohlen-result">
-        <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
-      </div>
-    </section>
-
-    <section id="tab-aussortierhilfe" class="tab-panel" hidden>
-      <div id="aussortieren-result">
-        <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
-      </div>
-    </section>
 
     <p id="load-error" class="error"></p>
   </main>
@@ -79,6 +74,7 @@
   <script src="js/verpaarung.js"></script>
   <script src="js/searchableSelect.js"></script>
   <script src="js/breedFilter.js"></script>
+  <script src="js/tagFilter.js"></script>
   <script src="js/tagSuggest.js"></script>
   <script src="js/fohlenpruefung.js"></script>
 </body>

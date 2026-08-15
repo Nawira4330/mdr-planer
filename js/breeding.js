@@ -336,8 +336,8 @@ function ownCoiFraction(horse, nameIndex, coiCache) {
 // ownCoiFraction, 0 falls der Vorfahre nicht auf ein gespeichertes Pferd
 // auflösbar ist - "unbekannt" wird wie überall nicht als "sicher 0"
 // behandelt, sondern schlicht nicht eingerechnet). Interne Bruchteil-
-// Variante ohne Rundung/Prozent-Umrechnung, wird von estimateRelatedness/
-// ownCoiFraction/estimateBreedRelatedness gebraucht.
+// Variante ohne Rundung/Prozent-Umrechnung, wird von ownCoiFraction
+// gebraucht (dort für den COI zwischen den beiden Eltern eines Pferds).
 function coiFraction(horseA, horseB, nameIndex, coiCache, maxGeneration = COI_MAX_GENERATION) {
   if (!horseA || !horseB) return 0;
   if (horseA === horseB || (horseA.id && horseB.id && horseA.id === horseB.id)) return 0;
@@ -366,31 +366,19 @@ function coiFractionFromDeepPedigrees(pedigreeA, pedigreeB, nameIndex, coiCache)
   return coi;
 }
 
-// Verwandtschaftsgrad zweier Pferde in Prozent (Inzuchtkoeffizient eines
-// hypothetischen gemeinsamen Fohlens) - "pool" ist der Pferde-Bestand, über
-// den Vorfahren-Namen zu tatsächlich gespeicherten Pferden aufgelöst werden
-// (siehe buildDeepPedigree). null, wenn eines der beiden Pferde fehlt oder
-// beide dasselbe Pferd sind.
-function estimateRelatedness(horseA, horseB, pool, maxGeneration = COI_MAX_GENERATION) {
-  if (!horseA || !horseB) return null;
-  if (horseA === horseB || (horseA.id && horseB.id && horseA.id === horseB.id)) return null;
-  const nameIndex = buildPedigreeNameIndex(pool);
-  const coiCache = new Map();
-  return Math.round(coiFraction(horseA, horseB, nameIndex, coiCache, maxGeneration) * 1000) / 10;
-}
-
 // Durchschnittlicher Verwandtschaftsgrad eines Pferds gegen ALLE ANDEREN
-// Pferde DERSELBEN RASSE im übergebenen Bestand (nicht nur eine aktuell im
-// UI gefilterte/angezeigte Auswahl) - ein eigener, separater Wert (anders
-// als die paarweisen Vergleiche), der zeigt, wie genetisch redundant ein
-// Pferd innerhalb seiner eigenen Rasse bereits ist: viele nahe Verwandte
-// in der eigenen Rasse bedeuten weniger genetische Vielfalt, die dieses
-// Pferd zusätzlich beisteuert. Rassenübergreifend verglichen wäre der COI
-// ohnehin praktisch immer 0% (keine gemeinsamen Vorfahren zwischen z.B.
-// Andalusier und American Paint Horse) und würde den Durchschnitt nur
-// künstlich verwässern - dieselbe Überlegung wie computeRelatedness in
-// js/sortierhilfe.js im HorseReality-Datenbank-Projekt. null, wenn das
-// Pferd fehlt oder es keine anderen Pferde derselben Rasse gibt.
+// Pferde DERSELBEN RASSE im übergebenen Bestand - EIN einziger,
+// zusammenfassender Wert pro Pferd (bewusst keine einzelnen Werte je
+// verglichenem Pferd, das wäre schnell unübersichtlich). Zeigt, wie
+// genetisch redundant ein Pferd innerhalb seiner eigenen Rasse bereits
+// ist: viele nahe Verwandte in der eigenen Rasse bedeuten weniger
+// genetische Vielfalt, die dieses Pferd zusätzlich beisteuert.
+// Rassenübergreifend verglichen wäre der COI ohnehin praktisch immer 0%
+// (keine gemeinsamen Vorfahren zwischen z.B. Andalusier und American Paint
+// Horse) und würde den Durchschnitt nur künstlich verwässern - dieselbe
+// Überlegung wie computeRelatedness in js/sortierhilfe.js im
+// HorseReality-Datenbank-Projekt. null, wenn das Pferd fehlt oder es keine
+// anderen Pferde derselben Rasse gibt.
 function estimateBreedRelatedness(horse, pool, maxGeneration = COI_MAX_GENERATION) {
   if (!horse) return null;
   const others = (pool || []).filter((h) => h.id !== horse.id && h.breed && h.breed === horse.breed);
@@ -414,6 +402,6 @@ if (typeof module !== 'undefined' && module.exports) {
     pedigreeNamePool, findRelations, areRelated,
     buildPedigreeNameIndex, buildDeepPedigree, findDeepCommonAncestors,
     ownCoiFraction, coiFraction, coiFractionFromDeepPedigrees,
-    estimateRelatedness, estimateBreedRelatedness,
+    estimateBreedRelatedness,
   };
 }

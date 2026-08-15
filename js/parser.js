@@ -609,10 +609,21 @@ const HORSE_TAG_OPTIONS = [
   { label: 'Reserviert', color: 'var(--warning)' },
   { label: 'Bleibt', color: 'var(--success)' },
   { label: 'GBH', color: 'var(--tag-purple)' },
+  { label: 'LastFoal', color: 'var(--info)' },
+  { label: '???', color: 'var(--tag-slate)' },
 ];
 
 function tagColor(label) {
   return HORSE_TAG_OPTIONS.find((t) => t.label === label)?.color || 'var(--muted)';
+}
+
+// Kleine Farb-Legende für die Schlagwort-Einfärbung (Name- und Schlagwort-
+// Spalte, siehe tagCellStyle) - einmal pro Seite unter der Einleitung
+// eingeblendet, damit klar ist, welche Farbe welches Schlagwort bedeutet
+// (z.B. dass Verkauf und Reserviert bewusst dieselbe Farbe teilen).
+function tagLegendHtml() {
+  const items = HORSE_TAG_OPTIONS.map((t) => `<span class="horse-tag-badge" style="background:${t.color}">${escapeHtml(t.label)}</span>`).join('');
+  return `<p class="small muted" style="display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center;"><strong>Schlagwort-Farben:</strong> ${items}</p>`;
 }
 
 // Rendert die zugewiesenen Schlagwörter eines Pferds als farbige Badges -
@@ -624,6 +635,42 @@ function tagsBadgesHtml(tags) {
     const text = tag.note ? `${tag.label}: ${tag.note}` : tag.label;
     return `<span class="horse-tag-badge" style="background:${tagColor(tag.label)}">${escapeHtml(text)}</span>`;
   }).join('');
+}
+
+// Bei mehreren Schlagwörtern bestimmt normalerweise das erste die
+// Zellfarbe - Ausnahme: stehen "Verkauf" UND "Reserviert" gleichzeitig
+// (Nutzerwunsch), gewinnt immer "Reserviert", unabhängig von der
+// Reihenfolge im tags-Array.
+function dominantTagLabel(tags) {
+  if (!tags || !tags.length) return null;
+  const labels = tags.map((t) => t.label);
+  if (labels.includes('Verkauf') && labels.includes('Reserviert')) return 'Reserviert';
+  return tags[0].label;
+}
+
+// Für die eigene "Schlagwort"-Spalte in Tabellen (statt der Badges direkt
+// neben dem Namen, siehe tagsBadgesHtml oben - Nutzerwunsch: Schlagwort
+// gehört in die eigene Spalte, die dann farblich nach dem Schlagwort
+// eingefärbt wird, UND dieselbe Farbe zusätzlich in der Name-Spalte
+// derselben Zeile). color-mix() mit var(--surface) statt "transparent"
+// als Mischfarbe - die Name-Spalte ist bei den meisten Tabellen
+// zusätzlich "sticky" (bleibt beim horizontalen Scrollen stehen) und
+// braucht dafür einen blickdichten Hintergrund, sonst scheinen darunter
+// liegende Zellen beim Scrollen durch.
+function tagCellStyle(tags) {
+  if (!tags || !tags.length) return '';
+  const color = tagColor(dominantTagLabel(tags));
+  return `background:color-mix(in srgb, ${color} 20%, var(--surface)); color:${color}; font-weight:600;`;
+}
+
+function tagCellText(tags) {
+  if (!tags || !tags.length) return '';
+  return escapeHtml(tags.map((t) => (t.note ? `${t.label}: ${t.note}` : t.label)).join(', '));
+}
+
+function tagSortValue(tags) {
+  if (!tags || !tags.length) return null;
+  return tags.map((t) => t.label).join(', ').toLowerCase();
 }
 
 // Geburtsdatum (horses.birthdate, "JJJJ-MM-TT") -> Alter in vollen

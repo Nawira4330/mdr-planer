@@ -30,6 +30,7 @@
       verwandt, aber der gemeinsame Vorfahre liegt zu weit zurück, um im
       Fohlen-Stammbaum aufzutauchen.
     </p>
+    <div id="tag-legend"></div>
 
     <fieldset>
       <legend>Einzelnes Pferd nachschlagen</legend>
@@ -48,6 +49,13 @@
         <div>
           <label>Rasse</label>
           <div class="checkdrop" id="relation-breed-drop">
+            <button type="button" class="checkdrop-toggle">Alle</button>
+            <div class="checkdrop-panel" hidden></div>
+          </div>
+        </div>
+        <div>
+          <label>Schlagwörter</label>
+          <div class="checkdrop" id="relation-tag-drop">
             <button type="button" class="checkdrop-toggle">Alle</button>
             <div class="checkdrop-panel" hidden></div>
           </div>
@@ -134,6 +142,13 @@
               </div>
             </div>
             <div>
+              <label>Schlagwörter</label>
+              <div class="checkdrop" id="matrix-row-tag-drop">
+                <button type="button" class="checkdrop-toggle">Alle</button>
+                <div class="checkdrop-panel" hidden></div>
+              </div>
+            </div>
+            <div>
               <label for="matrix-row-zzl-select">ZZL</label>
               <select id="matrix-row-zzl-select">
                 <option value="alle">Alle</option>
@@ -154,6 +169,13 @@
             <div>
               <label>Rasse</label>
               <div class="checkdrop" id="matrix-col-breed-drop">
+                <button type="button" class="checkdrop-toggle">Alle</button>
+                <div class="checkdrop-panel" hidden></div>
+              </div>
+            </div>
+            <div>
+              <label>Schlagwörter</label>
+              <div class="checkdrop" id="matrix-col-tag-drop">
                 <button type="button" class="checkdrop-toggle">Alle</button>
                 <div class="checkdrop-panel" hidden></div>
               </div>
@@ -199,6 +221,7 @@
   <script src="js/breeding.js"></script>
   <script src="js/searchableSelect.js"></script>
   <script src="js/breedFilter.js"></script>
+  <script src="js/tagFilter.js"></script>
   <script src="js/tagSuggest.js"></script>
   <script src="js/verwandtschaft.js"></script>
 </body>

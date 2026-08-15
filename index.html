@@ -75,16 +75,36 @@
         <legend>Zuchtbuch</legend>
         <p class="small">
           Verwandtschaftsübersicht zu einem beliebigen Pferd (Eltern,
-          Geschwister, Nachkommen über alle Generationen) und ein Vergleich
-          der Fohlen-Vorhersage mit den tatsächlichen Werten.
+          Geschwister, Nachkommen über alle Generationen, auch per Freitext
+          für datenbankfremde Pferde), Fohlen-Vorhersage vs. Realität,
+          direkt darunter die Aussortierhilfe (eigene Fohlen im Vergleich) -
+          Ø-Vergleich und Schlagwort-Vorschlag pro Zeile.
         </p>
         <a class="btn" href="zuchtbuch.html">Zum Zuchtbuch</a>
         <details class="howto">
           <summary>Anleitung</summary>
           <ol class="small muted">
-            <li>Ein beliebiges Pferd auswählen (auch ohne ZZL).</li>
+            <li>Ein beliebiges Pferd auswählen (auch ohne ZZL) - oder unter "Fremdes Pferd (Freitext)" den kopierten Seitentext einfügen, falls das Pferd nicht in der Datenbank steht.</li>
             <li>Verwandtschaftsübersicht durchsehen - Beziehung, alle Werte wie in der Datenbankübersicht, per Spaltenklick sortierbar.</li>
-            <li>Falls beide Eltern selbst in der Datenbank stehen: unten den Vergleich "Fohlen-Vorhersage vs. Realität" (GP/Int) ansehen.</li>
+            <li>Falls beide Eltern selbst in der Datenbank stehen: darunter den Vergleich "Fohlen-Vorhersage vs. Realität" (GP/Int) ansehen.</li>
+            <li>Direkt darunter die Aussortierhilfe (eigene Fohlen im Vergleich) - keine separate Seite mehr, sondern Teil derselben Ansicht.</li>
+          </ol>
+        </details>
+      </fieldset>
+      <fieldset>
+        <legend>Fohlen-Tracker</legend>
+        <p class="small">
+          Filterbare Übersicht mit Verwandten-Zählung je Pferd (inkl.
+          Inzucht-relevanter Zählung), aufklappbar zu den eigenen Fohlen,
+          im zweiten Reiter eine Top 20 der Pferde mit den meisten Fohlen.
+        </p>
+        <a class="btn" href="fohlen-tracker.html">Zum Fohlen-Tracker</a>
+        <details class="howto">
+          <summary>Anleitung</summary>
+          <ol class="small muted">
+            <li>Reiter "Übersicht": Besitzer/Geschlecht/Rasse/Schlagwörter/ZZL oben eingrenzen (standardmäßig nur Pferde mit ZZL) - die Tabelle zeigt Werte, HF/SF (Hengst-/Stutfohlenanzahl) und Verwandten-Zählung je Pferd der gefilterten Auswahl.</li>
+            <li>Eine Zeile anklicken, um die eigenen Fohlen dieses Pferds aufzuklappen.</li>
+            <li>Reiter "Top 20 - meiste Fohlen": eigene Besitzer/Geschlecht/Rasse/Schlagwörter/ZZL-Filter zum Eingrenzen wählen.</li>
           </ol>
         </details>
       </fieldset>
@@ -106,23 +126,6 @@
         </details>
       </fieldset>
       <fieldset>
-        <legend>Fohlen-Tracker</legend>
-        <p class="small">
-          Fohlenanzahl eines Pferds (mit Besitzer-Filter) und eine Top 10
-          der Pferde mit den meisten Fohlen, filterbar nach Besitzer,
-          Geschlecht und Rasse.
-        </p>
-        <a class="btn" href="fohlen-tracker.html">Zum Fohlen-Tracker</a>
-        <details class="howto">
-          <summary>Anleitung</summary>
-          <ol class="small muted">
-            <li>Oben ein Pferd mit ZZL auswählen (optional nach Besitzer eingrenzt) - Fohlenanzahl und -liste erscheinen darunter.</li>
-            <li>Für die Top 10: unten Besitzer, Geschlecht und/oder Rasse zum Eingrenzen wählen.</li>
-            <li>Die Top 10 zeigt die Pferde mit den meisten Fohlen absteigend sortiert.</li>
-          </ol>
-        </details>
-      </fieldset>
-      <fieldset>
         <legend>Fohlenprüfung</legend>
         <p class="small">
           Werte- und Farbvergleich eines Fohlens mit Eltern und Voll-/
@@ -134,26 +137,9 @@
           <summary>Anleitung</summary>
           <ol class="small muted">
             <li>Oben ein beliebiges Pferd auswählen (auch ohne ZZL).</li>
-            <li>Werte-Vergleich (GP/Ext/Ext%/Int) zu Eltern und Geschwistern ansehen - grün/rot/gelb zeigt besser/schlechter/gleich im Vergleich zum Fohlen.</li>
+            <li>Werte-Vergleich (GP/Ext/Ext%/Int) zu Eltern und Geschwistern ansehen - grün/rot/schwarz zeigt besser/schlechter/gleich im Vergleich zum Fohlen.</li>
             <li>Farbvergleich: welche der 9 geprüften Sondergene (Champagne, Silver, Pearl, Flaxen, Cream, Tobiano, Splashed, Sabino, Overo) hat das Fohlen von Vater und/oder Mutter übernommen?</li>
             <li>Unten: Turnierwerte (alle 28 Disziplinen) und LP-Prognose für das Fohlen selbst.</li>
-          </ol>
-        </details>
-      </fieldset>
-      <fieldset>
-        <legend>Aussortierhilfe</legend>
-        <p class="small">
-          Entscheidungshilfe für ein Zuchttier: eigene Fohlenanzahl,
-          Werte-Vergleich der Fohlen mit dem Elternteil, und wie viele
-          Fohlen noch beim aktuellen Besitzer sind.
-        </p>
-        <a class="btn" href="fohlenpruefung.html?tab=aussortierhilfe">Zur Aussortierhilfe</a>
-        <details class="howto">
-          <summary>Anleitung</summary>
-          <ol class="small muted">
-            <li>Oben ein Pferd auswählen (dieselbe Auswahl wie bei der Fohlenprüfung).</li>
-            <li>Fohlenanzahl und Werte-Vergleich der Fohlen mit dem Elternteil ansehen (grün/rot/gelb wie im Reiter "Fohlenprüfung", hier bezogen auf das Elternteil).</li>
-            <li>Unten: wie viele Fohlen noch beim aktuellen Besitzer des Elternteils sind, mit Liste.</li>
           </ol>
         </details>
       </fieldset>

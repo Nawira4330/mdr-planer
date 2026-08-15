@@ -19,12 +19,11 @@
   <main class="container">
     <p class="muted small">
       Nur lesender Zugriff auf die Pferdedatenbank – hier wird nichts
-      gespeichert oder verändert. Zeigt zu einem beliebigen Pferd alle im
-      sichtbaren Stammbaum auffindbaren Verwandten (Vater, Mutter, Voll-/
-      Halbgeschwister, Nachkommen über alle Generationen) sowie - falls
-      beide Eltern selbst in der Datenbank stehen - einen Vergleich der
-      Fohlen-Vorhersage mit den tatsächlichen Werten.
+      gespeichert oder verändert. Zeigt zu einem beliebigen Pferd die
+      Verwandtschaftsübersicht (Zuchtbuch) und direkt darunter die eigenen
+      Fohlen im Vergleich (Aussortierhilfe).
     </p>
+    <div id="tag-legend"></div>
 
     <fieldset>
       <legend>Pferd auswählen</legend>
@@ -48,6 +47,13 @@
           </div>
         </div>
         <div>
+          <label>Schlagwörter</label>
+          <div class="checkdrop" id="tag-drop">
+            <button type="button" class="checkdrop-toggle">Alle</button>
+            <div class="checkdrop-panel" hidden></div>
+          </div>
+        </div>
+        <div>
           <label for="gender-select">Geschlecht</label>
           <select id="gender-select">
             <option value="">Alle</option>
@@ -64,6 +70,43 @@
           </select>
         </div>
       </div>
+    </fieldset>
+
+    <details class="paste-box collapsible">
+      <summary>Fremdes Pferd (Freitext)</summary>
+      <p class="muted small">
+        Für ein Pferd, das nicht in der Datenbank steht: Pferdeseite im
+        Spiel markieren (Strg+A), kopieren (Strg+C) und hier einfügen –
+        funktioniert sowohl mit der Desktop- als auch der Handy-Ansicht
+        des Spiels. Es wird nichts gespeichert. Ersetzt die Auswahl oben,
+        solange das Feld nicht geleert wird.
+      </p>
+      <textarea id="foreign-horse-raw-text" placeholder="Hier den kopierten Seitentext des Pferdes einfügen…"></textarea>
+      <div class="paste-actions">
+        <button type="button" id="foreign-horse-parse-btn">Auslesen</button>
+        <span id="foreign-horse-parse-status" class="muted small"></span>
+      </div>
+    </details>
+
+    <fieldset>
+      <legend>Ø-Vergleich</legend>
+      <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center;">
+        <label style="display:flex; align-items:center; gap:0.4rem; font-weight:400;">
+          <input type="checkbox" id="compare-avg-toggle" style="width:auto;" /> Ø-Vergleich anzeigen
+        </label>
+        <label style="display:flex; align-items:center; gap:0.4rem; font-weight:400;">
+          <input type="checkbox" id="compare-tolerance-toggle" checked style="width:auto;" /> Persönliche Toleranz berücksichtigen
+        </label>
+      </div>
+      <p class="muted small" style="margin-top:0.5rem; margin-bottom:0;">
+        Textfarbe zeigt immer den Vergleich gegen die eigenen Werte des
+        ausgewählten Pferds (grün/rot/schwarz). "Ø-Vergleich anzeigen"
+        färbt zusätzlich den Zell-Hintergrund gegen den Durchschnitt aller
+        aktuell geladenen Pferde ein: grün = besser, roter Ton = deutlich
+        schlechter, türkiser Ton = schlechter, aber innerhalb der
+        persönlichen Toleranz (siehe Einstellungen in der Pferdedatenbank -
+        nur für eingeloggte Nutzer hinterlegt).
+      </p>
     </fieldset>
 
     <fieldset>
@@ -86,11 +129,11 @@
         </label>
       </div>
       <p class="muted small" style="margin-top:0.5rem; margin-bottom:0;">
-        Vater und Mutter stehen immer in eigenen Karten oberhalb der Tabelle.
-        "Alle Verwandtschaft" zeigt zusätzlich entferntere Verwandte (Onkel,
-        Tanten, Cousin, Cousine, ...) - jedes Pferd, das mindestens einen
-        Namen mit dem sichtbaren Stammbaum des gewählten Pferds teilt - und
-        nimmt dafür die Häkchen der Feinauswahl heraus.
+        Vater und Mutter stehen immer in eigenen Karten oberhalb der
+        Tabelle. "Alle Verwandtschaft" zeigt zusätzlich entferntere
+        Verwandte (Onkel, Tanten, Cousin, Cousine, ...) - jedes Pferd, das
+        mindestens einen Namen mit dem sichtbaren Stammbaum des gewählten
+        Pferds teilt - und nimmt dafür die Häkchen der Feinauswahl heraus.
       </p>
       <div style="margin-top:0.7rem;">
         <label for="rassefremde-select">Rassefremde Verwandte (Vergleich mit der Rasse des ausgewählten Pferds)</label>
@@ -107,6 +150,8 @@
     <div id="zuchtbuch-result">
       <p class="muted small">Bitte zuerst ein Pferd auswählen.</p>
     </div>
+
+    <div id="aussortierhilfe-abschnitt" style="scroll-margin-top: 1rem;"></div>
   </main>
 
   <script src="js/config.js"></script>
@@ -119,6 +164,7 @@
   <script src="js/verpaarung.js"></script>
   <script src="js/searchableSelect.js"></script>
   <script src="js/breedFilter.js"></script>
+  <script src="js/tagFilter.js"></script>
   <script src="js/tagSuggest.js"></script>
   <script src="js/zuchtbuch.js"></script>
 </body>

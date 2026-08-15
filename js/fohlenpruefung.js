@@ -1,9 +1,8 @@
-// Fohlenprüfung + Aussortierhilfe: ein Werkzeug, zwei Reiter. Dieselbe
-// Pferdeauswahl gilt für beide - ein Pferd wird im Reiter "Fohlenprüfung"
-// als Fohlen betrachtet (Werte-/Farbvergleich mit Eltern und Voll-/
-// Halbgeschwistern, Turnierwerte + LP-Prognose), im Reiter
-// "Aussortierhilfe" als (potenzieller) Elternteil (eigene Fohlen,
-// Werte-Vergleich, Besitzer-Verbleib). Nutzt js/parser.js, js/breeding.js,
+// Fohlenprüfung: betrachtet ein ausgewähltes Pferd als Fohlen -
+// Werte-/Farbvergleich mit Eltern und Voll-/Halbgeschwistern, Turnierwerte
+// + LP-Prognose. Die "Aussortierhilfe" (Elternteil-Perspektive: eigene
+// Fohlen, Werte-Vergleich, Besitzer-Verbleib) ist jetzt Teil von
+// js/zuchtbuch.js. Nutzt js/parser.js, js/breeding.js,
 // js/tournamentScoring.js, js/verpaarung.js, js/searchableSelect.js,
 // js/breedFilter.js - muss also nach diesen Scripts eingebunden werden.
 
@@ -23,45 +22,39 @@ const SPECIAL_COLOR_WISHES = COLOR_WISH_OPTIONS.filter((o) => SPECIAL_COLOR_LABE
 // die Boolean-Zuordnung selbst gebraucht wird).
 const METRIC_HIGHER_IS_BETTER = { gp: true, ext: false, extpct: true, int: false };
 
-// Dieselben Schwellen wie in js/zuchtplaner.js (MAX_BREEDING_AGE/
-// BREEDING_AGE_WARNING) - hier nur als Hinweis, keine Auswahl-Beschränkung
-// (diese Seite hat bewusst keinen ZZL-/Alters-Zwang).
-const MAX_BREEDING_AGE = 25;
-const BREEDING_AGE_WARNING = 24;
-
 let allHorses = [];
 let horseSelect;
 let breedFilter;
+let tagFilter;
 let currentHorse = null;
-let activeTab = 'fohlenpruefung';
 let flaxenLookup = null;
 let flaxenChildrenByName = null;
 let childrenByParentName = new Map();
 
-// Unabhängige Sortierzustände je Tabelle (Werte-Vergleich, Turnierwerte,
-// Fohlen-vs-Elternteil) - Muster wie js/turnierplaner.js/js/zuchtbuch.js,
-// hier über eine gemeinsame kleine Hilfsfunktion (siehe wireTableSort).
+// Unabhängige Sortierzustände je Tabelle (Werte-Vergleich, Turnierwerte) -
+// Muster wie js/turnierplaner.js, hier über eine gemeinsame kleine
+// Hilfsfunktion (siehe wireTableSort).
 let valueSort = { field: 'gp', dir: 'desc' };
 let tournamentSort = { field: 'category', dir: 'asc' };
-let foalsSort = { field: 'gp', dir: 'desc' };
+let colorSort = { field: 'label', dir: 'asc' };
 
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-  wireTabButtons();
+  document.querySelector('#tag-legend').innerHTML = tagLegendHtml();
   horseSelect = createSearchableSelect(
     document.querySelector('#horse-search'), document.querySelector('#horse-panel'),
     { onChange: onHorseSelect },
   );
   breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect });
+  tagFilter = createTagFilter(document.querySelector('#tag-drop'), { onChange: populateHorseSelect });
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   wireTableSort('value-table', (field) => { valueSort = nextSort(valueSort, field, field === 'gp' || field === 'extpct'); renderFohlenTab(); });
   wireTableSort('tournament-table', (field) => { tournamentSort = nextSort(tournamentSort, field, false); renderFohlenTab(); });
-  wireTableSort('foals-table', (field) => { foalsSort = nextSort(foalsSort, field, field === 'gp' || field === 'extpct'); renderAussortierenTab(); });
+  wireTableSort('color-table', (field) => { colorSort = nextSort(colorSort, field, false); renderFohlenTab(); });
   wireTagSuggestHandlers('Fohlenprüfung');
   await initAuthStatus();
   await loadHorses();
-  activateTabFromUrl();
 }
 
 async function loadHorses() {
@@ -76,10 +69,9 @@ async function loadHorses() {
   }
   allHorses = data || [];
 
-  // Reverse-Index (wer nennt diesen Namen als Vater/Mutter) - für
-  // Aussortierhilfe (eigene Fohlen) UND für die Flaxen-Trägerschaft über
-  // Nachkommen (siehe hasFlaxenTrait in js/verpaarung.js) - derselbe
-  // Bestand deckt beides ab.
+  // Reverse-Index (wer nennt diesen Namen als Vater/Mutter) - für die
+  // Flaxen-Trägerschaft über Nachkommen (siehe hasFlaxenTrait in
+  // js/verpaarung.js, als flaxenChildrenByName weiterverwendet).
   childrenByParentName = new Map();
   flaxenLookup = new Map();
   for (const h of allHorses) {
@@ -112,7 +104,7 @@ async function loadHorses() {
 
 function populateHorseSelect() {
   const owner = document.querySelector('#owner-select').value;
-  const filtered = allHorses.filter((h) => (!owner || h.owner === owner) && breedFilter.matches(h));
+  const filtered = allHorses.filter((h) => (!owner || h.owner === owner) && breedFilter.matches(h) && tagFilter.matches(h));
   horseSelect.setItems(filtered.map((h) => ({ id: h.id, label: h.name || '(ohne Name)' })));
 }
 
@@ -124,32 +116,9 @@ function onOwnerChange() {
 function onHorseSelect(id) {
   currentHorse = allHorses.find((h) => h.id === id) || null;
   renderFohlenTab();
-  renderAussortierenTab();
 }
 
-// --- Reiter-Umschaltung ---
-
-function wireTabButtons() {
-  document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
-  });
-}
-
-function activateTabFromUrl() {
-  const requestedTab = new URLSearchParams(window.location.search).get('tab');
-  if (requestedTab && document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`)) {
-    activateTab(requestedTab);
-  }
-}
-
-function activateTab(tab) {
-  activeTab = tab;
-  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-  document.querySelector('#tab-fohlenpruefung').hidden = activeTab !== 'fohlenpruefung';
-  document.querySelector('#tab-aussortierhilfe').hidden = activeTab !== 'aussortierhilfe';
-}
-
-// --- Sortier-Hilfsfunktionen (gemeinsam für alle 3 Tabellen dieser Seite) ---
+// --- Sortier-Hilfsfunktionen (gemeinsam für beide Tabellen dieser Seite) ---
 
 function nextSort(current, field, descFirst) {
   if (current.field === field) return { field, dir: current.dir === 'asc' ? 'desc' : 'asc' };
@@ -271,16 +240,6 @@ function affectedDiseaseLabels(horse) {
   return (horse.genetic_diseases || []).filter((d) => isDiseaseCarrierOrAffected(d.value)).map((d) => d.label);
 }
 
-// Alters-Hinweis, 1:1 aus ageWarningHtml in js/zuchtplaner.js übernommen
-// (gleiche Schwellen/gleicher Text), hier ohne Auswahl-Ausschluss - nur ein
-// Hinweis in der Aussortierhilfe, da ein altes Zuchttier der Kernfall für
-// "sollte es weiter in der Zucht bleiben?" ist.
-function ageWarningHtml(horse) {
-  const years = gameAgeYears(horse.birthdate);
-  if (years == null || years < BREEDING_AGE_WARNING) return '';
-  return `<div class="notice notice-caution">⚠️ ${escapeHtml(horse.name || 'Dieses Pferd')} ist ${years} Spieljahre alt - ab ${MAX_BREEDING_AGE} Jahren nicht mehr in der Zuchtplaner-Auswahl.</div>`;
-}
-
 // Kurze Werte-Zeile direkt unter dem Pferdenamen (wie parentSummaryHtml in
 // js/zuchtplaner.js) - zeigt die eigenen Werte, Farbe/Genetik, Alter und
 // EKH (falls vorhanden) des oben gewählten Pferdes auf einen Blick,
@@ -292,11 +251,11 @@ function horseStatsLineHtml(horse) {
   const genetik = genes.map((g) => g.alleles).join(' ');
   const ekh = affectedDiseaseLabels(horse);
   const age = horse.birthdate ? formatAge(horse.birthdate) : '';
-  // Eigener, separater Wert (siehe estimateBreedRelatedness in
+  // Ein einziger, zusammenfassender Wert (siehe estimateBreedRelatedness in
   // js/breeding.js) - Ø-Verwandtschaftsgrad gegen ALLE anderen Pferde
-  // DERSELBEN RASSE im Bestand (nicht nur die Vergleichszeilen der
-  // Tabelle darunter, die nur Vater/Mutter/Geschwister bzw. eigene
-  // Fohlen zeigt).
+  // DERSELBEN RASSE im Bestand. Bewusst NICHT je Vergleichszeile der
+  // Tabelle darunter (das wäre schnell unübersichtlich) - nur dieser eine
+  // Wert für das oben gewählte Pferd.
   const breedCoiPct = estimateBreedRelatedness(horse, allHorses);
   return `<p class="small muted">
     GP: <strong>${fmt(horseGP(horse), 0)}</strong>
@@ -310,10 +269,7 @@ function horseStatsLineHtml(horse) {
     &nbsp;·&nbsp; Farbe: <strong>${horse.coat_color ? escapeHtml(horse.coat_color) : '–'}</strong>
     &nbsp;·&nbsp; Alter: <strong>${age || '–'}</strong>${ekh.length ? ` &nbsp;·&nbsp; EKH: <strong style="color:var(--danger);">${escapeHtml(ekh.join(', '))}</strong>` : ''}
     &nbsp;·&nbsp; Besitzer: <strong>${horse.owner ? escapeHtml(horse.owner) : '–'}</strong>
-  </p>
-  <p class="small muted">
-    Ø Verwandtschaftsgrad zu allen ${horse.breed ? escapeHtml(horse.breed) : 'Pferden derselben Rasse'}-Pferden im Bestand: <strong>${breedCoiPct != null ? breedCoiPct.toFixed(1) + '%' : '–'}</strong>
-  </p>`;
+  </p>${breedCoiPct != null ? `<p class="small muted">Ø Verwandtschaftsgrad zu allen ${horse.breed ? escapeHtml(horse.breed) : 'Pferden derselben Rasse'}-Pferden im Bestand: <strong>${breedCoiPct.toFixed(1)}%</strong></p>` : ''}`;
 }
 
 // Schlagwort-Zuweisung je Tabellenzeile (Nutzerwunsch) - nutzt dieselbe
@@ -321,39 +277,33 @@ function horseStatsLineHtml(horse) {
 // stillschweigend leer, wenn kein Pferd/kein Login/keine Besitzerschaft
 // vorliegt (statt des Hinweistexts für Gäste) - sonst würde der
 // "nur für eingeloggte Nutzer"-Hinweis in JEDER Tabellenzeile wiederholt.
-// Der einmalige Hinweis oben unter dem Pferdenamen (siehe renderFohlenTab/
-// renderAussortierenTab) erklärt das bereits.
+// Der einmalige Hinweis oben unter dem Pferdenamen (siehe renderFohlenTab)
+// erklärt das bereits.
 function rowTagSuggestHtml(horse) {
   if (!horse || !isLoggedIn() || !isOwnerOf(horse.owner)) return '';
   return tagSuggestButtonHtml(horse.id, horse.owner);
 }
 
-// Gemeinsame Tabelle für "Werte im Vergleich" (Fohlenprüfung: Fohlen vs.
-// Eltern/Geschwister) UND "Werte-Vergleich Kinder vs. Elternteil"
-// (Aussortierhilfe) - referenceHorse liefert die Vergleichsbasis für die
-// Einfärbung, die Referenzzeile selbst wird nicht eingefärbt. Optionales
-// "ownerHighlight" (nur Aussortierhilfe): markiert Zeilen, deren Besitzer
-// mit dem übergebenen Namen übereinstimmt, direkt in einer eigenen
-// Besitzer-Spalte statt in separaten Listen darunter.
-function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHighlight) {
-  const data = rows.map((r) => ({
-    ...r,
-    gender: r.horse ? r.horse.gender : null,
-    owner: r.horse ? r.horse.owner : null,
-    ekh: r.horse ? affectedDiseaseLabels(r.horse) : [],
-    gp: r.horse ? horseGP(r.horse) : null,
-    ext: r.horse ? horseExt(r.horse) : null,
-    extpct: r.horse ? horseExtPct(r.horse) : null,
-    int: r.horse ? horseInt(r.horse) : null,
-    // Erwarteter Inzuchtkoeffizient eines hypothetischen gemeinsamen
-    // Fohlens von referenceHorse und dieser Zeile (Wright'sche
-    // Pfad-Methode über den gesamten Bestand, siehe estimateRelatedness in
-    // js/breeding.js) - z.B. Fohlenprüfung: referenceHorse=Fohlen,
-    // Zeile=Vater/Mutter/Geschwister (Vater/Mutter erwartungsgemäß 25%,
-    // ein hypothetisches Rück-Fohlen mit dem eigenen Elternteil wäre so
-    // stark eingezüchtet wie eines aus Vollgeschwister-Verpaarung).
-    coiPct: r.horse ? estimateRelatedness(referenceHorse, r.horse, allHorses) : null,
-  }));
+// Tabelle "Werte im Vergleich" (Fohlen vs. Eltern/Geschwister) -
+// referenceHorse liefert die Vergleichsbasis für die Einfärbung, die
+// Referenzzeile selbst wird nicht eingefärbt.
+function valueComparisonTableHtml(tableId, rows, referenceHorse, sort) {
+  const data = rows.map((r) => {
+    const ekh = r.horse ? affectedDiseaseLabels(r.horse) : [];
+    return {
+      ...r,
+      name: r.horse ? (r.horse.name || '(ohne Name)') : (r.name || ''),
+      gender: r.horse ? r.horse.gender : null,
+      owner: r.horse ? r.horse.owner : null,
+      ekh,
+      ekhLabel: ekh.length ? ekh.join(', ').toLowerCase() : null,
+      gp: r.horse ? horseGP(r.horse) : null,
+      ext: r.horse ? horseExt(r.horse) : null,
+      extpct: r.horse ? horseExtPct(r.horse) : null,
+      int: r.horse ? horseInt(r.horse) : null,
+      tag: r.horse ? tagSortValue(r.horse.tags) : null,
+    };
+  });
   const ref = { gp: horseGP(referenceHorse), ext: horseExt(referenceHorse), extpct: horseExtPct(referenceHorse), int: horseInt(referenceHorse) };
 
   const sorted = applySort(data, sort, (row, field) => row[field]);
@@ -366,41 +316,30 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
       const color = !row.resolved || isRef ? '' : compareColor(v, ref[metric], metric);
       return `<td data-label="${metric}" style="${color ? `color:${color}; font-weight:600;` : ''}">${fmt(v, digits)}</td>`;
     };
-    let ownerCell = '';
-    if (ownerHighlight !== undefined) {
-      const matches = row.horse && (row.owner || null) === (ownerHighlight || null);
-      const style = matches ? 'background:rgba(107,157,0,0.15); font-weight:600;' : '';
-      ownerCell = `<td data-label="Besitzer" style="${style}">${row.owner ? escapeHtml(row.owner) : '–'}${matches ? ' ✓' : ''}</td>`;
-    }
     return `<tr${isRef ? ' style="font-weight:600;"' : ''}>
+      <td data-label="Name" class="name-with-tags" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
       <td data-label="Beziehung">${escapeHtml(row.label)}</td>
-      <td data-label="Name" class="name-with-tags">${escapeHtml(name)}${row.horse ? tagsBadgesHtml(row.horse.tags) : ''}</td>
-      <td data-label="Verwandtschaftsgrad">${row.coiPct != null ? row.coiPct.toFixed(1) + '%' : '–'}</td>
       <td data-label="Geschlecht">${row.gender ? escapeHtml(row.gender) : '–'}</td>
       <td data-label="EKH" style="${row.ekh.length ? 'color:var(--danger); font-weight:600;' : ''}">${row.ekh.length ? escapeHtml(row.ekh.join(', ')) : '–'}</td>
-      ${ownerCell}
       ${cell('gp', 0)}
       ${cell('ext', 2)}
       ${cell('extpct', 1)}
       ${cell('int', 2)}
-      <td data-label="Schlagwort">${rowTagSuggestHtml(row.horse)}</td>
+      <td data-label="Schlagwort" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${row.horse ? tagCellText(row.horse.tags) : ''}${rowTagSuggestHtml(row.horse)}</td>
     </tr>`;
   }).join('');
 
-  const ownerHeader = ownerHighlight !== undefined ? `<th data-sort="owner">Besitzer${sortArrow(sort, 'owner')}</th>` : '';
   return `<div class="table-wrap"><table id="${tableId}">
     <thead><tr>
-      <th>Beziehung</th>
-      <th>Name</th>
-      <th data-sort="coiPct" title="Erwarteter Inzuchtkoeffizient eines hypothetischen gemeinsamen Fohlens (Wright'sche Pfad-Methode über den gesamten Bestand)">Verwandtschaftsgrad${sortArrow(sort, 'coiPct')}</th>
+      <th data-sort="name">Name${sortArrow(sort, 'name')}</th>
+      <th data-sort="label">Beziehung${sortArrow(sort, 'label')}</th>
       <th data-sort="gender">Geschlecht${sortArrow(sort, 'gender')}</th>
-      <th>EKH</th>
-      ${ownerHeader}
+      <th data-sort="ekhLabel">EKH${sortArrow(sort, 'ekhLabel')}</th>
       <th data-sort="gp">GP${sortArrow(sort, 'gp')}</th>
       <th data-sort="ext">Ext${sortArrow(sort, 'ext')}</th>
       <th data-sort="extpct">Ext%${sortArrow(sort, 'extpct')}</th>
       <th data-sort="int">Int${sortArrow(sort, 'int')}</th>
-      <th>Schlagwort</th>
+      <th data-sort="tag">Schlagwort${sortArrow(sort, 'tag')}</th>
     </tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table></div>`;
@@ -408,24 +347,36 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
 
 // --- Farbvergleich (die 9 vom Nutzer genannten Sondergene) ---
 
+function colorSortValue(row, field) {
+  if (field === 'label') return (row.label || '').toLowerCase();
+  if (field === 'name') {
+    const n = row.horse ? row.horse.name : row.name;
+    return (n || '').toLowerCase();
+  }
+  const wish = SPECIAL_COLOR_WISHES.find((w) => w.label === field);
+  if (wish) return row.horse ? (colorWishPossible(row.horse, wish, flaxenLookup, flaxenChildrenByName) ? 1 : 0) : 0;
+  return null;
+}
+
 function colorComparisonTableHtml(rows) {
+  const sorted = applySort(rows, colorSort, colorSortValue);
   const cells = (row) => SPECIAL_COLOR_WISHES.map((wish) => {
     const has = row.horse ? colorWishPossible(row.horse, wish, flaxenLookup, flaxenChildrenByName) : false;
     return `<td data-label="${escapeHtml(wish.label)}" style="text-align:center; ${has ? `color:${'var(--success)'}; font-weight:700;` : 'opacity:0.4;'}">${has ? '✓' : '–'}</td>`;
   }).join('');
 
-  const rowsHtml = rows.map((row) => {
+  const rowsHtml = sorted.map((row) => {
     const name = row.horse ? (row.horse.name || '(ohne Name)') : `${row.name || ''} (nicht in der Datenbank)`;
     return `<tr${row.isReference ? ' style="font-weight:600;"' : ''}>
+      <td data-label="Name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
       <td data-label="Beziehung">${escapeHtml(row.label)}</td>
-      <td data-label="Name">${escapeHtml(name)}</td>
       ${cells(row)}
     </tr>`;
   }).join('');
 
-  const header = SPECIAL_COLOR_WISHES.map((w) => `<th>${escapeHtml(w.label)}</th>`).join('');
-  return `<div class="table-wrap"><table>
-    <thead><tr><th>Beziehung</th><th>Name</th>${header}</tr></thead>
+  const header = SPECIAL_COLOR_WISHES.map((w) => `<th data-sort="${escapeHtml(w.label)}">${escapeHtml(w.label)}${sortArrow(colorSort, w.label)}</th>`).join('');
+  return `<div class="table-wrap"><table id="color-table">
+    <thead><tr><th data-sort="name">Name${sortArrow(colorSort, 'name')}</th><th data-sort="label">Beziehung${sortArrow(colorSort, 'label')}</th>${header}</tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table></div>`;
 }
@@ -447,42 +398,6 @@ function colorInheritanceSummary(rows) {
     <strong>${traceable.length} von ${present.length}</strong> beim Fohlen vorhandene Sondergene lassen sich auf Vater und/oder Mutter zurückführen
     (${escapeHtml(present.map((w) => w.label).join(', '))}).
   </p>`;
-}
-
-// Gegenrichtung für die Aussortierhilfe: nicht "woher hat das Fohlen sein
-// Sondergen", sondern "wie viele der eigenen Fohlen haben je Sondergen des
-// Elternteils ebenfalls dieses Gen" - je Sondergen des Elternteils eine
-// Quote. Bewusst KEINE Kausalitätsaussage ("vererbt von diesem Elternteil"),
-// da ein Fohlen das Gen theoretisch auch vom anderen Elternteil haben
-// könnte - nur die reine Vorkommensquote unter den eigenen Fohlen.
-function colorPassOnSummary(parentHorse, foals) {
-  const present = SPECIAL_COLOR_WISHES.filter((wish) => colorWishPossible(parentHorse, wish, flaxenLookup, flaxenChildrenByName));
-  if (!present.length) {
-    return '<p class="small muted">Elternteil trägt keines der geprüften Sondergene (Champagne/Silver/Pearl/Flaxen/Cream/Tobiano/Splashed/Sabino/Overo).</p>';
-  }
-  const items = present.map((wish) => {
-    const count = foals.filter((f) => colorWishPossible(f, wish, flaxenLookup, flaxenChildrenByName)).length;
-    const pct = foals.length ? Math.round((count / foals.length) * 100) : 0;
-    return `<li>${escapeHtml(wish.label)}: <strong>${count} von ${foals.length}</strong> Fohlen (${pct}%)</li>`;
-  }).join('');
-  return `<p class="small">Sondergene des Elternteils - wie viele Fohlen haben dasselbe Gen ebenfalls:</p><ul class="small">${items}</ul>`;
-}
-
-// Analog zu colorPassOnSummary, aber für Erbkrankheiten (EKH) - zeigt je
-// Krankheit des Elternteils, wie viele Fohlen ebenfalls Träger/betroffen
-// sind (isDiseaseCarrierOrAffected, wie in affectedDiseaseLabels), als
-// grobe Einschätzung für die Weiterzucht-Entscheidung.
-function diseaseInheritanceSummary(parentHorse, foals) {
-  const parentDiseases = affectedDiseaseLabels(parentHorse);
-  if (!parentDiseases.length) return '';
-  const items = parentDiseases.map((label) => {
-    const count = foals.filter((f) => affectedDiseaseLabels(f).includes(label)).length;
-    const pct = foals.length ? Math.round((count / foals.length) * 100) : 0;
-    return `<li>${escapeHtml(label)}: <strong>${count} von ${foals.length}</strong> Fohlen (${pct}%) Träger oder betroffen</li>`;
-  }).join('');
-  return `<div class="group-heading">Erbkrankheiten (EKH) im Vergleich</div>
-    <p class="small">Erbkrankheiten des Elternteils - wie viele Fohlen tragen dieselbe(n) ebenfalls:</p>
-    <ul class="small">${items}</ul>`;
 }
 
 // --- Turnierwerte + LP (1:1 aus js/turnierplaner.js) ---
@@ -578,54 +493,6 @@ function renderFohlenTab() {
   }
 
   html += tournamentSectionHtml(currentHorse);
-  container.innerHTML = html;
-}
-
-// --- Reiter 2: Aussortierhilfe ---
-
-function renderAussortierenTab() {
-  const container = document.querySelector('#aussortieren-result');
-  if (!currentHorse) {
-    container.innerHTML = '<p class="muted small">Bitte zuerst ein Pferd auswählen.</p>';
-    return;
-  }
-
-  const foals = childrenByParentName.get(normalizeName(currentHorse.name)) || [];
-  let html = `<h2 class="name-with-tags">${escapeHtml(currentHorse.name || '(ohne Name)')}${tagsBadgesHtml(currentHorse.tags)}</h2>`;
-  html += horseStatsLineHtml(currentHorse);
-  html += ageWarningHtml(currentHorse);
-  html += `<p class="small">${tagSuggestButtonHtml(currentHorse.id, currentHorse.owner)}</p>`;
-  html += `<div class="group-heading">${foals.length} Fohlen gefunden</div>`;
-
-  if (!foals.length) {
-    html += '<p class="small muted">Noch keine Fohlen im sichtbaren Stammbaum der übrigen Pferde gefunden.</p>';
-    container.innerHTML = html;
-    return;
-  }
-
-  const owner = currentHorse.owner || null;
-  const stillOwned = foals.filter((f) => (f.owner || null) === owner);
-  html += `<p class="small muted">Vergleich gegen die eigenen Werte des Elternteils oben - grün (besser), rot (schlechter) oder schwarz (gleich). Die Besitzer-Spalte markiert Fohlen, die noch beim aktuellen Besitzer (${owner ? escapeHtml(owner) : 'unbekannt'}) sind (<strong>${stillOwned.length} von ${foals.length}</strong>).</p>`;
-
-  // Zusätzlich zur Zählung gegen den Besitzer DES AUSGEWÄHLTEN PFERDES
-  // (oben) auch gegen das eigene, eingeloggte Konto zählen, falls das ein
-  // ANDERES Konto ist - z.B. beim Durchsehen eines fremden Hengstes, um zu
-  // sehen, wie viele seiner Fohlen bei einem selbst gelandet sind.
-  const myIdentity = currentIdentity();
-  if (myIdentity && (!owner || myIdentity.toLowerCase() !== owner.toLowerCase())) {
-    const mine = foals.filter((f) => (f.owner || '').toLowerCase() === myIdentity.toLowerCase());
-    html += `<p class="small muted">Davon <strong>${mine.length} von ${foals.length}</strong> bei Ihnen (${escapeHtml(myIdentity)}).</p>`;
-  }
-
-  const rows = foals.map((f) => ({ label: 'Fohlen', horse: f, resolved: true }));
-  html += valueComparisonTableHtml('foals-table', rows, currentHorse, foalsSort, owner);
-
-  html += '<div class="group-heading">Farbvergleich (Sondergene)</div>';
-  html += colorPassOnSummary(currentHorse, foals);
-  html += colorComparisonTableHtml([{ label: 'Ausgewähltes Pferd', horse: currentHorse, isReference: true }, ...rows]);
-
-  html += diseaseInheritanceSummary(currentHorse, foals);
-
   container.innerHTML = html;
 }
 

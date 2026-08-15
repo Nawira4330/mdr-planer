@@ -18,17 +18,16 @@
 
   <main class="container">
     <p class="muted small">
-      Acht Werkzeuge, ein gemeinsamer Datenbestand: Diese Seite geht jedes
-      Werkzeug einzeln durch – Schritt für Schritt, mit jeder Funktion im
-      Detail und den Datenfeldern, auf die sie zurückgreift. Gespeichert oder
-      verändert wird dabei nirgends etwas (Ausnahmen: „Decksprung nutzen“,
-      siehe Verpaarungsratgeber, und „Schlagwort vorschlagen“, siehe
-      Zuchtbuch/Fohlen-Tracker/Verwandtschaftsmatrix). MDR-Planer hat kein
-      eigenes Login, erkennt aber – da beide Seiten unter derselben Domain
-      laufen – automatisch mit, wenn du in der Pferdedatenbank eingeloggt
-      bist (Anzeige „Angemeldet als“ oben rechts in der Kopfzeile);
-      „Schlagwort vorschlagen“ steht nur eingeloggten Nutzern zur
-      Verfügung.
+      Diese Seite geht jedes Werkzeug einzeln durch – Schritt für Schritt,
+      mit jeder Funktion im Detail und den Datenfeldern, auf die sie
+      zurückgreift. Gespeichert oder verändert wird dabei nirgends etwas
+      (Ausnahmen: „Decksprung nutzen“, siehe Verpaarungsratgeber, und
+      „Schlagwort vorschlagen“, siehe Zuchtbuch/Aussortierhilfe/
+      Fohlen-Tracker/Verwandtschaftsmatrix). MDR-Planer hat kein eigenes
+      Login, erkennt aber – da beide Seiten unter derselben Domain laufen –
+      automatisch mit, wenn du in der Pferdedatenbank eingeloggt bist
+      (Anzeige „Angemeldet als“ oben rechts in der Kopfzeile); „Schlagwort
+      vorschlagen“ steht nur eingeloggten Nutzern zur Verfügung.
     </p>
 
     <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin: 1rem 0 1.5rem;">
@@ -36,10 +35,9 @@
       <a class="btn secondary" href="#ratgeber">Verpaarungsratgeber</a>
       <a class="btn secondary" href="#turnier">Turnierplaner</a>
       <a class="btn secondary" href="#zuchtbuch-anleitung">Zuchtbuch</a>
-      <a class="btn secondary" href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>
       <a class="btn secondary" href="#fohlen-tracker-anleitung">Fohlen-Tracker</a>
+      <a class="btn secondary" href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>
       <a class="btn secondary" href="#fohlenpruefung-anleitung">Fohlenprüfung</a>
-      <a class="btn secondary" href="#aussortierhilfe-anleitung">Aussortierhilfe</a>
       <a class="btn secondary" href="#bausteine">Gemeinsame Bedienelemente</a>
       <a class="btn secondary" href="#technik">Woher die Daten kommen</a>
     </div>
@@ -326,7 +324,7 @@
 
       <div class="group-heading">So gehst du vor</div>
       <ol class="small">
-        <li>Tab „Pferd aus ZG“: Besitzer und Rasse eingrenzen (optional), Pferd über das Suchfeld wählen. Es werden nur Pferde <em>ohne</em> ZZL angezeigt.</li>
+        <li>Tab „Pferd aus ZG“: Besitzer, Rasse und Schlagwörter eingrenzen (optional), Pferd über das Suchfeld wählen. Es werden nur Pferde <em>ohne</em> ZZL angezeigt.</li>
         <li>Alternativ Tab „Fremdes Pferd“: die komplette Pferdeseite im Spiel markieren (Strg+A), kopieren (Strg+C) und den Text einfügen – funktioniert mit Desktop- und Handy-Ansicht.</li>
         <li>Oben GP/Ext/Ext%/Int und die LP-Einschätzung ansehen.</li>
         <li>Darunter die Tabelle aller 28 Disziplinen durchsehen, per Klick auf eine Spaltenüberschrift sortierbar.</li>
@@ -380,9 +378,13 @@
     <fieldset id="zuchtbuch-anleitung">
       <legend>Zuchtbuch</legend>
       <p class="small">
-        Zeigt zu einem beliebigen Pferd die komplette im sichtbaren
-        Stammbaum auffindbare Verwandtschaft und vergleicht – falls möglich
-        – die eigene Fohlen-Vorhersage mit der Realität.
+        Zuchtbuch und Aussortierhilfe stehen auf einer gemeinsamen Seite
+        mit einer Pferdeauswahl oben - Zuchtbuch (dieser Abschnitt) zeigt
+        zu einem beliebigen Pferd die komplette im sichtbaren Stammbaum
+        auffindbare Verwandtschaft und vergleicht - falls möglich - die
+        eigene Fohlen-Vorhersage mit der Realität; direkt darunter folgt
+        die Aussortierhilfe (siehe nächster Abschnitt). Der Fohlen-Tracker
+        ist eine eigenständige, separate Seite.
       </p>
 
       <div class="group-heading">So gehst du vor</div>
@@ -401,8 +403,12 @@
           <td>Stehen immer oberhalb der Tabelle, unabhängig von den Häkchen. Ist der Elternname nicht bekannt, steht dort „Unbekannt“; ist er bekannt, aber das Pferd nicht in der Datenbank, „Nicht in der Datenbank“.</td>
         </tr>
         <tr>
+          <th>Ø-Vergleich</th>
+          <td>Eigenes Fieldset oben, gilt für die ganze Seite (Zuchtbuch UND Aussortierhilfe). Standardmäßig sind GP/Ext/Ext%/Int gegen die eigenen Werte des ausgewählten Pferds eingefärbt (grün/rot/schwarz). "Ø-Vergleich anzeigen" ERSETZT das durch eine Einfärbung gegen den Durchschnitt aller aktuell geladenen Pferde - grün = besser, roter Ton = deutlich schlechter, türkiser Ton = schlechter, aber innerhalb der persönlichen Toleranz (aus den Einstellungen der Pferdedatenbank, nur für eingeloggte Nutzer hinterlegt; "Persönliche Toleranz berücksichtigen" schaltet das ab/an).</td>
+        </tr>
+        <tr>
           <th>Schlagwort vorschlagen</th>
-          <td>Nur für in der Pferdedatenbank eingeloggte Nutzer (siehe „Angemeldet als“ oben rechts) - Button unter dem ausgewählten Pferd: eines der 4 festen Schlagwörter (Verkauf, Reserviert, Bleibt, GBH) plus optionaler Zusatztext auswählen und abschicken - trägt den Vorschlag in die Pferdedatenbank ein, wo er manuell geprüft und übernommen oder verworfen wird. MDR-Planer ändert nichts direkt am Pferd.</td>
+          <td>Nur für in der Pferdedatenbank eingeloggte Nutzer (siehe „Angemeldet als“ oben rechts) - sowohl unter dem ausgewählten Pferd als auch pro Zeile in der Verwandtschaftstabelle: eines der 4 festen Schlagwörter (Verkauf, Reserviert, Bleibt, GBH) plus optionaler Zusatztext auswählen und abschicken - trägt den Vorschlag in die Pferdedatenbank ein, wo er manuell geprüft und übernommen oder verworfen wird. MDR-Planer ändert nichts direkt am Pferd.</td>
         </tr>
         <tr>
           <th>Angezeigte Verwandte (Häkchen)</th>
@@ -430,7 +436,7 @@
         </tr>
         <tr>
           <th>Verwandtschaftstabelle</th>
-          <td>Beziehung, Name, Geschlecht, Farbe, Genetik, GP, Ext, Ext%, Int, HLP/SLP, ZZL, EKH (erbliche Krankheiten – Träger und voll betroffene Tiere), Besitzer – exakt dieselben Werte wie in der Datenbankübersicht, per Spaltenklick sortierbar.</td>
+          <td>Beziehung, Name, Geschlecht, Farbe, Genetik, GP, Ext, Ext%, Int, HLP/SLP, ZZL, EKH (erbliche Krankheiten – Träger und voll betroffene Tiere), Besitzer, Schlagwort – exakt dieselben Werte wie in der Datenbankübersicht, per Spaltenklick sortierbar.</td>
         </tr>
         <tr>
           <th>Zusammenfassung (Anzahl)</th>
@@ -458,6 +464,167 @@
       </div>
     </fieldset>
 
+    <fieldset id="aussortierhilfe-anleitung">
+      <legend>Zuchtbuch → Aussortierhilfe</legend>
+      <p class="small">
+        Steht direkt unterhalb des Zuchtbuch-Abschnitts auf derselben
+        Seite (kein eigener Reiter) und betrachtet dasselbe oben gewählte
+        Pferd als (potenziellen) Elternteil - Entscheidungshilfe, ob es
+        weiter in der Zucht bleiben sollte: eigene Fohlenanzahl,
+        Werte-/Farb-/EKH-Vergleich der Fohlen mit dem Elternteil,
+        Besitzer-Verbleib und Alters-Hinweis.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Oben ein Pferd auswählen (dieselbe Auswahl wie im Zuchtbuch-Abschnitt) - oder direkt über die Startseiten-Karte "Aussortierhilfe" einsteigen (springt automatisch zu diesem Abschnitt).</li>
+        <li>Fohlenanzahl, Werte-Vergleich, Farbvergleich, EKH-Vergleich und Besitzer-Verbleib durchsehen. Ist das Elternteil 24 Jahre oder älter, erscheint zusätzlich ein Alters-Hinweis.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Fohlenanzahl</th>
+          <td>
+            Wie im Fohlen-Tracker: ein Pferd gilt als Fohlen, sobald der
+            gewählte Name im Stammbaum-Feld als Vater ODER Mutter
+            hinterlegt ist (nur Generation 1, kein Enkel/Urenkel).
+          </td>
+        </tr>
+        <tr>
+          <th>Werte-Vergleich Fohlen vs. Elternteil</th>
+          <td>
+            Eine Zeile pro Fohlen (GP/Ext/Ext%/Int) im Vergleich zu den
+            eigenen Werten des Elternteils (Werte-Zeile oben unter dem
+            Namen) - grün/rot/schwarz-Einfärbung wie in der Fohlenprüfung,
+            bei aktivem Ø-Vergleich stattdessen gegen den
+            Bestandsdurchschnitt (siehe oben). Eine eigene Besitzer-Spalte
+            markiert Fohlen, die noch beim aktuellen Besitzer des
+            Elternteils sind; ist man selbst eingeloggt und Besitzer eines
+            anderen Kontos, wird zusätzlich gezählt, wie viele Fohlen beim
+            eigenen Konto gelandet sind.
+          </td>
+        </tr>
+        <tr>
+          <th>Farbvergleich</th>
+          <td>
+            Zeigt je Sondergen des Elternteils (dieselben 9 wie im Reiter
+            "Fohlenprüfung"), wie viele der eigenen Fohlen dasselbe Gen
+            ebenfalls tragen - als grobe "Weitergabequote", keine Aussage
+            darüber, von welchem Elternteil ein einzelnes Fohlen sein Gen
+            tatsächlich hat.
+          </td>
+        </tr>
+        <tr>
+          <th>Erbkrankheiten (EKH) im Vergleich</th>
+          <td>
+            Erscheint nur, wenn das Elternteil selbst mindestens eine
+            Erbkrankheit trägt oder ausgeprägt hat - zeigt je Krankheit,
+            wie viele der eigenen Fohlen ebenfalls Träger oder betroffen
+            sind, als Einschätzung für die Weiterzucht-Entscheidung.
+          </td>
+        </tr>
+        <tr>
+          <th>Alters-Hinweis</th>
+          <td>
+            Ab 24 Spielejahren erscheint derselbe Hinweis wie im
+            Zuchtplaner ("ab 25 Jahren nicht mehr in der
+            Zuchtplaner-Auswahl") - hier ohne Auswahl-Einschränkung, nur
+            als Entscheidungshilfe.
+          </td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> dieselbe Tabelle <em>horses</em> wie
+        im Zuchtbuch-Abschnitt (eine gemeinsame Pferdeauswahl für die
+        ganze Seite).
+      </div>
+    </fieldset>
+
+    <fieldset id="fohlen-tracker-anleitung">
+      <legend>Fohlen-Tracker</legend>
+      <p class="small">
+        Filterbare Übersichtstabelle mit Verwandten-Zählung je Pferd,
+        aufklappbar zu den eigenen Fohlen, im zweiten Reiter eine Top 20
+        der Pferde mit den meisten Fohlen.
+      </p>
+
+      <div class="group-heading">So gehst du vor</div>
+      <ol class="small">
+        <li>Reiter „Übersicht“: Besitzer/Geschlecht/Rasse/Schlagwörter/ZZL oben eingrenzen (standardmäßig nur Pferde mit ZZL) - diese Auswahl bestimmt, gegen welche Pferde die Verwandten-Zählung läuft.</li>
+        <li>Die Tabelle zeigt jedes Pferd der gefilterten Auswahl.</li>
+        <li>Eine Zeile anklicken, um die eigenen Fohlen dieses Pferds aufzuklappen.</li>
+        <li>Reiter „Top 20 - meiste Fohlen“: eigene Besitzer/Geschlecht/Rasse/Schlagwörter-Filter einstellen.</li>
+      </ol>
+
+      <div class="group-heading">Funktionen im Detail</div>
+      <table class="detail-table">
+        <tr>
+          <th>Haupttabelle</th>
+          <td>
+            Eine Zeile je Pferd der oben gefilterten Auswahl: Pferdename,
+            Geschlecht, GP/Ext/Ext%/Int, Farbe, HF (Hengstfohlen), SF
+            (Stutfohlen), Verwandte, Inzucht, Besitzer - per Spaltenklick
+            sortierbar.
+          </td>
+        </tr>
+        <tr>
+          <th>Spalte „Verwandte“</th>
+          <td>
+            Weite Zählung: jedes andere Pferd der aktuell gefilterten
+            Auswahl, das mindestens einen Namen mit dem sichtbaren
+            14-Ahnen-Stammbaum dieses Pferds teilt (Pferd selbst + Eltern +
+            Großeltern + Urgroßeltern) - dieselbe Grundlage wie bei der
+            Verwandtschaftsmatrix.
+          </td>
+        </tr>
+        <tr>
+          <th>Spalte „Inzucht“</th>
+          <td>
+            Enge Zählung: nur Pferde, bei denen sich ein Name tatsächlich
+            doppeln würde, wenn dieses Pferd mit dem jeweils anderen
+            gepaart würde (sichtbarer Stammbaum eines hypothetischen
+            gemeinsamen Fohlens, max. 3 Generationen tief) - exakt dieselbe
+            Definition von "Inzucht" wie bei der Inzuchtprüfung im
+            Zuchtplaner. Ist ein Pferd bereits selbst eingezüchtet (Name
+            doppelt im eigenen Stammbaum), erscheint statt einer Zahl der
+            Hinweis "Selbst bereits eingezüchtet", da die Zahl sonst
+            trivial "alle anderen" wäre.
+          </td>
+        </tr>
+        <tr>
+          <th>Aufklappbare Fohlen-Zeile</th>
+          <td>
+            Klick auf eine Zeile zeigt darunter die eigenen (direkten)
+            Fohlen dieses Pferds mit denselben Spalten wie oben, außer
+            HF/SF.
+          </td>
+        </tr>
+        <tr>
+          <th>Top 20 - meiste Fohlen (eigener Reiter)</th>
+          <td>
+            Berücksichtigt bewusst ALLE Pferde, nicht nur die mit aktueller
+            ZZL - auch frühere Deckhengste/Zuchtstuten ohne (mehr)
+            bestehende ZZL können noch Fohlen haben. Besitzer, Geschlecht,
+            Rasse und Schlagwörter filtern dabei die Kandidaten, aus denen
+            die Top 20 ermittelt wird. Pferde ohne Fohlen erscheinen nicht
+            in der Liste. Per Klick auf eine Zeile (▸) klappt darunter die
+            Liste seiner Fohlen mit Name, Rasse, Geschlecht, GP/Ext/Ext%/
+            Int, ZZL, Farbe und Besitzer auf - erneuter Klick klappt sie
+            wieder ein.
+          </td>
+        </tr>
+      </table>
+
+      <div class="notice">
+        <strong>Datenquelle:</strong> Tabelle <em>horses</em>, eigenständig
+        von dieser Seite geladen. Fohlen und Verwandtschaft werden
+        ausschließlich über Namensabgleich im Stammbaum-Feld ermittelt - es
+        gibt keine separate Mutter-/Vater-ID in der Datenbank.
+      </div>
+    </fieldset>
+
     <fieldset id="verwandtschaft-anleitung">
       <legend>Verwandtschaftsmatrix</legend>
       <p class="small">
@@ -471,7 +638,7 @@
       <div class="group-heading">So gehst du vor</div>
       <ol class="small">
         <li>Für ein einzelnes Pferd: oben im Bereich „Einzelnes Pferd nachschlagen“ Besitzer eingrenzen (optional) und Pferd über das Suchfeld auswählen - oder für ein datenbankfremdes Pferd stattdessen dessen kopierten Spieltext unter „Datenbankfremdes Pferd (Freitext)“ einfügen und auf „Auslesen“ klicken.</li>
-        <li>Für die Matrix: weiter unten Vergleich (Stuten↔Hengste / Hengste↔Stuten / Stuten↔Stuten / Hengste↔Hengste) wählen, dann Besitzer, Rasse, ZZL und bei Bedarf die alphabetische Beschränkung getrennt für Zeilen (1. Spalte) und Spalten (1. Zeile) einstellen.</li>
+        <li>Für die Matrix: weiter unten Vergleich (Stuten↔Hengste / Hengste↔Stuten / Stuten↔Stuten / Hengste↔Hengste) wählen, dann Besitzer, Rasse, Schlagwörter, ZZL und bei Bedarf die alphabetische Beschränkung getrennt für Zeilen (1. Spalte) und Spalten (1. Zeile) einstellen.</li>
         <li>Ergebnis durchsehen - Einzelansicht als Liste mit Position im Stammbaum, Matrix als Tabelle mit roten/grünen Zellen für Verwandtschaft, „Anzahl“-/„Inzucht“-Spalten und optionalem Filter „Bei Verpaarung (Fohlen)“.</li>
       </ol>
 
@@ -531,13 +698,7 @@
             Matrix zusätzlich als eigene, sortierbare Spalte „Ø
             Verwandtschaftsgrad“ (Mittelwert über alle verwandten
             Spalten-Pferde einer Zeile, bezogen auf die aktuelle
-            Spalten-Auswahl/-Filterung). Zusätzlich zeigt die Einzelansicht
-            oben einen davon unabhängigen, festen Wert „Ø Verwandtschaftsgrad
-            zu allen [Rasse]-Pferden im Bestand“ - der Durchschnitt gegen
-            WIRKLICH ALLE anderen Pferde derselben Rasse in der Datenbank,
-            unabhängig von Filtern; andere Rassen fließen bewusst nicht mit
-            ein, da der COI zwischen ihnen ohnehin praktisch immer 0% wäre
-            und den Durchschnitt nur verwässern würde.
+            Spalten-Auswahl/-Filterung).
           </td>
         </tr>
         <tr>
@@ -654,86 +815,20 @@
       </div>
     </fieldset>
 
-    <fieldset id="fohlen-tracker-anleitung">
-      <h2>🐣 Fohlen-Tracker</h2>
-      <p class="muted small">
-        Zählt für ein Pferd, wie viele Fohlen es im sichtbaren Stammbaum der
-        übrigen Pferde hat, und zeigt eine Top 10 der Pferde mit den meisten
-        Fohlen.
-      </p>
-
-      <div class="group-heading">So gehst du vor</div>
-      <ol class="small">
-        <li>Für ein einzelnes Pferd: oben im Bereich „Fohlenanzahl eines Pferds“ Besitzer eingrenzen (optional) und Pferd über das Suchfeld auswählen - nur Pferde mit ZZL stehen zur Auswahl.</li>
-        <li>Für die Top 10: weiter unten Besitzer, Geschlecht und/oder Rasse zum Eingrenzen einstellen.</li>
-        <li>Ergebnis durchsehen - Einzelansicht als Liste aller gefundenen Fohlen, Top 10 als absteigend sortierte Rangliste.</li>
-      </ol>
-
-      <div class="group-heading">Funktionen im Detail</div>
-      <table class="detail-table">
-        <tr>
-          <th>Fohlen-Ermittlung</th>
-          <td>
-            Ein Pferd gilt als Fohlen eines anderen, sobald dessen Name im
-            Stammbaum-Feld als Vater ODER Mutter hinterlegt ist - derselbe
-            Namensabgleich wie im Zuchtbuch, hier aber nur die direkte
-            Elternschaft (Generation 1), nicht Enkel/Urenkel. „Unbekannt“
-            löst wie überall keinen Treffer aus.
-          </td>
-        </tr>
-        <tr>
-          <th>Schlagwort vorschlagen</th>
-          <td>Nur für in der Pferdedatenbank eingeloggte Nutzer - Button unter dem Ergebnis der Einzelsuche: eines der 4 festen Schlagwörter (Verkauf, Reserviert, Bleibt, GBH) plus optionaler Zusatztext auswählen und abschicken - trägt den Vorschlag in die Pferdedatenbank ein, wo er manuell geprüft und übernommen oder verworfen wird.</td>
-        </tr>
-        <tr>
-          <th>Fohlenanzahl eines Pferds</th>
-          <td>
-            Die Suche zeigt nur Pferde MIT ZZL (Zuchtzulassung) zur Auswahl,
-            wie gewünscht - der Besitzer-Filter grenzt dabei nur die
-            Such-Auswahl ein (Besitzer des gesuchten Pferds), nicht die
-            gefundenen Fohlen selbst. Darunter erscheint die Anzahl sowie
-            eine Tabelle aller gefundenen Fohlen mit Name, Geschlecht,
-            Rasse, Besitzer und ZZL.
-          </td>
-        </tr>
-        <tr>
-          <th>Top 10 - meiste Fohlen</th>
-          <td>
-            Berücksichtigt bewusst ALLE Pferde, nicht nur die mit aktueller
-            ZZL - auch frühere Deckhengste/Zuchtstuten ohne (mehr)
-            bestehende ZZL können noch Fohlen haben. Besitzer, Geschlecht
-            und Rasse filtern dabei die Kandidaten, aus denen die Top 10
-            ermittelt wird (z. B. nur Hengste eines bestimmten Besitzers).
-            Pferde ohne Fohlen erscheinen nicht in der Liste. Per Klick auf
-            eine Zeile (▸) klappt darunter die Liste seiner Fohlen mit
-            Name, Rasse, Geschlecht, GP/Ext/Ext%/Int, ZZL, Farbe und
-            Besitzer auf - erneuter Klick klappt sie wieder ein.
-          </td>
-        </tr>
-      </table>
-
-      <div class="notice">
-        <strong>Datenquelle:</strong> Tabelle <em>horses</em>, ohne ZZL-
-        oder Geschlechtsfilter beim Laden. Genutzte Felder: Name, Besitzer,
-        Geschlecht, Rasse, Stammbaum, ZZL. Fohlen werden ausschließlich über
-        Namensabgleich im Stammbaum-Feld ermittelt - es gibt keine separate
-        Mutter-/Vater-ID in der Datenbank.
-      </div>
-    </fieldset>
-
     <fieldset id="fohlenpruefung-anleitung">
       <h2>🐣 Fohlenprüfung</h2>
       <p class="muted small">
         Betrachtet ein ausgewähltes Pferd als Fohlen: Werte- und
         Farbvergleich mit Eltern und Voll-/Halbgeschwistern, Turnierwerte
-        und LP-Prognose für das Fohlen selbst. Dieselbe Pferdeauswahl
-        gehört auch zum Reiter „Aussortierhilfe“ weiter unten.
+        und LP-Prognose für das Fohlen selbst. Eigenständiges Werkzeug,
+        unabhängig vom Zuchtbuch/Aussortierhilfe/Fohlen-Tracker weiter
+        oben.
       </p>
 
       <div class="group-heading">So gehst du vor</div>
       <ol class="small">
-        <li>Oben ein beliebiges Pferd auswählen (auch ohne ZZL) - optional über Besitzer/Rasse eingrenzen.</li>
-        <li>Im Reiter „Fohlenprüfung“ den Werte-Vergleich zu Eltern/Geschwistern durchsehen (per Spaltenklick sortierbar).</li>
+        <li>Oben ein beliebiges Pferd auswählen (auch ohne ZZL) - optional über Besitzer/Rasse/Schlagwörter eingrenzen.</li>
+        <li>Werte-Vergleich zu Eltern/Geschwistern durchsehen (per Spaltenklick sortierbar).</li>
         <li>Darunter den Farbvergleich der 9 geprüften Sondergene ansehen.</li>
         <li>Ganz unten Turnierwerte (alle 28 Disziplinen, sortierbar) und LP-Prognose für das Fohlen selbst.</li>
       </ol>
@@ -751,26 +846,7 @@
             gleich (Richtung je Metrik: bei GP/Ext% ist höher besser, bei
             Ext/Int niedriger). Ist ein Elternteil dem Namen nach bekannt,
             aber nicht in der Datenbank auflösbar, erscheint die Zeile
-            trotzdem mit Hinweis, nur ohne Werte. Eine eigene, sortierbare
-            Spalte „Verwandtschaftsgrad“ zeigt zusätzlich den erwarteten
-            Inzuchtkoeffizienten eines hypothetischen gemeinsamen Fohlens
-            aus Fohlen + jeweiliger Vergleichszeile in Prozent (Wright'sche
-            Pfad-Methode über den gesamten Bestand, dieselbe Berechnung wie
-            in der <a href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>) -
-            Vater/Mutter liegen dabei erwartungsgemäß bei 25%, echte
-            Vollgeschwister ebenfalls bei rund 25%, Halbgeschwister bei
-            rund 12,5%.
-          </td>
-        </tr>
-        <tr>
-          <th>Verwandtschaftsgrad zur Rasse</th>
-          <td>
-            In der Werte-Zeile direkt unter dem Namen des Fohlens steht
-            zusätzlich ein davon unabhängiger, fester Wert: der
-            durchschnittliche Verwandtschaftsgrad gegen WIRKLICH ALLE
-            anderen Pferde derselben Rasse im Bestand (nicht nur die
-            Vergleichszeilen der Tabelle) - Details siehe
-            <a href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>.
+            trotzdem mit Hinweis, nur ohne Werte.
           </td>
         </tr>
         <tr>
@@ -803,93 +879,9 @@
       </div>
     </fieldset>
 
-    <fieldset id="aussortierhilfe-anleitung">
-      <h2>🐣 Aussortierhilfe</h2>
-      <p class="muted small">
-        Betrachtet dasselbe oben gewählte Pferd als (potenziellen)
-        Elternteil - Entscheidungshilfe, ob es weiter in der Zucht bleiben
-        sollte: eigene Fohlenanzahl, Werte-Vergleich der Fohlen mit dem
-        Elternteil, und wie viele Fohlen noch beim aktuellen Besitzer sind.
-      </p>
-
-      <div class="group-heading">So gehst du vor</div>
-      <ol class="small">
-        <li>Oben dasselbe Pferd wie bei der Fohlenprüfung auswählen (oder direkt über die Startseiten-Karte "Aussortierhilfe" mit vorausgewähltem Reiter einsteigen).</li>
-        <li>Zum Reiter „Aussortierhilfe“ wechseln.</li>
-        <li>Fohlenanzahl, Werte-Vergleich, Farbvergleich, EKH-Vergleich und Besitzer-Verbleib durchsehen. Ist das Elternteil 24 Jahre oder älter, erscheint zusätzlich ein Alters-Hinweis.</li>
-      </ol>
-
-      <div class="group-heading">Funktionen im Detail</div>
-      <table class="detail-table">
-        <tr>
-          <th>Fohlenanzahl</th>
-          <td>
-            Wie im Fohlen-Tracker: ein Pferd gilt als Fohlen, sobald der
-            gewählte Name im Stammbaum-Feld als Vater ODER Mutter
-            hinterlegt ist (nur Generation 1, kein Enkel/Urenkel).
-          </td>
-        </tr>
-        <tr>
-          <th>Werte-Vergleich Fohlen vs. Elternteil</th>
-          <td>
-            Eine Zeile pro Fohlen (GP/Ext/Ext%/Int) im Vergleich zu den
-            eigenen Werten des Elternteils (Werte-Zeile oben unter dem
-            Namen) - dieselbe grün/rot/schwarz-Einfärbung wie im Reiter
-            "Fohlenprüfung". Eine eigene Besitzer-Spalte markiert Fohlen,
-            die noch beim aktuellen Besitzer des Elternteils sind; ist man
-            selbst eingeloggt und Besitzer eines anderen Kontos, wird
-            zusätzlich gezählt, wie viele Fohlen beim eigenen Konto
-            gelandet sind. Wie im Reiter „Fohlenprüfung“ zeigt eine eigene,
-            sortierbare Spalte „Verwandtschaftsgrad“ den erwarteten
-            Inzuchtkoeffizienten eines hypothetischen Rück-Fohlens aus
-            Elternteil + jeweiligem eigenem Fohlen (typischerweise rund
-            25%, wie bei jeder direkten Eltern-Kind-Beziehung). Zusätzlich
-            zeigt die Werte-Zeile oben unter dem Namen des Elternteils den
-            davon unabhängigen, festen Wert „Ø Verwandtschaftsgrad zu allen
-            [Rasse]-Pferden im Bestand“ (siehe
-            <a href="#verwandtschaft-anleitung">Verwandtschaftsmatrix</a>).
-          </td>
-        </tr>
-        <tr>
-          <th>Farbvergleich</th>
-          <td>
-            Zeigt je Sondergen des Elternteils (dieselben 9 wie im Reiter
-            "Fohlenprüfung"), wie viele der eigenen Fohlen dasselbe Gen
-            ebenfalls tragen - als grobe "Weitergabequote", keine Aussage
-            darüber, von welchem Elternteil ein einzelnes Fohlen sein Gen
-            tatsächlich hat.
-          </td>
-        </tr>
-        <tr>
-          <th>Erbkrankheiten (EKH) im Vergleich</th>
-          <td>
-            Erscheint nur, wenn das Elternteil selbst mindestens eine
-            Erbkrankheit trägt oder ausgeprägt hat - zeigt je Krankheit,
-            wie viele der eigenen Fohlen ebenfalls Träger oder betroffen
-            sind, als Einschätzung für die Weiterzucht-Entscheidung.
-          </td>
-        </tr>
-        <tr>
-          <th>Alters-Hinweis</th>
-          <td>
-            Ab 24 Spielejahren erscheint derselbe Hinweis wie im
-            Zuchtplaner ("ab 25 Jahren nicht mehr in der
-            Zuchtplaner-Auswahl") - hier ohne Auswahl-Einschränkung, nur
-            als Entscheidungshilfe.
-          </td>
-        </tr>
-      </table>
-
-      <div class="notice">
-        <strong>Datenquelle:</strong> dieselbe Tabelle <em>horses</em> wie
-        im Reiter "Fohlenprüfung" (eine gemeinsame Pferdeauswahl für
-        beide Reiter).
-      </div>
-    </fieldset>
-
     <fieldset id="bausteine">
       <legend>Gemeinsame Bedienelemente</legend>
-      <p class="small">Diese Elemente verhalten sich auf allen vier Werkzeugen identisch.</p>
+      <p class="small">Diese Elemente verhalten sich auf allen Werkzeugen identisch.</p>
 
       <div class="group-heading">Durchsuchbares Pferde-Auswahlfeld</div>
       <p class="small">
