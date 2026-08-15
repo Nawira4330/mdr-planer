@@ -337,7 +337,12 @@ td.actions-cell { display: flex; gap: 0.4rem; }
    würden (alle Zellen einer Zeile liegen normalerweise im selben
    Stapel-Kontext). */
 .sticky-name { position: sticky; left: var(--sticky-left, 0); z-index: 1; background: var(--surface); }
-th.sticky-name { z-index: 2; background: var(--surface); }
+/* Nutzt denselben Grünton wie alle anderen th (rgba(107,157,0,0.08) ist
+   "#6b9d00" = --accent, siehe th oben) - aber blickdicht statt
+   halbtransparent, sonst wäre die grüne Färbung wirkungslos (kein
+   deckender Hintergrund) UND die Spalte optisch weiß statt grünlich
+   gewesen (Nutzer-Feedback). */
+th.sticky-name { z-index: 2; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 tr:hover td.sticky-name { background: var(--border); }
 
 /* --- Ø-Vergleich (siehe cmpClass in js/zuchtbuch.js, Vorbild: MDR-
