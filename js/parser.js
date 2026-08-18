@@ -156,8 +156,30 @@ function extractSimpleTable(lines, startLabel, endLabels) {
 // als zusätzlicher Abbruch, da die Handy-Ansicht direkt dorthin springt
 // (ohne die Desktop-only "Leistung"-Zwischenüberschrift).
 function parseExteriorGenetics(lines) {
-  const startIdx = lines.indexOf('Exterieur');
-  if (startIdx === -1) return { rows: [], overall: null };
+  let startIdx = lines.indexOf('Exterieur');
+  if (startIdx === -1) {
+    // Handy-Ansicht: keine "Exterieur"-Zwischenüberschrift, die Tabelle
+    // steht direkt vor "Körperbau" (siehe Kommentar bei parsePedigree, wo
+    // "Körperbau" aus demselben Grund als Ersatz-Abbruchkriterium dient).
+    // Rückwärts ab "Körperbau" nach zusammenhängenden Tabellenzeilen (2-3
+    // Tab-getrennte Spalten) suchen - unterscheidet sie zuverlässig von
+    // den einspaltigen Stammbaum-Zeilen davor, unabhängig davon, wie viele
+    // Vorfahren-Zeilen vorausgehen (vorher fand parseExteriorGenetics ohne
+    // "Exterieur" gar keinen Start und lieferte immer leere Werte - dadurch
+    // fehlte auf dem Handy die komplette Exterieur-Genetik inkl. Ext%).
+    const koerperbauIdx = lines.indexOf('Körperbau');
+    if (koerperbauIdx === -1) return { rows: [], overall: null };
+    let rowStart = koerperbauIdx;
+    while (rowStart > 0) {
+      const prev = lines[rowStart - 1];
+      if (!prev) break;
+      const parts = prev.split(/\t+/).map((p) => p.trim()).filter(Boolean);
+      if (parts.length !== 2 && parts.length !== 3) break;
+      rowStart--;
+    }
+    if (rowStart === koerperbauIdx) return { rows: [], overall: null };
+    startIdx = rowStart - 1;
+  }
   const rows = [];
   let overall = null;
   for (let i = startIdx + 1; i < lines.length; i++) {
@@ -296,6 +318,12 @@ function parsePedigree(lines, ownName) {
   const entries = [];
   let current = null;
   for (const line of segment) {
+    // Handy-Ansicht: endIdx landet bei "Körperbau" statt "Exterieur" (siehe
+    // Kommentar oben), daher stehen die Tab-getrennten Exterieur-Genetik-
+    // Zeilen (siehe parseExteriorGenetics) noch mit im Segment - echte
+    // Stammbaum-Zeilen (Name/Rasse/Potential) enthalten nie einen Tab, das
+    // unterscheidet sie zuverlässig.
+    if (line.includes('\t')) continue;
     const potMatch = line.match(/^Potential:\s*(\d+)$/);
     const diffMatch = line.match(/^Diff\.-GP Eltern:/);
     if (potMatch) {
@@ -563,22 +591,63 @@ function extractPresentAlleles(rawValue) {
   return tokens.filter((t) => t === 'pl' || /[A-Z]/.test(t)).join('');
 }
 
+// Loci mit einem einzigen eindeutigen Allel-Kürzel (Gegenstück zu
+// LOCUS_MULTI_ALLELES unten) - für den Override-Zustand "hom"/"het" reicht
+// hier der Locus-Name selbst als Override-Schlüssel.
+const LOCUS_PRIMARY_ALLELE = {
+  Extension: 'E', Dun: 'D', Champagne: 'Ch', Grey: 'G', Silver: 'Z',
+  Overo: 'O', Splashed: 'SPL', Appaloosa: 'Lp', PATN1: 'P1',
+  Flaxen: 'fl',
+};
+
+// Loci mit mehreren unabhängigen Allelen/Merkmalen statt einem einzigen
+// eindeutigen Code - der Override-Schlüssel ist dann "Locus:Allel" (z.B.
+// "Cream:pl"), nicht nur der Locus-Name. 1:1 aus MDR-Datenbank/js/parser.js
+// übernommen (dort gepflegt, hier nur lesend für color_gene_overrides
+// gebraucht).
+const LOCUS_MULTI_ALLELES = {
+  KIT: ['To', 'Sb', 'Rn'],
+  Agouti: ['A1', 'At', 'Ap'],
+  Cream: ['Cr', 'pl'],
+};
+
+function localeOfOverrideKey(key) {
+  return key.split(':')[0];
+}
+
 // Fasst alle tatsächlich vorhandenen Gene eines Pferdes zusammen: zuerst
-// aus getesteten Loci (siehe extractPresentAlleles), dann - nur für Loci,
-// die nicht getestet wurden - aus Hinweisen im Fellfarbe-Namen, in der
-// Notiz UND im Anzeigenamen (siehe inferGeneticHintsFromPhenotype) -
-// manche Pferde tragen einen Farbhinweis nur im Namen, nicht im separaten
-// Fellfarbe-Feld.
-function presentGenesSummary(colorRows, coatColorName, notes, horseName) {
+// aus getesteten Loci (siehe extractPresentAlleles), dann manuell in
+// MDR-Datenbank bestätigte/ausgeschlossene Loci (horses.color_gene_overrides,
+// überstimmt die automatische Ableitung, außer bei bereits getesteten
+// Loci - dort bleibt der Rohwert maßgeblich), dann - nur für weiterhin
+// unbekannte Loci - aus Hinweisen im Fellfarbe-Namen, in der Notiz UND im
+// Anzeigenamen (siehe inferGeneticHintsFromPhenotype) - manche Pferde
+// tragen einen Farbhinweis nur im Namen, nicht im separaten
+// Fellfarbe-Feld. "overrides" ist optional (rein lesend, MDR-Planer legt
+// selbst keine Overrides an) - ohne Angabe verhält sich die Funktion wie
+// zuvor.
+function presentGenesSummary(colorRows, coatColorName, notes, horseName, overrides) {
   const rows = colorRows || [];
   const confirmed = [];
   const testedLoci = new Set();
+  const ov = overrides || {};
 
   for (const r of rows) {
     if (isUntestedLocusValue(r.value)) continue;
     testedLoci.add(r.label);
     const alleles = extractPresentAlleles(r.value);
     if (alleles) confirmed.push({ locus: r.label, alleles, source: 'getestet' });
+  }
+
+  const overriddenKeys = new Set(Object.keys(ov).filter((k) => ov[k] && !testedLoci.has(localeOfOverrideKey(k))));
+  const manual = [];
+  for (const key of overriddenKeys) {
+    const state = ov[key];
+    const locus = localeOfOverrideKey(key);
+    const primary = key.includes(':') ? key.split(':')[1] : LOCUS_PRIMARY_ALLELE[key];
+    if (!primary || state === 'absent') continue;
+    const alleleCode = state === 'hom' ? primary + primary : primary;
+    manual.push({ locus, alleles: alleleCode, source: 'manuell' });
   }
 
   const hints = [
@@ -590,13 +659,23 @@ function presentGenesSummary(colorRows, coatColorName, notes, horseName) {
   const inferred = [];
   for (const h of hints) {
     if (testedLoci.has(h.locus)) continue;
+    // Override-Schlüssel bei Mehr-Allel-Loci tragen immer den blossen
+    // Allel-Code (z.B. "Cream:pl"), abgeleitete Hinweise aus
+    // PHENOTYPE_GENE_HINTS aber bei reinerbigen Merkmalen den verdoppelten
+    // Code (z.B. "plpl") - der Vergleich normalisiert deshalb zuerst auf
+    // das Basis-Allel (1:1 aus MDR-Datenbank/js/parser.js übernommen,
+    // Bugfix vom 17.08.2026).
+    const multiAlleles = LOCUS_MULTI_ALLELES[h.locus];
+    const primaryAllele = multiAlleles ? multiAlleles.find((a) => h.allele.startsWith(a)) : null;
+    const hKey = multiAlleles ? `${h.locus}:${primaryAllele || h.allele}` : h.locus;
+    if (overriddenKeys.has(hKey)) continue;
     const key = h.locus + h.allele;
     if (seen.has(key)) continue;
     seen.add(key);
     inferred.push({ locus: h.locus, alleles: h.allele, source: 'abgeleitet' });
   }
 
-  return sortGenesForDisplay([...confirmed, ...inferred]);
+  return sortGenesForDisplay([...confirmed, ...manual, ...inferred]);
 }
 
 // Schlagwörter (horses.tags), 1:1 aus MDR-Datenbank/js/parser.js portiert,

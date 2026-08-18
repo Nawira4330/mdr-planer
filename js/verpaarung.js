@@ -718,7 +718,7 @@ function colorWishPossible(candidate, wish, flaxenLookup, flaxenChildrenByName) 
   if (wish.locus === 'Flaxen') {
     return wish.viaParent ? hasFlaxenTrait(candidate, flaxenLookup, flaxenChildrenByName) : isVisiblyFlaxen(candidate);
   }
-  const genes = presentGenesSummary(candidate.colors, candidate.coat_color, candidate.notes, candidate.name);
+  const genes = presentGenesSummary(candidate.colors, candidate.coat_color, candidate.notes, candidate.name, candidate.color_gene_overrides);
   const entries = genes.filter((g) => g.locus === wish.locus);
   if (!entries.length) return false;
   if (!wish.homozygousOnly) return entries.some((e) => e.alleles.includes(wish.allele));

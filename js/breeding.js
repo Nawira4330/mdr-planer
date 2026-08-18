@@ -116,7 +116,7 @@ function findSharedNames(mare, stallion) {
 // dem Fellfarbe-Namen zusammenführt.
 function hasOveroGene(horse) {
   if (!horse) return false;
-  const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes, horse.name);
+  const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes, horse.name, horse.color_gene_overrides);
   return genes.some((g) => g.locus === 'Overo');
 }
 
