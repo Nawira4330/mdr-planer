@@ -13,11 +13,20 @@ let tagFilter;
 // Rassen - siehe loadDefaultBreeds/user_settings.preferred_breeds.
 let defaultBreeds = null;
 
+const TOURNAMENT_SORT_FIELDS = [
+  { field: 'category', label: 'Kategorie' },
+  { field: 'name', label: 'Disziplin' },
+  { field: 'wert', label: 'Wert' },
+  { field: 'interieur', label: 'Interieur' },
+  { field: 'lk', label: 'LK' },
+];
+
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   wireModeTabs();
   wireSortableHeaders();
+  wireMobileSort('tournament-mobile-sort-select', (field, dir) => { currentSort = { field, dir }; renderProfile(); });
   horseSelect = createSearchableSelect(
     document.querySelector('#horse-search'), document.querySelector('#horse-panel'),
     { onChange: onHorseSelect },
@@ -122,10 +131,12 @@ function renderProfile() {
   const container = document.querySelector('#profile-result');
   const wrap = document.querySelector('#tournament-wrap');
   const tbody = document.querySelector('#tournament-table tbody');
+  const mobileSort = document.querySelector('#tournament-mobile-sort');
 
   if (!currentProfile) {
     container.innerHTML = '';
     wrap.hidden = true;
+    mobileSort.innerHTML = '';
     return;
   }
 
@@ -151,10 +162,12 @@ function renderProfile() {
 
   if (!values.length) {
     wrap.hidden = true;
+    mobileSort.innerHTML = '';
     return;
   }
 
   wrap.hidden = false;
+  mobileSort.innerHTML = mobileSortSelectHtml('tournament-mobile-sort-select', TOURNAMENT_SORT_FIELDS, currentSort);
   tbody.innerHTML = applySort(values).map(rowHtml).join('');
 }
 

@@ -559,7 +559,15 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
 .modal-box li { margin: 0.2rem 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.2rem; }
 
+/* Sortier-Dropdown für Karten-Tabellen auf dem Handy (siehe
+   mobileSortSelectHtml in js/parser.js) - auf dem Desktop bleiben die
+   klickbaren th[data-sort]-Header die einzige Sortier-Bedienung. */
+.mobile-sort { display: none; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+.mobile-sort select { width: auto; flex: 1; }
+
 @media (max-width: 640px) {
+  .mobile-sort { display: flex; }
+
   .topbar { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
   /* align-items:flex-start lässt Flex-Items sonst auf ihre eigene
      max-content-Breite schrumpfen - bei "nav" (mit mehreren Dropdown-

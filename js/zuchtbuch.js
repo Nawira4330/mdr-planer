@@ -360,7 +360,30 @@ function wireSortableHeaders() {
   wireTableSort('relatives-table', (field) => { relativesSort = nextSort(relativesSort, field, false); render(); });
   wireTableSort('foals-table', (field) => { foalsSort = nextSort(foalsSort, field, field === 'gp' || field === 'extpct'); render(); });
   wireTableSort('color-table', (field) => { colorSort = nextSort(colorSort, field, false); render(); });
+  wireMobileSort('relatives-mobile-sort', (field, dir) => { relativesSort = { field, dir }; render(); });
 }
+
+// Feld/Beschriftungs-Liste für das Handy-Sortier-Dropdown der Verwandten-
+// Tabelle (siehe mobileSortSelectHtml) - muss zu den th[data-sort] oben in
+// relativesTableHtml() passen, wird aber bewusst separat gehalten statt aus
+// dem Header-HTML abgeleitet, da die Header-Zelle "Name" zusätzlich die
+// sticky-name-Klasse trägt.
+const RELATIVES_SORT_FIELDS = [
+  { field: 'name', label: 'Name' },
+  { field: 'beziehung', label: 'Beziehung' },
+  { field: 'gender', label: 'Geschlecht' },
+  { field: 'coat_color', label: 'Farbe' },
+  { field: 'genetik', label: 'Genetik' },
+  { field: 'gp', label: 'GP' },
+  { field: 'ext', label: 'Ext' },
+  { field: 'extpct', label: 'Ext%' },
+  { field: 'int', label: 'Int' },
+  { field: 'hlpslp', label: 'HLP/SLP' },
+  { field: 'zzl', label: 'ZZL' },
+  { field: 'ekh', label: 'EKH' },
+  { field: 'owner', label: 'Besitzer' },
+  { field: 'tag', label: 'Schlagwort' },
+];
 
 function rowTagSuggestHtml(horse) {
   if (!horse || !isLoggedIn() || !isOwnerOf(horse.owner)) return '';
@@ -670,6 +693,7 @@ function relativesTableHtml(horse) {
   }
   const refD = computeDerived(horse);
   html += `<p class="small muted">Vergleich gegen die eigenen Werte des ausgewählten Pferds oben - grün (besser), rot (schlechter) oder schwarz (gleich); bei aktivem Ø-Vergleich zusätzlich als Hintergrundfarbe gegen den Bestandsdurchschnitt.</p>`;
+  html += mobileSortSelectHtml('relatives-mobile-sort', RELATIVES_SORT_FIELDS, relativesSort);
   html += `<div class="table-wrap"><table id="relatives-table">
     <thead><tr>
       <th data-sort="name" class="sticky-name">Name${sortArrow(relativesSort, 'name')}</th>

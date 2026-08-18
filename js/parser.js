@@ -785,6 +785,33 @@ function formatAge(birthdateIso) {
   return parts.join(', ');
 }
 
+// Handy-Ansicht: Tabellen, die dort zu einer Kartenliste werden (siehe
+// "thead { display:none }" in css/style.css für #tournament-table und
+// #relatives-table), verlieren damit die klickbaren th[data-sort]-Header.
+// Dieses <select> bietet dieselben Sortiermöglichkeiten als Dropdown an -
+// wird per CSS (.mobile-sort) nur unterhalb 640px eingeblendet, auf dem
+// Desktop bleiben die Header die einzige Sortier-Bedienung. "fields" ist
+// [{field, label}], "sort" das aktuelle {field, dir}-Objekt der jeweiligen
+// Tabelle.
+function mobileSortSelectHtml(id, fields, sort) {
+  const options = fields.flatMap(({ field, label }) => [
+    `<option value="${field}:asc"${sort.field === field && sort.dir === 'asc' ? ' selected' : ''}>${escapeHtml(label)} ▲</option>`,
+    `<option value="${field}:desc"${sort.field === field && sort.dir === 'desc' ? ' selected' : ''}>${escapeHtml(label)} ▼</option>`,
+  ]).join('');
+  return `<div class="mobile-sort"><label for="${id}">Sortieren:</label><select id="${id}">${options}</select></div>`;
+}
+
+// Liest field:dir aus dem value eines per mobileSortSelectHtml erzeugten
+// <select> und ruft onSort(field, dir) auf - Gegenstück zu wireTableSort
+// (Klick auf th[data-sort]) für die Handy-Dropdown-Variante.
+function wireMobileSort(id, onSort) {
+  document.addEventListener('change', (e) => {
+    if (e.target.id !== id) return;
+    const [field, dir] = e.target.value.split(':');
+    onSort(field, dir);
+  });
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { parseHorseText, HORSE_TAG_OPTIONS, tagColor, tagsBadgesHtml, gameAgeYears, formatAge };
 }
