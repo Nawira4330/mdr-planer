@@ -2,7 +2,7 @@
 // Kennzahlen und den Verpaarungsratgeber (inkl. GP-Formel und
 // Genotyp-basierter Fohlen-Vorhersage) gebraucht werden.
 const HORSE_SELECT_FIELDS =
-  'id,name,owner,gender,breed,purebred_pct,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,birthdate';
+  'id,name,owner,gender,breed,purebred_pct,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,birthdate,color_gene_overrides,tags';
 
 // Leichtere Feldauswahl für die Datenbank-Schätzung (computeEmpiricalDeviations):
 // braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
@@ -41,6 +41,10 @@ let comboWeight = 50;
 // renderBestMatches, nutzt dieselbe rankStallions()-Logik nur mit
 // vertauschten Rollen (siehe Kommentar dort).
 let richtung = 'stute';
+// null = keine Präferenz (Gast/kein Setting) -> APH-Standard in
+// createBreedFilter; [] = "Alle Rassen" bewusst gewählt; [...] = konkrete
+// Rassen - siehe loadDefaultBreeds/user_settings.preferred_breeds.
+let defaultBreeds = null;
 let empiricalDeviations = null; // wird nach loadHorses() befüllt, siehe loadEmpiricalDeviations()
 // Map<normalisierterName, Pferd> aus demselben breiten Bestand wie
 // empiricalDeviations (horses + foal_reference_data) - für die Flaxen-
@@ -76,7 +80,7 @@ async function init() {
   );
   document.querySelector('#mare-owner-select').addEventListener('change', onMareOwnerChange);
   document.querySelector('#stallion-owner-select').addEventListener('change', onStallionOwnerChange);
-  mareBreedFilter = createBreedFilter(document.querySelector('#mare-breed-drop'), { onChange: onMareOwnerChange });
+  mareBreedFilter = createBreedFilter(document.querySelector('#mare-breed-drop'), { onChange: onMareOwnerChange, initialSelection: () => defaultBreeds });
   mareTagFilter = createTagFilter(document.querySelector('#mare-tag-drop'), { onChange: onMareOwnerChange });
   // Standardauswahl übernimmt einmalig die Rasse(n) der Stute (Kreuzungen
   // sind möglich, aber standardmäßig geht man von derselben Rasse aus) -
@@ -87,10 +91,12 @@ async function init() {
   });
   stallionTagFilter = createTagFilter(document.querySelector('#stallion-tag-drop'), { onChange: onStallionOwnerChange });
   // Eigener, unabhängiger Rassen-Filter für den Hengst-Pool im
-  // Verpaarungsratgeber (Top-10-Ranking) - Standard bleibt APH, unabhängig
-  // von der Stuten-Auswahl (manuelles Umschalten nötig für z.B. Rasselos).
+  // Verpaarungsratgeber (Top-10-Ranking) - Standard ist die Rassen-
+  // Präferenz aus den Einstellungen (sonst APH), unabhängig von der
+  // Stuten-Auswahl (manuelles Umschalten nötig für z.B. Rasselos).
   auswahlStallionBreedFilter = createBreedFilter(document.querySelector('#auswahl-stallion-breed-drop'), {
     onChange: renderBestMatches,
+    initialSelection: () => defaultBreeds,
   });
   auswahlStallionTagFilter = createTagFilter(document.querySelector('#auswahl-stallion-tag-drop'), { onChange: renderBestMatches });
   document.querySelector('#stallion-parse-btn').addEventListener('click', onStallionParse);
@@ -122,6 +128,7 @@ async function init() {
   document.addEventListener('click', onDecksprungClick);
   await initAuthStatus();
   await loadVerpaarungLogEnabled();
+  await loadDefaultBreeds();
   await loadHorses();
   loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert die Seite nicht
   // Erst NACH mareSelect/stallionSelect + loadHorses() aktivieren, da
@@ -148,6 +155,20 @@ async function loadVerpaarungLogEnabled() {
   if (!error && data && data.verpaarung_enabled === false) {
     verpaarungLogEnabled = false;
   }
+}
+
+// Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
+// MDR-Datenbank (user_settings.preferred_breeds), damit die Rassen-Filter
+// hier nicht mehr fest auf APH stehen. Kein eigener gespeicherter Zustand
+// hier - reine Übernahme.
+async function loadDefaultBreeds() {
+  if (!isLoggedIn()) { defaultBreeds = null; return; }
+  const { data, error } = await supabaseClient
+    .from('user_settings')
+    .select('preferred_breeds')
+    .eq('user_id', currentAuthSession.user.id)
+    .maybeSingle();
+  defaultBreeds = (!error && data) ? (data.preferred_breeds || []) : null;
 }
 
 // Lädt ALLE Pferde (unabhängig von ZZL/Geschlecht) einmalig, um daraus die
@@ -434,11 +455,11 @@ function parentSummaryHtml(label, horse) {
   const extAvg = averageScore(horse.exterior_descriptive, scoreExteriorTerm);
   const extPct = horse.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(horse.temperament, scoreTemperamentTerm);
-  const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes, horse.name);
+  const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes, horse.name, horse.color_gene_overrides);
   const genetik = genetikWithFlaxen(horse, genes.map((g) => g.alleles).join(' '));
 
   return `<div class="result-card">
-    <h2>${escapeHtml(label)}: ${escapeHtml(horse.name || '(ohne Name)')}</h2>
+    <h2 class="name-with-tags">${escapeHtml(label)}: ${escapeHtml(horse.name || '(ohne Name)')}${tagsBadgesHtml(horse.tags)}</h2>
     <p class="small muted">
       GP: <strong>${gp != null ? escapeHtml(String(gp)) : '–'}</strong>
       &nbsp;·&nbsp; Ext: <strong>${extAvg != null ? extAvg.toFixed(2) : '–'}</strong>
@@ -804,11 +825,11 @@ function candidateCardHtml(rank, c, mare, stallion, weaknessOwnerLabel) {
   const extAvg = averageScore(h.exterior_descriptive, scoreExteriorTerm);
   const extPct = h.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(h.temperament, scoreTemperamentTerm);
-  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes, h.name);
+  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes, h.name, h.color_gene_overrides);
   const genetik = genetikWithFlaxen(h, genes.map((g) => g.alleles).join(' '));
 
   return `<div class="result-card">
-    <h2>${rank}. ${escapeHtml(h.name || '(ohne Name)')}</h2>
+    <h2 class="name-with-tags">${rank}. ${escapeHtml(h.name || '(ohne Name)')}${tagsBadgesHtml(h.tags)}</h2>
     <p class="small muted">
       GP: <strong>${escapeHtml(String(gp))}</strong>
       &nbsp;·&nbsp; Ext: <strong>${fmtScore(extAvg)}</strong>

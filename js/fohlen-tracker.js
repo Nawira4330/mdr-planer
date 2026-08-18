@@ -13,6 +13,10 @@ let breedFilter;
 let tagFilter;
 let topBreedFilter;
 let topTagFilter;
+// null = keine Präferenz (Gast/kein Setting) -> APH-Standard in
+// createBreedFilter; [] = "Alle Rassen" bewusst gewählt; [...] = konkrete
+// Rassen - siehe loadDefaultBreeds/user_settings.preferred_breeds.
+let defaultBreeds = null;
 let childrenByParentName = new Map();
 let trackerSort = { field: 'gp', dir: 'desc' };
 let trackerSubSort = { field: 'gp', dir: 'desc' };
@@ -50,7 +54,7 @@ function activateTab(tab) {
 async function init() {
   document.querySelector('#tag-legend').innerHTML = tagLegendHtml();
   wireTabButtons();
-  breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: renderTrackerTab });
+  breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: renderTrackerTab, initialSelection: () => defaultBreeds });
   tagFilter = createTagFilter(document.querySelector('#tag-drop'), { onChange: renderTrackerTab });
   document.querySelector('#owner-select').addEventListener('change', renderTrackerTab);
   document.querySelector('#gender-select').addEventListener('change', renderTrackerTab);
@@ -58,14 +62,29 @@ async function init() {
   wireTrackerToggle();
   wireSortableHeaders();
   wireTopToggle();
-  topBreedFilter = createBreedFilter(document.querySelector('#top-breed-drop'), { onChange: renderTop });
+  topBreedFilter = createBreedFilter(document.querySelector('#top-breed-drop'), { onChange: renderTop, initialSelection: () => defaultBreeds });
   topTagFilter = createTagFilter(document.querySelector('#top-tag-drop'), { onChange: renderTop });
   document.querySelector('#top-owner-select').addEventListener('change', renderTop);
   document.querySelector('#top-gender-select').addEventListener('change', renderTop);
   document.querySelector('#top-zzl-select').addEventListener('change', renderTop);
   wireTagSuggestHandlers('Fohlen-Tracker');
   await initAuthStatus();
+  await loadDefaultBreeds();
   await loadHorses();
+}
+
+// Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
+// MDR-Datenbank (user_settings.preferred_breeds), damit die Rassen-Filter
+// hier nicht mehr fest auf APH stehen. Kein eigener gespeicherter Zustand
+// hier - reine Übernahme.
+async function loadDefaultBreeds() {
+  if (!isLoggedIn()) { defaultBreeds = null; return; }
+  const { data, error } = await supabaseClient
+    .from('user_settings')
+    .select('preferred_breeds')
+    .eq('user_id', currentAuthSession.user.id)
+    .maybeSingle();
+  defaultBreeds = (!error && data) ? (data.preferred_breeds || []) : null;
 }
 
 async function loadHorses() {

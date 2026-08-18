@@ -9,7 +9,7 @@
 // js/tagSuggest.js - muss also nach diesen Scripts eingebunden werden.
 
 const ZUCHTBUCH_FIELDS =
-  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags,birthdate';
+  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags,birthdate,color_gene_overrides';
 
 // Genau die vom Nutzer genannten 9 "Sondergene" (aus COLOR_WISH_OPTIONS in
 // js/verpaarung.js gefiltert) - siehe Aussortierhilfe-Farbvergleich.
@@ -28,6 +28,12 @@ let allHorses = [];
 let horseSelect;
 let breedFilter;
 let tagFilter;
+// null = keine Präferenz hinterlegt (Gast oder kein Setting gespeichert) ->
+// createBreedFilter fällt auf den APH-Standard zurück; [] = "Alle Rassen"
+// bewusst gewählt (siehe user_settings.preferred_breeds in der
+// MDR-Datenbank, dort dieselbe NULL-vs-leer-Unterscheidung); [...] =
+// konkrete Rassen.
+let defaultBreeds = null;
 let currentHorse = null;
 let foreignHorse = null; // per Freitext eingelesenes, nicht gespeichertes Pferd
 let flaxenLookup = null;
@@ -59,7 +65,7 @@ async function init() {
     document.querySelector('#horse-search'), document.querySelector('#horse-panel'),
     { onChange: onHorseSelect },
   );
-  breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect });
+  breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect, initialSelection: () => defaultBreeds });
   tagFilter = createTagFilter(document.querySelector('#tag-drop'), { onChange: populateHorseSelect });
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   document.querySelector('#gender-select').addEventListener('change', populateHorseSelect);
@@ -76,6 +82,7 @@ async function init() {
   wireTagSuggestHandlers('Zuchtbuch');
   await initAuthStatus();
   await loadCompareTolerances();
+  await loadDefaultBreeds();
   await loadHorses();
   scrollToHashTarget();
 }
@@ -191,6 +198,22 @@ async function loadCompareTolerances() {
   compareTolerances = (!error && data?.compare_tolerances) || {};
 }
 
+// Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
+// MDR-Datenbank (user_settings.preferred_breeds - dort "Sichtbare Rassen
+// in der Übersicht"), damit der Rassen-Filter hier nicht mehr fest auf
+// APH steht, sondern für eingeloggte Nutzer die dort gewählten Rassen
+// (oder "Alle", wenn preferred_breeds NULL ist). Kein eigener
+// gespeicherter Zustand hier - reine Übernahme.
+async function loadDefaultBreeds() {
+  if (!isLoggedIn()) { defaultBreeds = null; return; }
+  const { data, error } = await supabaseClient
+    .from('user_settings')
+    .select('preferred_breeds')
+    .eq('user_id', currentAuthSession.user.id)
+    .maybeSingle();
+  defaultBreeds = (!error && data) ? (data.preferred_breeds || []) : null;
+}
+
 function effectiveTolerance(key) {
   return compareToleranceEnabled ? (compareTolerances[key] || 0) : 0;
 }
@@ -265,7 +288,7 @@ function compareColor(value, reference, metric) {
 
 function computeDerived(h) {
   const gpRaw = h.tournament_potential?.['Gesamtpotenzial'];
-  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes, h.name);
+  const genes = presentGenesSummary(h.colors, h.coat_color, h.notes, h.name, h.color_gene_overrides);
   return {
     presentGenes: genes.map((g) => g.alleles).join(' '),
     gp: gpRaw != null && gpRaw !== '' ? Number(gpRaw) : null,

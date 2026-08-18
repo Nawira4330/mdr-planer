@@ -32,6 +32,10 @@ let currentTarget = null;
 let foreignTarget = null; // per Freitext eingelesenes, nicht in der DB gespeichertes Pferd
 let matrixRowBreedFilter, matrixColBreedFilter, relationBreedFilter;
 let matrixRowTagFilter, matrixColTagFilter, relationTagFilter;
+// null = keine Präferenz (Gast/kein Setting) -> APH-Standard in
+// createBreedFilter; [] = "Alle Rassen" bewusst gewählt; [...] = konkrete
+// Rassen - siehe loadDefaultBreeds/user_settings.preferred_breeds.
+let defaultBreeds = null;
 let matrixSort = { field: 'count', dir: 'desc' };
 let freitextSort = { field: 'name', dir: 'asc' };
 // Aktuelle Seite je Achse (0-indexiert), bleibt beim Umblättern erhalten
@@ -49,7 +53,7 @@ async function init() {
     { onChange: onTargetChange },
   );
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
-  relationBreedFilter = createBreedFilter(document.querySelector('#relation-breed-drop'), { onChange: populateHorseSelect });
+  relationBreedFilter = createBreedFilter(document.querySelector('#relation-breed-drop'), { onChange: populateHorseSelect, initialSelection: () => defaultBreeds });
   relationTagFilter = createTagFilter(document.querySelector('#relation-tag-drop'), { onChange: populateHorseSelect });
   document.querySelector('#relation-gender-select').addEventListener('change', populateHorseSelect);
   document.querySelector('#relation-zzl-select').addEventListener('change', populateHorseSelect);
@@ -58,8 +62,8 @@ async function init() {
   // unabhängig voneinander filtern - z.B. "Stuten von Besitzer A" gegen
   // "Stuten von Besitzer B" statt zwangsweise derselben Auswahl auf
   // beiden Seiten.
-  matrixRowBreedFilter = createBreedFilter(document.querySelector('#matrix-row-breed-drop'), { onChange: renderMatrix });
-  matrixColBreedFilter = createBreedFilter(document.querySelector('#matrix-col-breed-drop'), { onChange: renderMatrix });
+  matrixRowBreedFilter = createBreedFilter(document.querySelector('#matrix-row-breed-drop'), { onChange: renderMatrix, initialSelection: () => defaultBreeds });
+  matrixColBreedFilter = createBreedFilter(document.querySelector('#matrix-col-breed-drop'), { onChange: renderMatrix, initialSelection: () => defaultBreeds });
   matrixRowTagFilter = createTagFilter(document.querySelector('#matrix-row-tag-drop'), { onChange: renderMatrix });
   matrixColTagFilter = createTagFilter(document.querySelector('#matrix-col-tag-drop'), { onChange: renderMatrix });
   document.querySelector('#matrix-row-owner-select').addEventListener('change', renderMatrix);
@@ -73,7 +77,22 @@ async function init() {
   wireFreitextSortableHeaders();
   wireTagSuggestHandlers('Verwandtschaftsmatrix');
   await initAuthStatus();
+  await loadDefaultBreeds();
   await loadHorses();
+}
+
+// Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
+// MDR-Datenbank (user_settings.preferred_breeds), damit die Rassen-Filter
+// hier nicht mehr fest auf APH stehen. Kein eigener gespeicherter Zustand
+// hier - reine Übernahme.
+async function loadDefaultBreeds() {
+  if (!isLoggedIn()) { defaultBreeds = null; return; }
+  const { data, error } = await supabaseClient
+    .from('user_settings')
+    .select('preferred_breeds')
+    .eq('user_id', currentAuthSession.user.id)
+    .maybeSingle();
+  defaultBreeds = (!error && data) ? (data.preferred_breeds || []) : null;
 }
 
 // Delegiert auf document, da die <th> bei jedem Neu-Rendern der Matrix neu

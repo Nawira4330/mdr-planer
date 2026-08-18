@@ -7,7 +7,7 @@
 // js/breedFilter.js - muss also nach diesen Scripts eingebunden werden.
 
 const FOHLENPRUEFUNG_FIELDS =
-  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags,birthdate';
+  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags,birthdate,color_gene_overrides';
 
 // Genau die vom Nutzer genannten 9 "Sondergene" (aus COLOR_WISH_OPTIONS in
 // js/verpaarung.js gefiltert) - zeigen, wie "ausgefallen" eine Farbe ist
@@ -26,6 +26,10 @@ let allHorses = [];
 let horseSelect;
 let breedFilter;
 let tagFilter;
+// null = keine Präferenz (Gast/kein Setting) -> APH-Standard in
+// createBreedFilter; [] = "Alle Rassen" bewusst gewählt; [...] = konkrete
+// Rassen - siehe loadDefaultBreeds/user_settings.preferred_breeds.
+let defaultBreeds = null;
 let currentHorse = null;
 let flaxenLookup = null;
 let flaxenChildrenByName = null;
@@ -46,7 +50,7 @@ async function init() {
     document.querySelector('#horse-search'), document.querySelector('#horse-panel'),
     { onChange: onHorseSelect },
   );
-  breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect });
+  breedFilter = createBreedFilter(document.querySelector('#breed-drop'), { onChange: populateHorseSelect, initialSelection: () => defaultBreeds });
   tagFilter = createTagFilter(document.querySelector('#tag-drop'), { onChange: populateHorseSelect });
   document.querySelector('#owner-select').addEventListener('change', onOwnerChange);
   wireTableSort('value-table', (field) => { valueSort = nextSort(valueSort, field, field === 'gp' || field === 'extpct'); renderFohlenTab(); });
@@ -54,7 +58,22 @@ async function init() {
   wireTableSort('color-table', (field) => { colorSort = nextSort(colorSort, field, false); renderFohlenTab(); });
   wireTagSuggestHandlers('Fohlenprüfung');
   await initAuthStatus();
+  await loadDefaultBreeds();
   await loadHorses();
+}
+
+// Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
+// MDR-Datenbank (user_settings.preferred_breeds), damit der Rassen-Filter
+// hier nicht mehr fest auf APH steht. Kein eigener gespeicherter Zustand
+// hier - reine Übernahme.
+async function loadDefaultBreeds() {
+  if (!isLoggedIn()) { defaultBreeds = null; return; }
+  const { data, error } = await supabaseClient
+    .from('user_settings')
+    .select('preferred_breeds')
+    .eq('user_id', currentAuthSession.user.id)
+    .maybeSingle();
+  defaultBreeds = (!error && data) ? (data.preferred_breeds || []) : null;
 }
 
 async function loadHorses() {
@@ -247,7 +266,7 @@ function affectedDiseaseLabels(horse) {
 // darunter.
 function horseStatsLineHtml(horse) {
   const extpct = horseExtPct(horse);
-  const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes, horse.name);
+  const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes, horse.name, horse.color_gene_overrides);
   const genetik = genes.map((g) => g.alleles).join(' ');
   const ekh = affectedDiseaseLabels(horse);
   const age = horse.birthdate ? formatAge(horse.birthdate) : '';

@@ -123,7 +123,12 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
       breeds = [...new Set((horses || []).map((h) => h.breed).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
       if (!initialized) {
         const seed = typeof initialSelection === 'function' ? initialSelection() : initialSelection;
-        if (seed && seed.length) {
+        // Array.isArray statt "seed && seed.length" - so lässt sich ein
+        // bewusst LEERES Array ("Alle Rassen", z.B. aus dem gespeicherten
+        // preferred_breeds-Nutzer-Setting) von "gar keine Vorgabe vorhanden"
+        // (null/undefined, z.B. Gast ohne Login) unterscheiden. Nur im
+        // zweiten Fall greift der APH-Standard.
+        if (Array.isArray(seed)) {
           breeds.forEach((b) => { if (seed.includes(b)) selected.add(b); });
         } else {
           breeds.forEach((b) => { if (isDefaultBreedSelection(b)) selected.add(b); });
