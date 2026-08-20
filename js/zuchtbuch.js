@@ -528,9 +528,13 @@ function findRelatives(horse, horses) {
     if (sameFather && sameMother) {
       results.push({ horse: other, beziehung: 'Vollgeschwister', sortRank: 1 });
     } else if (sameFather) {
-      results.push({ horse: other, beziehung: 'Halbgeschwister (Vater)', sortRank: 2 });
+      // Der gemeinsame Vater steht schon im Beziehungs-Label - ohne die
+      // jeweils andere (nicht gemeinsame) Mutter dazuzuschreiben, sind bei
+      // mehreren Halbgeschwistern (Vater) väterlicherseits nicht
+      // unterscheidbar, von welcher Stute sie jeweils abstammen.
+      results.push({ horse: other, beziehung: 'Halbgeschwister (Vater)', sortRank: 2, otherParent: p.mother ? { label: 'Mutter', name: p.mother } : null });
     } else if (sameMother) {
-      results.push({ horse: other, beziehung: 'Halbgeschwister (Mutter)', sortRank: 3 });
+      results.push({ horse: other, beziehung: 'Halbgeschwister (Mutter)', sortRank: 3, otherParent: p.father ? { label: 'Vater', name: p.father } : null });
     }
   }
 
@@ -694,7 +698,7 @@ function relativesTableHtml(horse) {
   const refD = computeDerived(horse);
   html += `<p class="small muted">Vergleich gegen die eigenen Werte des ausgewählten Pferds oben - grün (besser), rot (schlechter) oder schwarz (gleich); bei aktivem Ø-Vergleich zusätzlich als Hintergrundfarbe gegen den Bestandsdurchschnitt.</p>`;
   html += mobileSortSelectHtml('relatives-mobile-sort', RELATIVES_SORT_FIELDS, relativesSort);
-  html += `<div class="table-wrap"><table id="relatives-table">
+  html += `<div class="table-wrap"><table id="relatives-table" class="mobile-cards">
     <thead><tr>
       <th data-sort="name" class="sticky-name">Name${sortArrow(relativesSort, 'name')}</th>
       <th data-sort="beziehung">Beziehung${sortArrow(relativesSort, 'beziehung')}</th>
@@ -726,7 +730,7 @@ function relativeRowHtml(r, refD) {
   };
   return `<tr>
     <td data-label="Name" class="name-with-tags sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
-    <td data-label="Beziehung"${r.beziehungDetail ? ` title="${escapeHtml(r.beziehungDetail)}"` : ''}>${escapeHtml(r.beziehung)}</td>
+    <td data-label="Beziehung"${r.beziehungDetail ? ` title="${escapeHtml(r.beziehungDetail)}"` : ''}><span>${escapeHtml(r.beziehung)}${r.otherParent ? `<br><span class="small muted">${escapeHtml(r.otherParent.label)}: ${escapeHtml(r.otherParent.name)}</span>` : ''}</span></td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '')}</td>
     <td data-label="Genetik" class="small" style="font-family: ui-monospace, monospace;">${escapeHtml(d.presentGenes)}</td>
@@ -842,7 +846,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
   }).join('');
 
   const ownerHeader = ownerHighlight !== undefined ? `<th data-sort="owner">Besitzer${sortArrow(sort, 'owner')}</th>` : '';
-  return `<div class="table-wrap"><table id="${tableId}">
+  return `<div class="table-wrap"><table id="${tableId}" class="mobile-cards">
     <thead><tr>
       <th data-sort="name" class="sticky-name">Name${sortArrow(sort, 'name')}</th>
       <th data-sort="label">Beziehung${sortArrow(sort, 'label')}</th>
@@ -887,7 +891,7 @@ function colorComparisonTableHtml(rows) {
   }).join('');
 
   const header = SPECIAL_COLOR_WISHES.map((w) => `<th data-sort="${escapeHtml(w.label)}">${escapeHtml(w.label)}${sortArrow(colorSort, w.label)}</th>`).join('');
-  return `<div class="table-wrap"><table id="color-table">
+  return `<div class="table-wrap"><table id="color-table" class="mobile-cards">
     <thead><tr>
       <th data-sort="name" class="sticky-name">Name${sortArrow(colorSort, 'name')}</th>
       <th data-sort="label">Beziehung${sortArrow(colorSort, 'label')}</th>

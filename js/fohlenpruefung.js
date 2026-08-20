@@ -204,30 +204,35 @@ function findSiblings(horse, horses) {
     if (sameFather && sameMother) {
       results.push({ horse: other, beziehung: 'Vollgeschwister' });
     } else if (sameFather) {
-      results.push({ horse: other, beziehung: 'Halbgeschwister (Vater)' });
+      // Der gemeinsame Vater steht schon im Beziehungs-Label - ohne die
+      // jeweils andere (nicht gemeinsame) Mutter dazuzuschreiben, sind bei
+      // mehreren Halbgeschwistern (Vater) väterlicherseits nicht
+      // unterscheidbar, von welcher Stute sie jeweils abstammen.
+      results.push({ horse: other, beziehung: 'Halbgeschwister (Vater)', otherParent: p.mother ? { label: 'Mutter', name: p.mother } : null });
     } else if (sameMother) {
-      results.push({ horse: other, beziehung: 'Halbgeschwister (Mutter)' });
+      results.push({ horse: other, beziehung: 'Halbgeschwister (Mutter)', otherParent: p.father ? { label: 'Vater', name: p.father } : null });
     }
   }
   return results;
 }
 
 // Zeilen für Werte-/Farbvergleich: Fohlen selbst (Referenz) + Vater/Mutter
-// (falls Name bekannt - "resolved: false" wenn der Name zwar bekannt, das
-// Pferd aber nicht in der Datenbank auflösbar ist) + Voll-/Halbgeschwister.
+// (nur falls in der Datenbank auflösbar - ohne Datenbank-Eintrag gibt es
+// keine Werte zum Vergleichen, die Zeile bestünde nur aus "-"-Zellen,
+// Nutzerwunsch: solche Pferde nicht mit anzeigen) + Voll-/Halbgeschwister.
 function buildRelativeRows(horse) {
   const { father, mother } = parentNames(horse);
   const rows = [{ label: 'Fohlen', horse, resolved: true, isReference: true }];
   if (father) {
     const fatherHorse = findHorseByName(father);
-    rows.push({ label: 'Vater', horse: fatherHorse, resolved: !!fatherHorse, name: father });
+    if (fatherHorse) rows.push({ label: 'Vater', horse: fatherHorse, resolved: true, name: father });
   }
   if (mother) {
     const motherHorse = findHorseByName(mother);
-    rows.push({ label: 'Mutter', horse: motherHorse, resolved: !!motherHorse, name: mother });
+    if (motherHorse) rows.push({ label: 'Mutter', horse: motherHorse, resolved: true, name: mother });
   }
   for (const s of findSiblings(horse, allHorses)) {
-    rows.push({ label: s.beziehung, horse: s.horse, resolved: true });
+    rows.push({ label: s.beziehung, horse: s.horse, resolved: true, otherParent: s.otherParent });
   }
   return rows;
 }
@@ -248,6 +253,15 @@ function compareColor(value, reference, metric) {
 
 function fmt(v, digits) {
   return v == null ? '–' : v.toFixed(digits);
+}
+
+// Bei Halbgeschwistern zeigt row.otherParent den jeweils NICHT geteilten
+// Elternteil an (siehe findSiblings) - ohne das ist bei mehreren
+// Halbgeschwistern (Vater) väterlicherseits nicht ersichtlich, von welcher
+// Stute sie einzeln abstammen.
+function beziehungCellHtml(row) {
+  const extra = row.otherParent ? `<br><span class="small muted">${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}</span>` : '';
+  return `<td data-label="Beziehung"><span>${escapeHtml(row.label)}${extra}</span></td>`;
 }
 
 // EKH-Anzeige: jede Krankheit, bei der mindestens ein Allel nicht "NN" ist
@@ -336,8 +350,8 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort) {
       return `<td data-label="${metric}" style="${color ? `color:${color}; font-weight:600;` : ''}">${fmt(v, digits)}</td>`;
     };
     return `<tr${isRef ? ' style="font-weight:600;"' : ''}>
-      <td data-label="Name" class="name-with-tags" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
-      <td data-label="Beziehung">${escapeHtml(row.label)}</td>
+      <td data-label="Name" class="name-with-tags sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
+      ${beziehungCellHtml(row)}
       <td data-label="Geschlecht">${row.gender ? escapeHtml(row.gender) : '–'}</td>
       <td data-label="EKH" style="${row.ekh.length ? 'color:var(--danger); font-weight:600;' : ''}">${row.ekh.length ? escapeHtml(row.ekh.join(', ')) : '–'}</td>
       ${cell('gp', 0)}
@@ -348,9 +362,9 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort) {
     </tr>`;
   }).join('');
 
-  return `<div class="table-wrap"><table id="${tableId}">
+  return `<div class="table-wrap"><table id="${tableId}" class="mobile-cards">
     <thead><tr>
-      <th data-sort="name">Name${sortArrow(sort, 'name')}</th>
+      <th data-sort="name" class="sticky-name">Name${sortArrow(sort, 'name')}</th>
       <th data-sort="label">Beziehung${sortArrow(sort, 'label')}</th>
       <th data-sort="gender">Geschlecht${sortArrow(sort, 'gender')}</th>
       <th data-sort="ekhLabel">EKH${sortArrow(sort, 'ekhLabel')}</th>
@@ -387,15 +401,15 @@ function colorComparisonTableHtml(rows) {
   const rowsHtml = sorted.map((row) => {
     const name = row.horse ? (row.horse.name || '(ohne Name)') : `${row.name || ''} (nicht in der Datenbank)`;
     return `<tr${row.isReference ? ' style="font-weight:600;"' : ''}>
-      <td data-label="Name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
-      <td data-label="Beziehung">${escapeHtml(row.label)}</td>
+      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
+      ${beziehungCellHtml(row)}
       ${cells(row)}
     </tr>`;
   }).join('');
 
   const header = SPECIAL_COLOR_WISHES.map((w) => `<th data-sort="${escapeHtml(w.label)}">${escapeHtml(w.label)}${sortArrow(colorSort, w.label)}</th>`).join('');
-  return `<div class="table-wrap"><table id="color-table">
-    <thead><tr><th data-sort="name">Name${sortArrow(colorSort, 'name')}</th><th data-sort="label">Beziehung${sortArrow(colorSort, 'label')}</th>${header}</tr></thead>
+  return `<div class="table-wrap"><table id="color-table" class="mobile-cards">
+    <thead><tr><th data-sort="name" class="sticky-name">Name${sortArrow(colorSort, 'name')}</th><th data-sort="label">Beziehung${sortArrow(colorSort, 'label')}</th>${header}</tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table></div>`;
 }
@@ -471,7 +485,7 @@ function tournamentSectionHtml(horse) {
     return html;
   }
   const sorted = applySort(values, tournamentSort, tournamentSortValue);
-  html += `<div class="table-wrap"><table id="tournament-table">
+  html += `<div class="table-wrap"><table id="tournament-table" class="mobile-cards">
     <thead><tr>
       <th data-sort="category">Kategorie${sortArrow(tournamentSort, 'category')}</th>
       <th data-sort="name">Disziplin${sortArrow(tournamentSort, 'name')}</th>
@@ -513,6 +527,27 @@ function renderFohlenTab() {
 
   html += tournamentSectionHtml(currentHorse);
   container.innerHTML = html;
+  applyStickyOffsets(container);
+}
+
+// Die Beziehung-Spalte steht vor der Name-Spalte und hat keine feste
+// Breite (nowrap-Inhalt) - .sticky-name braucht also einen per JS
+// gemessenen "left"-Versatz statt eines festen CSS-Werts, damit die
+// Spalte beim horizontalen Scrollen sauber am linken Rand kleben bleibt.
+// 1:1 aus js/zuchtbuch.js portiert.
+function applyStickyOffsets(root) {
+  root.querySelectorAll('table').forEach((table) => {
+    const headerRow = table.querySelector('thead tr');
+    if (!headerRow) return;
+    const idx = Array.from(headerRow.children).findIndex((th) => th.classList.contains('sticky-name'));
+    if (idx < 0) return;
+    let left = 0;
+    for (let i = 0; i < idx; i++) left += headerRow.children[i].getBoundingClientRect().width;
+    table.querySelectorAll('tr').forEach((tr) => {
+      const cell = tr.children[idx];
+      if (cell && cell.classList.contains('sticky-name')) cell.style.setProperty('--sticky-left', `${left}px`);
+    });
+  });
 }
 
 function escapeHtml(str) {

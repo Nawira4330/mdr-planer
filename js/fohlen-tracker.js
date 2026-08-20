@@ -400,9 +400,21 @@ function trackerRowHtml(row) {
   </tr>`;
   if (expanded) {
     const foals = childrenByParentName.get(normalizeName(h.name)) || [];
-    html += `<tr class="tracker-subrow"><td colspan="${TRACKER_COLSPAN}">${trackerSubTableHtml(foals)}</td></tr>`;
+    html += `<tr class="tracker-subrow"><td colspan="${TRACKER_COLSPAN}">${trackerSubTableHtml(foals, h)}</td></tr>`;
   }
   return html;
+}
+
+// Ein Pferd kann Fohlen mit mehreren verschiedenen Partnern haben - welcher
+// das jeweils war, ist in der Fohlen-Unterliste sonst nicht ersichtlich.
+// Ermittelt zum bekannten (aufgeklappten) Elternteil den jeweils ANDEREN
+// Elternteil des Fohlens (analog zur Halbgeschwister-Anzeige in
+// js/zuchtbuch.js/js/fohlenpruefung.js).
+function otherParentOf(foal, knownParent) {
+  const { father, mother } = parentNames(foal);
+  const isFather = father && normalizeName(father) === normalizeName(knownParent.name);
+  const otherName = isFather ? mother : father;
+  return otherName ? { label: isFather ? 'Mutter' : 'Vater', name: otherName } : null;
 }
 
 function trackerSubSortValue(row, field) {
@@ -417,20 +429,22 @@ function trackerSubSortValue(row, field) {
     case 'int': return row.d.intAvg;
     case 'verwandte': return row.verwandte;
     case 'inzucht': return row.inzucht;
+    case 'otherParent': return (row.otherParent?.name || '').toLowerCase();
     case 'tag': return tagSortValue(row.horse.tags);
     default: return null;
   }
 }
 
-function trackerSubTableHtml(foals) {
+function trackerSubTableHtml(foals, parentHorse) {
   const pool = trackerFilteredHorses();
   if (!foals.length) return '<p class="small muted" style="margin:0.3rem 0;">Keine eigenen Fohlen im sichtbaren Stammbaum der übrigen Pferde gefunden.</p>';
-  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), verwandte: countRelatedWide(h, pool), inzucht: countRelatedInzucht(h, pool) }));
+  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), verwandte: countRelatedWide(h, pool), inzucht: countRelatedInzucht(h, pool), otherParent: otherParentOf(h, parentHorse) }));
   const sorted = applySortGeneric(rows, trackerSubSort, trackerSubSortValue);
   const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(trackerSubSort, field)}</th>`;
   return `<div class="table-wrap"><table class="tracker-subtable">
     <thead><tr>
       ${th('name', 'Pferdename', ' class="sticky-name"')}
+      ${th('otherParent', 'Anderer Elternteil')}
       ${th('gender', 'Geschlecht')}
       ${th('gp', 'GP')}
       ${th('ext', 'Ext')}
@@ -451,6 +465,7 @@ function trackerSubRowHtml(row) {
   const d = row.d;
   return `<tr>
     <td data-label="Pferdename" class="name-with-tags sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="GP">${d.gp != null ? Math.round(d.gp) : '–'}</td>
     <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
@@ -550,7 +565,7 @@ function topRowHtml(r) {
   </tr>`;
   if (expanded) {
     const foals = childrenByParentName.get(normalizeName(h.name)) || [];
-    html += `<tr class="foal-subrow"><td colspan="${TOP_ROW_COLSPAN}">${topFoalSubTableHtml(foals)}</td></tr>`;
+    html += `<tr class="foal-subrow"><td colspan="${TOP_ROW_COLSPAN}">${topFoalSubTableHtml(foals, h)}</td></tr>`;
   }
   return html;
 }
@@ -567,18 +582,20 @@ function topFoalSubSortValue(row, field) {
     case 'ext': return row.d.extAvg;
     case 'extpct': return row.d.extPercent;
     case 'int': return row.d.intAvg;
+    case 'otherParent': return (row.otherParent?.name || '').toLowerCase();
     case 'tag': return tagSortValue(row.horse.tags);
     default: return null;
   }
 }
 
-function topFoalSubTableHtml(foals) {
-  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h) }));
+function topFoalSubTableHtml(foals, parentHorse) {
+  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), otherParent: otherParentOf(h, parentHorse) }));
   const sorted = applySortGeneric(rows, topSubSort, topFoalSubSortValue);
   const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(topSubSort, field)}</th>`;
   return `<div class="table-wrap"><table class="top-subtable">
     <thead><tr>
       ${th('name', 'Name', ' class="sticky-name"')}
+      ${th('otherParent', 'Anderer Elternteil')}
       ${th('breed', 'Rasse')}
       ${th('gender', 'Geschlecht')}
       ${th('gp', 'GP')}
@@ -599,6 +616,7 @@ function topFoalSubRowHtml(row) {
   const d = row.d;
   return `<tr>
     <td data-label="Name" class="name-with-tags sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="GP">${d.gp != null ? Math.round(d.gp) : '–'}</td>
