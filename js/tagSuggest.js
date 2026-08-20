@@ -7,8 +7,12 @@
 // Planer selbst liest/ändert horses.tags NICHT - der Vorschlag erscheint
 // nur als Hinweis in der MDR-Datenbank zum manuellen Übernehmen oder
 // Verwerfen. Labels sind bewusst eine feste Auswahl (kein Freitext),
-// identisch zu HORSE_TAG_OPTIONS in der MDR-Datenbank (js/parser.js dort).
-const TAG_SUGGESTION_LABELS = ['Verkauf', 'Reserviert', 'Bleibt', 'GBH'];
+// aus HORSE_TAG_OPTIONS (js/parser.js) abgeleitet statt separat gepflegt,
+// damit neue Schlagwörter (z.B. das später ergänzte "LastFoal"/"???")
+// nicht extra hier nachgetragen werden müssen - identisch zur Checkbox-/
+// Mehrfachauswahl-Liste in der MDR-Datenbank (js/horseForm.js, js/list.js
+// dort), die ebenfalls direkt aus HORSE_TAG_OPTIONS baut.
+const TAG_SUGGESTION_LABELS = HORSE_TAG_OPTIONS.map((t) => t.label);
 
 // horseId fehlt bei datenbankfremden (per Freitext eingelesenen) Pferden -
 // dafür gibt es keinen Vorschlag-Button, da tag_suggestions.horse_id eine
