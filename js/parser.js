@@ -147,14 +147,33 @@ function extractSimpleTable(lines, startLabel, endLabels) {
   return rows;
 }
 
+// Jedes Körperteil hat einen Genotyp aus 16 Zeichen (2 Gruppen zu je 4
+// zweistelligen Allel-Kürzeln, insgesamt 8+8 Buchstaben, getrennt durch
+// "|"). Im Optimalfall sind die ersten 8 Buchstaben groß (H) und die
+// letzten 8 klein (h) - gezählt wird, wie viele davon tatsächlich passen.
+// Das entspricht exakt der Punktzahl, die das Spiel selbst als "X/16"
+// anzeigt (gegen ein echtes Beispiel geprüft: 124/224 - Summe der 14
+// einzeln nachgerechneten Werte stimmt exakt mit der vom Spiel gelieferten
+// Gesamtzeile überein), wird hier aber IMMER selbst berechnet statt aus
+// dem kopierten Text gelesen (1:1 aus MDR-Datenbank/js/parser.js
+// übernommen) - weder die einzelnen "X/16"-Werte je Merkmal noch die
+// Gesamtzeile ("141/224 62.95%") sind im kopierten Text zuverlässig
+// vorhanden (fehlen z.B. bei jungen/noch nicht bewerteten Pferden
+// komplett), der Genotyp-String selbst aber schon.
+function computeExteriorScore(genotype) {
+  const parts = (genotype || '').split('|').map((s) => s.replace(/\s+/g, ''));
+  if (parts.length !== 2 || parts[0].length !== 8 || parts[1].length !== 8) return null;
+  const front = [...parts[0]].filter((c) => c === 'H').length;
+  const back = [...parts[1]].filter((c) => c === 'h').length;
+  return front + back;
+}
+
 // Die genetische Exterieur-Tabelle hat auf dem Desktop 3 Spalten
-// (Körperteil / Genotyp / Punktzahl je Merkmal) und endet mit einer
-// Gesamtzeile wie "141/224 62.95%". In der Handy-Ansicht fehlt sowohl die
-// Punktzahl-Spalte je Zeile als auch die Gesamtzeile komplett (nur 2
-// Spalten: Körperteil / Genotyp) - wird hier mit "score: null" bzw.
-// "overall: null" abgefangen, statt die Zeilen zu verwerfen. "Disziplin"
-// als zusätzlicher Abbruch, da die Handy-Ansicht direkt dorthin springt
-// (ohne die Desktop-only "Leistung"-Zwischenüberschrift).
+// (Körperteil / Genotyp / vom Spiel mitgelieferte Punktzahl je Merkmal -
+// wird ignoriert, siehe computeExteriorScore oben) oder auf dem Handy nur
+// 2 (Körperteil / Genotyp). "Disziplin" als zusätzlicher Abbruch, da die
+// Handy-Ansicht direkt dorthin springt (ohne die Desktop-only
+// "Leistung"-Zwischenüberschrift).
 function parseExteriorGenetics(lines) {
   let startIdx = lines.indexOf('Exterieur');
   if (startIdx === -1) {
@@ -181,23 +200,32 @@ function parseExteriorGenetics(lines) {
     startIdx = rowStart - 1;
   }
   const rows = [];
-  let overall = null;
   for (let i = startIdx + 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
-    const totalMatch = line.match(/^(\d+)\/(\d+)\s+([\d.,]+)\s*%$/);
-    if (totalMatch) {
-      overall = { score: `${totalMatch[1]}/${totalMatch[2]}`, percent: parseFloat(totalMatch[3].replace(',', '.')) };
-      break;
-    }
+    // Vom Spiel mitgelieferte Gesamtzeile ("124/224 55.36%") - wird nicht
+    // gelesen, sondern unten aus den Genotypen selbst berechnet.
+    if (/^\d+\/\d+\s+[\d.,]+\s*%$/.test(line)) continue;
     if (line === 'Leistung' || line === 'Körperbau' || line === 'Disziplin') break;
     const parts = line.split(/\t+/).map((p) => p.trim()).filter(Boolean);
-    if (parts.length === 3) {
-      rows.push({ label: parts[0], genotype: parts[1], score: parts[2] });
-    } else if (parts.length === 2) {
-      rows.push({ label: parts[0], genotype: parts[1], score: null });
+    if (parts.length === 2 || parts.length === 3) {
+      rows.push({ label: parts[0], genotype: parts[1] });
     }
   }
+
+  let totalScore = 0;
+  let totalMax = 0;
+  for (const row of rows) {
+    const score = computeExteriorScore(row.genotype);
+    if (score === null) continue;
+    row.score = `${score}/16`;
+    totalScore += score;
+    totalMax += 16;
+  }
+  const overall = totalMax > 0
+    ? { score: `${totalScore}/${totalMax}`, percent: Math.round((totalScore / totalMax) * 10000) / 100 }
+    : null;
+
   return { rows, overall };
 }
 
