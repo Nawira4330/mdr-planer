@@ -4,7 +4,8 @@
 // Kombination). Nutzt findRelations/areRelated aus js/breeding.js - muss
 // also nach parser.js/breeding.js eingebunden werden.
 
-const RELATION_FIELDS = 'id,name,owner,gender,breed,purebred_pct,pedigree,breeding_allowed,tags';
+const RELATION_FIELDS =
+  'id,name,owner,gender,coat_color,breed,purebred_pct,pedigree,breeding_allowed,tags,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
 
 // Ab wie vielen Zellen (Zeilen × Spalten) die Matrix aus Performance- und
 // Übersichtlichkeitsgründen nicht mehr gerendert wird.
@@ -108,6 +109,20 @@ function applySortGeneric(rows, sort, getValue) {
     if (typeof va === 'string') return va.localeCompare(vb, 'de') * mult;
     return (va - vb) * mult;
   });
+}
+
+// GP/Ext/Ext%/Int fürs nachgeschlagene Pferd (Werte-Zeile in
+// renderFreitext) - 1:1 aus js/zuchtbuch.js portiert (dort computeDerived),
+// hier ohne die dort zusätzlich berechnete Genetik-Zusammenfassung, da nur
+// nach "Werte und Farbe" gefragt wurde.
+function targetValues(h) {
+  const gpRaw = h.tournament_potential?.['Gesamtpotenzial'];
+  return {
+    gp: gpRaw != null && gpRaw !== '' ? Number(gpRaw) : null,
+    extAvg: averageScore(h.exterior_descriptive, scoreExteriorTerm),
+    extPercent: h.exterior_genetics?.overall?.percent ?? null,
+    intAvg: averageScore(h.temperament, scoreTemperamentTerm),
+  };
 }
 
 function freitextSortValue(row, field) {
@@ -278,6 +293,14 @@ function renderFreitext() {
     ? `${countLabel} für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
     : `${countLabel} gefunden`;
   let html = `<div class="group-heading">${heading}</div>`;
+  const d = targetValues(target);
+  html += `<p class="small muted">
+    GP: <strong>${d.gp != null ? d.gp : '–'}</strong>
+     &nbsp;·&nbsp; Ext: <strong>${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</strong>
+     &nbsp;·&nbsp; Ext%: <strong>${d.extPercent != null ? d.extPercent + '%' : '–'}</strong>
+     &nbsp;·&nbsp; Int: <strong>${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}</strong>
+     &nbsp;·&nbsp; Farbe: <strong>${target.coat_color ? escapeHtml(target.coat_color) : '–'}</strong>
+  </p>`;
   // Ein einziger, zusammenfassender Wert (siehe estimateBreedRelatedness in
   // js/breeding.js) - Ø-Verwandtschaftsgrad gegen ALLE anderen Pferde
   // DERSELBEN RASSE im Bestand. Bewusst NICHT je einzelnem verwandten
