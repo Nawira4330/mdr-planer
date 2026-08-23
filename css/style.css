@@ -323,7 +323,13 @@ label {
    Spalten wachsen weiterhin über .table-wrap hinaus und scrollen dort
    horizontal, aber schmale Tabellen werden nicht mehr künstlich auf
    mindestens 900px aufgeblasen. */
-table { border-collapse: collapse; width: 100%; }
+/* border-collapse:separate (statt "collapse") vermeidet bekannte
+   Sticky-Spalten-Bugs in einigen Browsern (position:sticky auf th/td
+   funktioniert dort mit collapse nicht zuverlässig, betraf z.B. die
+   Name-Spalte in den Verwandten-/Vergleichstabellen) - border-spacing:0
+   hält die Optik dabei identisch zu vorher, da hier ohnehin nur
+   border-bottom (keine vertikalen Rahmen) gesetzt ist. */
+table { border-collapse: separate; border-spacing: 0; width: 100%; }
 th, td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
 th { background: rgba(107, 157, 0, 0.08); user-select: none; }
 th[data-sort] { cursor: pointer; }
@@ -366,10 +372,6 @@ td.cmp-bad, td.cmp-bad a { color: var(--danger); font-weight: 600; }
 .pill.no { color: var(--danger); border-color: var(--danger); }
 
 /* --- Verwandtschaftsmatrix --- */
-/* border-collapse:separate (statt der globalen table-Regel "collapse")
-   vermeidet bekannte Sticky-Header-Bugs in einigen Browsern; border-
-   spacing:0 hält die Optik dabei nahezu identisch zu vorher. */
-#matrix-table { border-collapse: separate; border-spacing: 0; }
 /* .table-wrap hat overflow-x:auto - laut CSS-Spezifikation berechnet der
    Browser overflow-y dadurch zwangsweise ebenfalls zu "auto" (man kann
    nicht eine Achse "auto" und die andere "visible" haben). Ohne eigene

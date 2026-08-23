@@ -547,7 +547,20 @@ function findRelatives(horse, horses) {
       for (const child of children) {
         if (visited.has(child.id)) continue;
         visited.add(child.id);
-        results.push({ horse: child, beziehung: generationLabel(generation), sortRank: 3 + generation });
+        const entry = { horse: child, beziehung: generationLabel(generation), sortRank: 3 + generation };
+        // Nur bei "Kind" (generation 1) ist der jeweils ANDERE Elternteil
+        // eindeutig auf das ausgewählte Pferd bezogen (der bekannte Elternteil
+        // IST das ausgewählte Pferd) - bei tieferen Generationen (Enkelkind
+        // etc.) wäre "der andere Elternteil" nur der eines Zwischen-Vorfahren,
+        // nicht des ausgewählten Pferds selbst, daher hier bewusst nicht
+        // ergänzt (Nutzerwunsch war explizit "bei Kindern").
+        if (generation === 1) {
+          const cp = parentNames(child);
+          const isFather = cp.father && normalizeName(cp.father) === normalizeName(parent.name);
+          const otherName = isFather ? cp.mother : cp.father;
+          if (otherName) entry.otherParent = { label: isFather ? 'Mutter' : 'Vater', name: otherName };
+        }
+        results.push(entry);
         next.push(child);
       }
     }
