@@ -344,7 +344,7 @@ function relationRowHtml(r, target) {
     ? '<span class="pill no">Inzucht-Gefahr</span>'
     : '<span class="pill yes">Unbedenklich</span>';
   return `<tr>
-    <td data-label="Pferd" class="name-with-tags" style="${tagCellStyle(r.horse.tags)}">${otherName}</td>
+    <td data-label="Pferd" style="${tagCellStyle(r.horse.tags)}">${otherName}</td>
     <td data-label="Besitzer">${r.horse.owner ? escapeHtml(r.horse.owner) : '–'}</td>
     <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetName}: ${escapeHtml(m.positionA)}, bei ${otherName}: ${escapeHtml(m.positionB)})</td>
     <td data-label="Bei Verpaarung">${pill}</td>

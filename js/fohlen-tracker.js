@@ -384,7 +384,7 @@ function trackerRowHtml(row) {
     ? '<td data-label="Inzucht" title="Dieses Pferd hat bereits eine Namensdopplung im eigenen sichtbaren Stammbaum - die Zahl gegen alle anderen Pferde wäre dadurch trivial und irreführend.">Selbst bereits eingezüchtet</td>'
     : `<td data-label="Inzucht">${row.inzucht}</td>`;
   let html = `<tr class="tracker-row" data-id="${escapeHtml(h.id)}" style="cursor:pointer;">
-    <td data-label="Pferdename" class="name-with-tags sticky-name" style="${tagCellStyle(h.tags)}">${expanded ? '▾ ' : '▸ '}${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${expanded ? '▾ ' : '▸ '}${escapeHtml(h.name || '(ohne Name)')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="GP">${d.gp != null ? d.gp : '–'}</td>
     <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
@@ -464,7 +464,7 @@ function trackerSubRowHtml(row) {
   const h = row.horse;
   const d = row.d;
   return `<tr>
-    <td data-label="Pferdename" class="name-with-tags sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
     <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="GP">${d.gp != null ? Math.round(d.gp) : '–'}</td>
@@ -555,7 +555,7 @@ function topRowHtml(r) {
   let html = `<tr class="top-row" data-id="${escapeHtml(h.id)}" style="cursor:pointer;">
     <td>${expanded ? '▾' : '▸'}</td>
     <td data-label="Rang">${r.rank}</td>
-    <td data-label="Name" class="name-with-tags sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
@@ -615,7 +615,7 @@ function topFoalSubRowHtml(row) {
   const h = row.horse;
   const d = row.d;
   return `<tr>
-    <td data-label="Name" class="name-with-tags sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
     <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>

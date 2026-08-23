@@ -742,7 +742,7 @@ function relativeRowHtml(r, refD) {
     return `<td data-label="${metric}" class="${cls}" style="${style}">${formatted}</td>`;
   };
   return `<tr>
-    <td data-label="Name" class="name-with-tags sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
     <td data-label="Beziehung"${r.beziehungDetail ? ` title="${escapeHtml(r.beziehungDetail)}"` : ''}><span>${escapeHtml(r.beziehung)}${r.otherParent ? `<br><span class="small muted">${escapeHtml(r.otherParent.label)}: ${escapeHtml(r.otherParent.name)}</span>` : ''}</span></td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '')}</td>
@@ -845,7 +845,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
       ownerCell = `<td data-label="Besitzer" style="${style}">${row.owner ? escapeHtml(row.owner) : '–'}${matches ? ' ✓' : ''}</td>`;
     }
     return `<tr${isRef ? ' style="font-weight:600;"' : ''}>
-      <td data-label="Name" class="name-with-tags sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
+      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
       <td data-label="Beziehung">${escapeHtml(row.label)}</td>
       <td data-label="Geschlecht">${row.gender ? escapeHtml(row.gender) : '–'}</td>
       <td data-label="EKH" style="${row.ekh.length ? 'color:var(--danger); font-weight:600;' : ''}">${row.ekh.length ? escapeHtml(row.ekh.join(', ')) : '–'}</td>
@@ -897,7 +897,7 @@ function colorComparisonTableHtml(rows) {
   const rowsHtml = sorted.map((row) => {
     const name = row.horse ? (row.horse.name || '(ohne Name)') : `${row.name || ''} (nicht in der Datenbank)`;
     return `<tr${row.isReference ? ' style="font-weight:600;"' : ''}>
-      <td data-label="Name" class="name-with-tags sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
+      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
       <td data-label="Beziehung">${escapeHtml(row.label)}</td>
       ${cells(row)}
     </tr>`;
