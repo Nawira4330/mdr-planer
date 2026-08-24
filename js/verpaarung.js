@@ -271,18 +271,40 @@ function extComplementarityScore(mare, stallion) {
 // Kategorie -> Bandbreite "Anzahl hh-Loci von 8" (Komplement der
 // H-Präsenz-Bandbreite Exzellent=8H, Gut=6-7H, In Ordnung=4-5H,
 // Schlecht=4, Miserabel=5). Best-/Worst-Case je Elternpaar direkt aus
-// einer Tabelle (mit dem Nutzer abgestimmt): schlechte Werte des einen
-// Elters werden vom guten Partner tendenziell ausgeglichen, gute/exzellente
-// Werte werden unterstützt. Ausgangspunkt sind immer die Eltern-Werte
-// selbst - sie verbessern sich im besten Fall bzw. verschlechtern sich im
-// schlechtesten Fall um 1-2 Punkte (oder bleiben gleich), nie darüber
-// hinaus. Bei gleichen Eltern-Werten (z.B. 3+3) gilt dasselbe Muster wie
-// bei den vom Nutzer vorgegebenen Fällen 1+1 und 2+2: Best Case bleibt
-// gleich, Worst Case verschlechtert sich um 1 (bei 5+5 an der Skala
-// gedeckelt).
+// zwei Tabellen. Ursprünglich (Best = "floor((lo+hi)/2)", Worst = feste
+// Tabelle) mit dem Nutzer abgestimmt, aber gegen echte Eltern-Fohlen-Trios
+// aus foal_reference_data verifiziert (2026-08-24, 251 Trios/~2500
+// Merkmals-Beobachtungen, inkl. gelöschter Pferde) - dabei lag der
+// tatsächliche Wert bei "1-3"/"2-2"/"2-3"/"2-4"/"3-3" in 15-40% der Fälle
+// UNTER dem alten "Best"-Wert (z.B. bei "2-2" 160 von 1033 Beobachtungen:
+// beide Eltern "Gut", Fohlen trotzdem "Exzellent") - reine Mittelwert-
+// Rundung war dort zu pessimistisch. Ebenso lag der Wert bei "1-1"/"1-2"/
+// "1-3"/"2-2" selten (0.2-1.9%) leicht ÜBER dem alten "Worst"-Wert. Beide
+// Tabellen unten je Zelle auf den tatsächlich beobachteten Extremwert
+// gesetzt (BEST_CASE_TABLE-Einträge ohne Beobachtung fehlen bewusst - dort
+// gilt weiterhin "floor((lo+hi)/2)", siehe interieurBestWorstForTrait).
+// Für Zellen ganz ohne Beobachtungen in den Trios (1-5/2-5/3-5/4-4/4-5/5-5)
+// bleibt WORST_CASE_TABLE unverändert (weiterhin nur die ursprüngliche,
+// mit dem Nutzer abgestimmte Schätzung, nicht empirisch geprüft).
+//
+// Wichtiger Vorbehalt (Nutzer-Hinweis 2026-08-24): wirklich schlecht
+// ausgefallene Fohlen werden von Spielern erfahrungsgemäß oft gar nicht
+// erst in die Datenbank eingetragen - foal_reference_data ist also nicht
+// unverzerrt, sondern tendenziell zu positiv ("Survivorship Bias"). Die
+// BEST_CASE-Anhebungen oben bleiben davon unberührt gültig/eher konservativ
+// (bessere Ergebnisse werden vermutlich eher vollständig erfasst als
+// schlechtere, die Beobachtung "Fohlen besser als bisheriger Best-Case"
+// ist also glaubwürdig). Die 100%-Containment für WORST_CASE (0 von 251
+// Verletzungen) ist dagegen NICHT als Beweis zu verstehen, dass das echte
+// Worst-Case-Minimum nie unterschritten wird - eher als aktuell bester,
+// aber möglicherweise noch zu optimistischer Anhaltspunkt aus den
+// tatsächlich eingetragenen Daten.
+const INTERIEUR_BEST_CASE_TABLE = {
+  '1-3': 1, '2-2': 1, '2-3': 1, '2-4': 2, '3-3': 2,
+};
 const INTERIEUR_WORST_CASE_TABLE = {
-  '1-1': 2, '1-2': 3, '1-3': 3, '1-4': 4, '1-5': 5,
-  '2-2': 3, '2-3': 4, '2-4': 4, '2-5': 5,
+  '1-1': 3, '1-2': 4, '1-3': 4, '1-4': 4, '1-5': 5,
+  '2-2': 4, '2-3': 4, '2-4': 4, '2-5': 5,
   '3-3': 4, '3-4': 4, '3-5': 5,
   '4-4': 5, '4-5': 5,
   '5-5': 5,
@@ -291,9 +313,10 @@ const INTERIEUR_WORST_CASE_TABLE = {
 function interieurBestWorstForTrait(scoreA, scoreB) {
   const lo = Math.min(scoreA, scoreB);
   const hi = Math.max(scoreA, scoreB);
+  const key = `${lo}-${hi}`;
   return {
-    best: Math.floor((lo + hi) / 2),
-    worst: INTERIEUR_WORST_CASE_TABLE[`${lo}-${hi}`],
+    best: key in INTERIEUR_BEST_CASE_TABLE ? INTERIEUR_BEST_CASE_TABLE[key] : Math.floor((lo + hi) / 2),
+    worst: INTERIEUR_WORST_CASE_TABLE[key],
   };
 }
 

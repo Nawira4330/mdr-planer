@@ -746,7 +746,8 @@ function renderBestMatches() {
   html += '<div class="notice">';
   html += 'Erklärung zur Fohlen-Vorhersage: <strong>Int</strong> ist eine Näherung, da nur die Phänotyp-Kategorie der Eltern bekannt ist (kein Gencode) - ';
   html += 'sie geht von den Eltern-Werten aus, die sich je nach Partner im besten Fall um 1-2 Punkte verbessern, gleich bleiben oder im schlechtesten Fall um 1-2 Punkte verschlechtern. ';
-  html += '<strong>GP</strong> ist eine Schätzung aus den Grenzwerten der Eltern-Einzelwerte (Grundlagen/Gangarten/Disziplinen), keine echte Vererbungssimulation.';
+  html += '<strong>GP</strong> ist eine Schätzung aus den Grenzwerten der Eltern-Einzelwerte (Grundlagen/Gangarten/Disziplinen), keine echte Vererbungssimulation. ';
+  html += 'Da wirklich schlecht ausgefallene Fohlen oft gar nicht erst eingetragen werden, sind <strong>Worst Case</strong> und <strong>Datenbank-Schätzung</strong> tendenziell optimistischer als die Realität - schlechtere Ergebnisse als angezeigt sind möglich.';
   html += '</div>';
 
   html += `<div class="group-heading">${candidateLabelPlural}</div>`;
