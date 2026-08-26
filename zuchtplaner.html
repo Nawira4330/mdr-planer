@@ -122,6 +122,33 @@
         sichtbarem Stammbaum) verwandt sind oder bei denen das Fohlen doppelt
         Overo erben könnte, werden ausgeschlossen.
       </p>
+      <details class="collapsible">
+        <summary style="color: var(--danger);">⚠️ Vorhersagen sind Näherungen, keine Garantie - Details &amp; Beispiel</summary>
+        <div class="notice notice-warning">
+          <strong>Best-/Worst-Case bei GP und Int</strong> sind theoretische Extremwerte, kein tatsächlicher Vorhersagewert - nutzt stattdessen lieber die <strong>Datenbank-Schätzung</strong> weiter unten (Eltern-Mittelwert + echte Abweichung bisheriger Fohlen, wird mit mehr eingetragenen Fohlen automatisch genauer).
+          <ul style="margin: 0.5rem 0 0; padding-left: 1.2rem;">
+            <li><strong>GP:</strong> Schätzung aus den Grenzwerten der Eltern-Einzelwerte (Grundlagen/Gangarten/Disziplinen), keine echte Vererbungssimulation. Bei Rasselosen ist die Datenbank-Schätzung nur verfügbar, wenn Stute und Hengst dieselbe Hauptdisziplin haben (z. B. beide Barock oder beide Western).</li>
+            <li><strong>Int:</strong> Näherung, da nur die Phänotyp-Kategorie der Eltern bekannt ist (kein Gencode) - die Eltern-Werte verbessern oder verschlechtern sich je nach Partner im Best-/Worst-Case um 1-2 Punkte.</li>
+            <li><strong>Ext / Ext%:</strong> basieren dagegen bereits auf dem echten Gencode und wurden gegen eine unabhängige Quelle verifiziert - am verlässlichsten.</li>
+            <li><strong>Worst Case bei GP und Int:</strong> tendenziell optimistischer als die Realität, da wirklich schlecht ausgefallene Fohlen oft gar nicht erst eingetragen werden und beide Formeln teilweise auf diesen Daten beruhen. Bei <strong>Ext/Ext%</strong> gilt das nicht - der Worst Case ist dort eine harte mathematische Grenze direkt aus dem Erbgang der Eltern, nicht aus Fohlen-Daten gelernt.</li>
+            <li><strong>Datenbank-Schätzung (alle vier Werte):</strong> tendenziell optimistischer als die Realität, aus demselben Grund - sie basiert direkt auf den eingetragenen Fohlen.</li>
+          </ul>
+        </div>
+        <div class="notice">
+          Bei Sortierung "Bester Ausgleich der Schwächen" (Ext/Ext%/GP) entscheidet eine feste Rangfolge - <strong>nicht</strong> die angezeigte Prozentzahl:
+          <ol style="margin: 0.5rem 0; padding-left: 1.2rem;">
+            <li>Schwächen behoben</li>
+            <li>Bereits gute Stellen gehalten</li>
+            <li>Nur bei Ext/Ext%, bei Gleichstand: wie vollständig abgesichert (homozygoter statt nur heterozygoter Hengst) - bei GP gibt es diese dritte Stufe nicht, dort zählen nur die ersten beiden.</li>
+          </ol>
+          <strong>Beispiel:</strong>
+          <ul style="margin: 0.3rem 0; padding-left: 1.2rem;">
+            <li>Hengst A: 41 von 44 Schwächen behoben, 20 von 59 Stärken gehalten → 59%</li>
+            <li>Hengst B: 40 von 44 Schwächen behoben, 33 von 59 Stärken gehalten → 71%</li>
+          </ul>
+          Hengst A steht trotz niedrigerer Prozentzahl vorne, weil er eine Schwäche mehr behebt - das zählt immer mehr als beliebig viele zusätzlich gehaltene Stärken.
+        </div>
+      </details>
       <fieldset>
         <legend>Richtung</legend>
         <div class="form-grid">
@@ -138,20 +165,6 @@
           (auch ein per Freitext eingelesener fremder Hengst funktioniert).
         </p>
       </fieldset>
-      <div class="notice notice-warning">
-        ⚠️ Best-/Worst-Case bei <strong>GP</strong> und <strong>Int</strong>
-        sind theoretische Extremwerte, kein tatsächlicher Vorhersagewert -
-        verlasst euch für diese beiden Werte lieber auf die
-        <strong>Datenbank-Schätzung</strong> weiter unten (Eltern-Mittelwert
-        + echte Abweichung bisheriger Fohlen in der Datenbank, wird mit
-        mehr eingetragenen Fohlen automatisch genauer). Bei Rasselosen ist
-        die GP-Datenbank-Schätzung nur verfügbar, wenn Stute und Hengst
-        dieselbe Hauptdisziplin haben (z. B. beide Barock oder beide
-        Western) - sonst ist nicht vorhersagbar, welche Kategorie das
-        Fohlen erbt. <strong>Ext</strong> und <strong>Ext%</strong>
-        basieren dagegen bereits auf dem echten Gencode und wurden gegen
-        eine unabhängige Quelle verifiziert.
-      </div>
       <fieldset>
         <legend>Schwerpunkt &amp; Farbwünsche</legend>
         <div class="form-grid">
