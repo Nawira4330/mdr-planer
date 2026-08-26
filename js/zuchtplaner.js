@@ -785,7 +785,7 @@ function fmtGp(v) {
 // dieselbe Modul-Variable, die auch rankStallions bei der Berechnung
 // des Ausgleichs übergeben wird.
 const COMPLEMENT_UNIT_LABEL = { gp: 'Werte-Ausgleich (GP)', ext: 'Ausgleich (Ext)', extpct: 'Genort-Ausgleich (Ext%)', int: 'Ausgleich (Int)' };
-const COMPLEMENT_NOUN_LABEL = { gp: 'unterdurchschnittlichen Werten', ext: 'Problem-/Halte-Genorten', extpct: 'Problem-Genorten', int: 'Problem-/Halte-Eigenschaften' };
+const COMPLEMENT_NOUN_LABEL = { gp: 'Problem-/Halte-Werten', ext: 'Problem-/Halte-Genorten', extpct: 'Problem-/Halte-Genorten', int: 'Problem-/Halte-Eigenschaften' };
 function complementRowHtml(c, weaknessOwnerLabel) {
   const { atStake, saved } = c.complement || {};
   if (!atStake) return '';

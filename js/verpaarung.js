@@ -138,22 +138,60 @@ function exteriorFoalRange(mare, stallion) {
 // Schätzung" für Ext/Ext% praktisch immer derselbe, individuell stärkste
 // Hengst - unabhängig davon, welche Stute gewählt wurde.
 //
-// Dieser Score misst stattdessen gezielt, wie viele der eigenen "Problem-
-// Genorte" DIESER STUTE (Positionen, an denen sie allein das bestmögliche
-// Ergebnis nicht garantieren kann) von GENAU DIESEM Hengst tatsächlich
-// gerettet bzw. nicht verschlechtert werden - dieselbe Zygotie-Logik wie
-// exteriorBestWorstForTrait (vorne: mind. 1x H nötig; hinten: kein HH
-// erlaubt), nur pro Genort statt als Summe ausgewertet, damit die Stute die
-// Rangfolge tatsächlich beeinflusst:
-// - Vorne (Genort 1-4, braucht H): "Problem" der Stute, wenn sie selbst
-//   kein H geben kann (zA=0) - "gerettet", wenn der Hengst H beisteuert.
-// - Hinten (Genort 5-8, braucht hh): unrettbar, wenn die Stute selbst
-//   bereits HH ist (zA=2, kein Hengst kann das ausgleichen) - sonst zählt
-//   der Genort, wenn der Hengst SELBST nicht HH beisteuert ("nicht
-//   verschlechtert").
-// "atStake" (wie viele Problem-Genorte die Stute überhaupt hat) ist für
+// Dieser Score misst gezielt, wie viele der eigenen "Problem-Genorte"
+// DIESER STUTE (Positionen, an denen sie allein das bestmögliche Ergebnis
+// nicht garantieren kann) von GENAU DIESEM Hengst tatsächlich gerettet
+// werden ("Fix"-Stufe), UND zusätzlich, wie viele ihrer bereits
+// halbwegs sicheren Genorte durch den Hengst NICHT zu einer neuen
+// Schwäche werden ("Support"-Stufe, Nutzerwunsch 2026-08-26 - gilt analog
+// auch für GP/Ext, siehe gpComplementarityScore/extComplementarityScore) -
+// dieselbe Zygotie-Logik wie exteriorBestWorstForTrait, nur pro Genort
+// statt als Summe ausgewertet, damit die Stute die Rangfolge tatsächlich
+// beeinflusst:
+// - Vorne (Genort 1-4, braucht H im Fohlen):
+//   - Fix: "Problem" der Stute, wenn sie selbst kein H geben kann (zA=0) -
+//     "gerettet", wenn der Hengst H beisteuert (rettet den Best Case).
+//     Innerhalb der Rettungen zusätzlich bevorzugt (Nutzerwunsch
+//     2026-08-26, dritte Stufe "savedFixFull" unterhalb von Fix, oberhalb
+//     von Support): ein homozygoter Hengst (zB=2) sichert an dieser
+//     Stelle zusätzlich auch den Worst Case ab, ein nur heterozygoter
+//     Hengst (zB=1) rettet lediglich den Best Case - bei gleich vielen
+//     geretteten Schwächen gewinnt der Hengst mit mehr davon vollständig
+//     (HH) abgesichert.
+//   - Support: bei zA=1 (Stute heterozygot, hat H, aber nicht garantiert)
+//     ist der Worst Case OHNE Zutun des Hengstes weiterhin 0xH möglich
+//     (dieselbe minZ-Formel wie bei achievableFoalZygosity) - "gehalten"
+//     nur, wenn der Hengst selbst homozygot ist (zB=2) und damit im Worst
+//     Case mindestens 1x H erzwingt. Bei zA=2 besteht kein Risiko (die
+//     Stute allein garantiert bereits den Worst Case) - nicht gezählt.
+// - Hinten (Genort 5-8, braucht hh im Fohlen): unrettbar, wenn die Stute
+//   selbst bereits HH ist (zA=2, kein Hengst kann das ausgleichen) - dann
+//   nicht gezählt. Anders als vorne ist "hh" ein UND (beide Eltern müssen
+//   mitziehen), kein ODER - eine Stute mit zA=0 (ihre STÄRKE, selbst
+//   sicher hh) garantiert den Worst Case damit NICHT automatisch:
+//   - Fix: bei zA=1 (Stute selbst heterozygot, für sie bereits ein
+//     eigenes Problem) ist der Worst Case unabhängig vom Hengst IMMER
+//     verschlechtert (maxZ enthält ihren eigenen Beitrag schon garantiert)
+//     - "gerettet" bezieht sich hier wie bisher nur auf den Best Case
+//     (zB !== 2). Innerhalb der Rettungen zählt zusätzlich zu savedFixFull
+//     (Nutzerwunsch 2026-08-26 - "hinten hh ODER vorne HH" als feine
+//     Rangstufe), wenn der Hengst komplett frei von H ist (zB=0) - dasselbe
+//     Prinzip wie vorne, nur gespiegelt (hinten will hh statt H).
+//   - Support (Nutzerwunsch 2026-08-26 - Stärken der Stute schützen):
+//     bei zA=0 (Stute selbst ideal) hängt der Worst Case allein vom
+//     Hengst ab (maxZ = 1, falls der Hengst irgendein H hat) - "gehalten"
+//     nur, wenn der Hengst selbst komplett frei von H ist (zB=0). Bringt
+//     der Hengst auch nur 1x H mit (zB=1), entsteht am eigentlich
+//     sicheren Genort der Stute eine neue Schwäche im Fohlen.
+// "atStake" (wie viele Genorte die Stute überhaupt zu bieten hat) ist für
 // alle Hengst-Kandidaten derselbe Wert, "saved" variiert echt je Hengst -
-// die Rangfolge nach "saved" ist damit tatsächlich stutenspezifisch.
+// die Rangfolge nach "saved"/"weighted" ist damit tatsächlich
+// stutenspezifisch. "weighted" gewichtet dreistufig (Reihenfolge Nutzer-
+// wunsch 2026-08-26): jede gerettete Problemstelle (Fix) schlägt jede
+// Anzahl gehaltener Support-Genorte, die wiederum jede Anzahl vollständig
+// abgesicherter Rettungen schlägt (feinster Tiebreak, siehe "hinten hh
+// ODER vorne HH" oben) - Fix vs. Support analog zur Gewichtung bei
+// Ext/Int, "vollständig abgesichert" kommt bewusst erst danach.
 //
 // Kein vom Spiel selbst angezeigter Wert, sondern eine zusätzliche
 // Heuristik auf Basis derselben verifizierten Zygotie-Mechanik.
@@ -161,8 +199,8 @@ function exteriorComplementarityScore(mare, stallion) {
   const mareRows = mare?.exterior_genetics?.rows || [];
   const stallionByLabel = new Map((stallion?.exterior_genetics?.rows || []).map((r) => [r.label, r]));
 
-  let atStake = 0;
-  let saved = 0;
+  let atStakeFix = 0, savedFix = 0, savedFixFull = 0;
+  let atStakeSupport = 0, savedSupport = 0;
 
   for (const mareRow of mareRows) {
     const stallionRow = stallionByLabel.get(mareRow.label);
@@ -176,17 +214,27 @@ function exteriorComplementarityScore(mare, stallion) {
       const zB = parseExteriorLocus(stallionTokens[i]);
       if (i < 4) {
         if (zA === 0) {
-          atStake++;
-          if (zB >= 1) saved++;
+          atStakeFix++;
+          if (zB >= 1) { savedFix++; if (zB === 2) savedFixFull++; }
+        } else if (zA === 1) {
+          atStakeSupport++;
+          if (zB === 2) savedSupport++;
         }
-      } else if (zA !== 2) {
-        atStake++;
-        if (zB !== 2) saved++;
+      } else if (zA === 1) {
+        atStakeFix++;
+        if (zB !== 2) { savedFix++; if (zB === 0) savedFixFull++; }
+      } else if (zA === 0) {
+        atStakeSupport++;
+        if (zB === 0) savedSupport++;
       }
     }
   }
 
-  return { atStake, saved };
+  return {
+    atStake: atStakeFix + atStakeSupport,
+    saved: savedFix + savedSupport,
+    weighted: savedFix * 1000000 + savedSupport * 10000 + savedFixFull,
+  };
 }
 
 // Eigene Kategorie (1-5, wie EXTERIOR_TERM_SCORES/exterior_descriptive)
@@ -218,17 +266,36 @@ function ownExteriorTraitScore(tokens) {
 //    bringt H; hinten: Hengst bringt kein HH).
 // 2. Priorität ("unterstützen"): Merkmale mit eigener Kategorie 1 oder 2
 //    (Exzellent/Gut) - bereits gute Genorte sollen nicht verschlechtert
-//    werden (dieselbe Rettungs-Logik, nur auf die bereits GUTEN statt
-//    schlechten Genorte angewendet).
+//    werden. Anders als in der Fix-Stufe reicht dafür vorne (Genort 1-4)
+//    NICHT dieselbe Rettungs-Bedingung (Hengst hat mind. 1x H) - das
+//    sichert nur den Best Case, nicht den Worst Case (siehe
+//    achievableFoalZygosity: bei Stute zA=1 bleibt der Worst Case ohne
+//    Zutun des Hengstes weiterhin 0xH möglich). Korrigiert (Nutzerwunsch
+//    2026-08-26, galt vorher fälschlich als bereits korrekt): nur bei
+//    zA=1 überhaupt ein Risiko (bei zA=2 garantiert die Stute den Worst
+//    Case bereits allein, kein Genort "at stake"), gehalten nur bei
+//    homozygotem Hengst (zB=2), der im Worst Case mind. 1x H erzwingt.
+//    Hinten (Genort 5-8): dieselbe Korrektur wie bei
+//    exteriorComplementarityScore - "hh" ist ein UND (beide Eltern müssen
+//    mitziehen), die alte Bedingung (zB !== 2) für zA=0 (Stute selbst
+//    ideal) sicherte nur den Best Case. Jetzt: zA=1 (Stutes eigenes
+//    Problem, in beiden Stufen wie gehabt best-case-gerettet durch
+//    zB !== 2) getrennt von zA=0 (Stutes eigene Stärke, jetzt worst-case-
+//    sicher nur bei zB === 0, sonst neue Schwäche durchs Fohlen).
 // "weighted" (nicht "saved") bestimmt die Sortierung (siehe sortKey) -
 // jede ausgeglichene Problemstelle (Prio 1) schlägt dabei immer jede
 // Anzahl unterstützter guter Genorte (Prio 2), analog zu
-// intComplementarityScore.
+// intComplementarityScore. Erst danach (Prio 3, feinster Tiebreak,
+// Reihenfolge Nutzerwunsch 2026-08-26) zählt "vollständig abgesichert" -
+// "hinten hh ODER vorne HH": vorne rettet ein nur heterozygoter Hengst
+// (zB=1) zwar den Best Case, aber nicht den Worst Case, ein homozygoter
+// (zB=2) beides; hinten spiegelbildlich ein Hengst mit zB=1 nur den Best
+// Case, ein komplett H-freier (zB=0) beides.
 function extComplementarityScore(mare, stallion) {
   const mareRows = mare?.exterior_genetics?.rows || [];
   const stallionByLabel = new Map((stallion?.exterior_genetics?.rows || []).map((r) => [r.label, r]));
 
-  let atStakeFix = 0, savedFix = 0;
+  let atStakeFix = 0, savedFix = 0, savedFixFull = 0;
   let atStakeSupport = 0, savedSupport = 0;
 
   for (const mareRow of mareRows) {
@@ -245,16 +312,19 @@ function extComplementarityScore(mare, stallion) {
       const zB = parseExteriorLocus(stallionTokens[i]);
       if (i < 4) {
         if (isFixTier) {
-          if (zA === 0) { atStakeFix++; if (zB >= 1) savedFix++; }
-        } else if (zA >= 1) {
+          if (zA === 0) { atStakeFix++; if (zB >= 1) { savedFix++; if (zB === 2) savedFixFull++; } }
+        } else if (zA === 1) {
           atStakeSupport++;
-          if (zB >= 1) savedSupport++;
+          if (zB === 2) savedSupport++;
         }
       } else if (isFixTier) {
-        if (zA !== 2) { atStakeFix++; if (zB !== 2) savedFix++; }
-      } else if (zA !== 2) {
+        if (zA === 1) { atStakeFix++; if (zB !== 2) { savedFix++; if (zB === 0) savedFixFull++; } }
+      } else if (zA === 1) {
         atStakeSupport++;
         if (zB !== 2) savedSupport++;
+      } else if (zA === 0) {
+        atStakeSupport++;
+        if (zB === 0) savedSupport++;
       }
     }
   }
@@ -262,7 +332,7 @@ function extComplementarityScore(mare, stallion) {
   return {
     atStake: atStakeFix + atStakeSupport,
     saved: savedFix + savedSupport,
-    weighted: savedFix * 10000 + savedSupport,
+    weighted: savedFix * 1000000 + savedSupport * 10000 + savedFixFull,
   };
 }
 
@@ -471,16 +541,23 @@ function estimateFoalGP(mare, stallion) {
 // max(Stute, Hengst) - hat ein Hengst in fast allen Eigenschaften höhere
 // Werte als praktisch jede Stute im Pool, gewinnt er unabhängig von der
 // gewählten Stute; empirisch bestätigt: bei 8 echten Stuten 8x derselbe
-// Hengst). Analog zu exteriorComplementarityScore wird hier stattdessen
-// gezählt, wie viele der EIGENEN unterdurchschnittlichen Werte der Stute
-// (Grundlagen/Gangarten/Disziplinen ihrer eigenen Begabungskategorie) ein
-// Hengst-Kandidat tatsächlich anhebt (sein Wert > ihrer, gewinnt also den
-// max() in der Best-Case-Summe) - dadurch stutenspezifisch statt praktisch
-// immer derselbe Kandidat.
+// Hengst). Analog zu exteriorComplementarityScore/extComplementarityScore
+// zählt dieser Score zwei Stufen (Nutzerwunsch 2026-08-26 - die
+// "Support"-Stufe fehlte hier ursprünglich komplett):
+// - Fix: EIGENE unterdurchschnittliche Werte der Stute (Grundlagen/
+//   Gangarten/Disziplinen ihrer eigenen Begabungskategorie, a < avg) -
+//   "gerettet", wenn der Hengst-Wert höher ist (b > a, gewinnt also den
+//   max() in der Best-Case-Summe).
+// - Support: bereits durchschnittliche/überdurchschnittliche Werte der
+//   Stute (a >= avg) - "gehalten", wenn der Hengst dort NICHT schwächer
+//   ist als die Stute (b >= a) - sonst zieht der Hengst den Worst Case
+//   (min(a,b) in sumBestWorst) unter das bisherige Stuten-Niveau und
+//   erzeugt an dieser Stelle eine neue Schwäche, die es vorher nicht gab.
 function gpComplementarityScore(mare, stallion) {
   const mareTraitMap = flattenTraitPotentials(mare?.traits);
   const stallionTraitMap = flattenTraitPotentials(stallion?.traits);
-  let atStake = 0, saved = 0;
+  let atStakeFix = 0, savedFix = 0;
+  let atStakeSupport = 0, savedSupport = 0;
 
   const countGroup = (names, mapA, mapB) => {
     const values = names.map((n) => mapA[n]).filter((v) => v != null);
@@ -488,9 +565,14 @@ function gpComplementarityScore(mare, stallion) {
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     for (const name of names) {
       const a = mapA[name], b = mapB[name];
-      if (a == null || b == null || a >= avg) continue;
-      atStake++;
-      if (b > a) saved++;
+      if (a == null || b == null) continue;
+      if (a < avg) {
+        atStakeFix++;
+        if (b > a) savedFix++;
+      } else {
+        atStakeSupport++;
+        if (b >= a) savedSupport++;
+      }
     }
   };
 
@@ -506,7 +588,11 @@ function gpComplementarityScore(mare, stallion) {
     countGroup(Object.keys(mareDiscMap), mareDiscMap, stallionDiscMap);
   }
 
-  return { atStake, saved };
+  return {
+    atStake: atStakeFix + atStakeSupport,
+    saved: savedFix + savedSupport,
+    weighted: savedFix * 10000 + savedSupport,
+  };
 }
 
 // --- Datenbank-Schätzung (3. Version, neben Best-/Worst-Case) ---
