@@ -1,0 +1,13 @@
+{
+  "name": "mdr-planer",
+  "private": true,
+  "description": "Build-Pipeline: minifiziert HTML/CSS/JS fuer das Deployment, ohne die Quelldateien im Repo zu veraendern (siehe scripts/build.js und .github/workflows/deploy.yml).",
+  "scripts": {
+    "build": "node scripts/build.js"
+  },
+  "devDependencies": {
+    "clean-css": "^5.3.3",
+    "html-minifier-terser": "^7.2.0",
+    "terser": "^5.31.0"
+  }
+}

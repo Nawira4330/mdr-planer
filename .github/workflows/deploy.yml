@@ -1,0 +1,40 @@
+name: Deploy (minifiziert)
+
+# Baut bei jedem Push auf main eine minifizierte Kopie (siehe scripts/build.js)
+# und deployt NUR die auf GitHub Pages - die Quelldateien im Repo (js/*.js,
+# css/style.css, *.html) bleiben unveraendert und behalten alle Kommentare.
+#
+# Einmaliger manueller Schritt (nicht per Workflow moeglich): im Repo unter
+# Settings -> Pages -> "Build and deployment" -> Source auf
+# "GitHub Actions" umstellen (statt "Deploy from a branch").
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

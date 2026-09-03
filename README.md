@@ -22,8 +22,11 @@ wo Pferde angelegt/bearbeitet/gelöscht werden: Hier gibt es **kein Login**
 und **keine Schreibfunktion** – der Code ruft nirgends `insert`/`update`/
 `delete` auf, nur `select`.
 
-- **Frontend**: statische Seite (HTML/CSS/JS ohne Build-Schritt) → gehostet
-  über **GitHub Pages**
+- **Frontend**: statische Seite (HTML/CSS/JS, kein Build-Schritt für die
+  lokale Entwicklung nötig) → gehostet über **GitHub Pages**. Beim Deployment
+  läuft automatisch eine Minifizierungs-Pipeline (siehe
+  [Deployment](#deployment) unten) - die Quelldateien im Repo bleiben davon
+  unberührt.
 - **Datenbank**: dieselbe [Supabase](https://supabase.com)-Datenbank wie
   MDR-Datenbank, nur lesend angebunden (kein eigenes Supabase-Projekt)
 
@@ -47,10 +50,24 @@ Konten in MDR-Datenbank vorbehalten.
 ## Auf GitHub veröffentlichen
 
 1. Repository auf GitHub anlegen und dieses Projektverzeichnis pushen.
-2. Im Repo unter **Settings → Pages** als Quelle den `main`-Branch (Ordner
-   `/`) wählen.
-3. Nach ein bis zwei Minuten ist die Seite unter der von GitHub angezeigten
-   URL erreichbar.
+2. Im Repo unter **Settings → Pages → Build and deployment → Source** auf
+   **"GitHub Actions"** stellen (nicht "Deploy from a branch") - einmaliger
+   manueller Schritt, siehe [Deployment](#deployment) unten.
+3. Nach dem nächsten Push auf `main` läuft der Workflow automatisch durch,
+   danach ist die Seite unter der von GitHub angezeigten URL erreichbar.
+
+## Deployment
+
+Jeder Push auf `main` löst [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+aus: baut über [`scripts/build.js`](scripts/build.js) eine minifizierte
+Kopie aller `.html`/`.css`/`.js`-Dateien (HTML/CSS/JS-Minifizierung, keine
+Struktur-/Verhaltensänderung) und deployt **nur die** auf GitHub Pages. Die
+Quelldateien im Repo bleiben unverändert - alle Kommentare, Herleitungen
+und Begründungen bleiben also für zukünftige Änderungen erhalten, nur die
+tatsächlich ausgelieferte Version ist kleiner.
+
+Lokal testen: `npm install && npm run build` erzeugt `dist/` (nicht
+committet, siehe `.gitignore`).
 
 ## Lokal testen (optional)
 

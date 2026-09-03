@@ -1,3 +1,8 @@
 .DS_Store
 Thumbs.db
 .claude/settings.local.json
+
+# Build-Ausgabe der Minifizierungs-Pipeline (siehe scripts/build.js) - wird
+# nur von .github/workflows/deploy.yml erzeugt und deployt, nie committet.
+node_modules/
+dist/
