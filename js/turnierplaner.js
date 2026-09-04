@@ -56,7 +56,8 @@ async function loadDefaultBreeds() {
 
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');
-  const { data, error } = await supabaseClient.from('horses').select(TOURNAMENT_SELECT_FIELDS).order('name');
+  const { data, error } = await fetchAllRows((from, to) =>
+    supabaseClient.from('horses').select(TOURNAMENT_SELECT_FIELDS).order('name').range(from, to));
   if (error) {
     errorEl.textContent =
       'Konnte Pferde nicht laden: ' + error.message +

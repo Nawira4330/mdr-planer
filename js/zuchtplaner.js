@@ -178,8 +178,8 @@ async function loadDefaultBreeds() {
 // warten muss.
 async function loadEmpiricalDeviations() {
   const [liveRes, refRes] = await Promise.all([
-    supabaseClient.from('horses').select(STATS_SELECT_FIELDS),
-    supabaseClient.from('foal_reference_data').select(REFERENCE_SELECT_FIELDS),
+    fetchAllRows((from, to) => supabaseClient.from('horses').select(STATS_SELECT_FIELDS).range(from, to)),
+    fetchAllRows((from, to) => supabaseClient.from('foal_reference_data').select(REFERENCE_SELECT_FIELDS).range(from, to)),
   ]);
   const liveHorses = liveRes.data || [];
   const liveIds = new Set(liveHorses.map((h) => h.id));
@@ -246,8 +246,8 @@ function selectedFarbwuensche() {
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');
   const [mareRes, stallionRes] = await Promise.all([
-    supabaseClient.from('horses').select(HORSE_SELECT_FIELDS).eq('gender', 'Stute').order('name'),
-    supabaseClient.from('horses').select(HORSE_SELECT_FIELDS).eq('gender', 'Hengst').order('name'),
+    fetchAllRows((from, to) => supabaseClient.from('horses').select(HORSE_SELECT_FIELDS).eq('gender', 'Stute').order('name').range(from, to)),
+    fetchAllRows((from, to) => supabaseClient.from('horses').select(HORSE_SELECT_FIELDS).eq('gender', 'Hengst').order('name').range(from, to)),
   ]);
 
   if (mareRes.error || stallionRes.error) {

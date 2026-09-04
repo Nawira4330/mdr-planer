@@ -172,7 +172,8 @@ async function loadHorses() {
   // Bewusst ohne ZZL-/Geschlechtsfilter beim Laden (wie js/zuchtbuch.js) -
   // die ZZL-Einschränkung ist hier nur ein optionaler Filter für die
   // Matrix, die Einzel-Nachschlage soll alle Pferde finden können.
-  const { data, error } = await supabaseClient.from('horses').select(RELATION_FIELDS).order('name');
+  const { data, error } = await fetchAllRows((from, to) =>
+    supabaseClient.from('horses').select(RELATION_FIELDS).order('name').range(from, to));
   if (error) {
     errorEl.textContent =
       'Konnte Pferde nicht laden: ' + error.message +
