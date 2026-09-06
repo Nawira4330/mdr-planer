@@ -129,13 +129,15 @@ async function init() {
   await initAuthStatus();
   await loadVerpaarungLogEnabled();
   await loadDefaultBreeds();
-  await loadHorses();
-  loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert die Seite nicht
-  // Erst NACH mareSelect/stallionSelect + loadHorses() aktivieren, da
-  // activateTab('auswahl') sonst renderBestMatches() aufruft, bevor
-  // mareSelect existiert bzw. Pferde geladen sind (führte zu einem
-  // Fehler, der die komplette init()-Funktion abbrach - Suchfelder
-  // blieben dann funktionslos, z.B. via "zuchtplaner.html?tab=auswahl").
+  // Lädt die (inzwischen recht große, >1200 Zeilen) Pferdeliste bewusst
+  // NICHT beim Seitenaufruf, sondern erst bei der ersten Eingabe in eines
+  // der beiden Namens-Suchfelder (Nutzerwunsch 2026-09-05, wegen Supabase-
+  // Egress-Kontingent) - renderBestMatches() lädt bei Bedarf zusätzlich
+  // selbst nach (siehe ensureHorsesLoaded), für den Direktlink-Fall
+  // "zuchtplaner.html?tab=auswahl" (siehe activateTabFromUrl unten), bei
+  // dem noch nie ins Suchfeld getippt wurde.
+  document.querySelector('#mare-search').addEventListener('input', onFirstSearchInput, { once: true });
+  document.querySelector('#stallion-search').addEventListener('input', onFirstSearchInput, { once: true });
   activateTabFromUrl();
 }
 
@@ -241,6 +243,20 @@ function wireFarbwunschDropdown() {
 
 function selectedFarbwuensche() {
   return [...document.querySelectorAll('#farbwunsch-drop input:checked')].map((cb) => cb.value);
+}
+
+let horsesLoadPromise = null;
+function ensureHorsesLoaded() {
+  if (!horsesLoadPromise) {
+    horsesLoadPromise = loadHorses();
+    loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert nicht
+  }
+  return horsesLoadPromise;
+}
+async function onFirstSearchInput(e) {
+  const input = e.target;
+  await ensureHorsesLoaded();
+  input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 async function loadHorses() {
@@ -693,7 +709,8 @@ function updateRichtungsLabels() {
     : `Bester Ausgleich der Stuten-Schwächen (${metricLabel})`;
 }
 
-function renderBestMatches() {
+async function renderBestMatches() {
+  await ensureHorsesLoaded();
   const container = document.querySelector('#auswahl-result');
   const hintEl = document.querySelector('#auswahl-hint');
   const isHengstRichtung = richtung === 'hengst';

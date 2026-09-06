@@ -79,7 +79,13 @@ async function init() {
   wireTagSuggestHandlers('Verwandtschaftsmatrix');
   await initAuthStatus();
   await loadDefaultBreeds();
-  await loadHorses();
+  // Lädt die (inzwischen recht große, >1200 Zeilen) Pferdeliste bewusst
+  // NICHT beim Seitenaufruf, sondern erst bei der ersten echten Interaktion
+  // (Nutzerwunsch 2026-09-05, wegen Supabase-Egress-Kontingent) - hier zwei
+  // getrennte Einstiegspunkte: die Einzelabfrage über das Namens-Suchfeld,
+  // die Matrix über ensureHorsesLoaded() direkt in renderMatrix (jeder
+  // Matrix-Filter ruft die am Ende ohnehin auf).
+  document.querySelector('#relation-search').addEventListener('input', onFirstSearchInput, { once: true });
 }
 
 // Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
@@ -167,6 +173,16 @@ function wireMatrixSortableHeaders() {
   });
 }
 
+let horsesLoadPromise = null;
+function ensureHorsesLoaded() {
+  if (!horsesLoadPromise) horsesLoadPromise = loadHorses();
+  return horsesLoadPromise;
+}
+async function onFirstSearchInput() {
+  await ensureHorsesLoaded();
+  document.querySelector('#relation-search').dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');
   // Bewusst ohne ZZL-/Geschlechtsfilter beim Laden (wie js/zuchtbuch.js) -
@@ -199,7 +215,6 @@ async function loadHorses() {
   matrixColBreedFilter.setHorses(allHorses);
   relationBreedFilter.setHorses(allHorses);
   populateHorseSelect();
-  renderMatrix();
 }
 
 function populateHorseSelect() {
@@ -506,7 +521,8 @@ function computeRowData(rowsSubset, colsFull, colStart, colEnd) {
   });
 }
 
-function renderMatrix() {
+async function renderMatrix() {
+  await ensureHorsesLoaded();
   const container = document.querySelector('#matrix-result');
   const hintEl = document.querySelector('#matrix-hint');
   const modus = document.querySelector('#matrix-modus-select').value;

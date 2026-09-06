@@ -83,7 +83,7 @@ async function init() {
   await initAuthStatus();
   await loadCompareTolerances();
   await loadDefaultBreeds();
-  await loadHorses();
+  document.querySelector('#horse-search').addEventListener('input', onFirstSearchInput, { once: true });
   scrollToHashTarget();
 }
 
@@ -98,6 +98,24 @@ function scrollToHashTarget() {
 }
 
 // --- Gemeinsame Pferdeauswahl ---
+
+// Lädt die (inzwischen recht große, >1200 Zeilen) Pferdeliste bewusst NICHT
+// beim Seitenaufruf, sondern erst bei der ersten Eingabe ins Namens-
+// Suchfeld (Nutzerwunsch 2026-09-05, wegen Supabase-Egress-Kontingent) -
+// Besitzer-/Rasse-/Schlagwort-Filter bleiben bis dahin leer/wirkungslos,
+// das ist so in Kauf genommen.
+let horsesLoadPromise = null;
+function ensureHorsesLoaded() {
+  if (!horsesLoadPromise) horsesLoadPromise = loadHorses();
+  return horsesLoadPromise;
+}
+async function onFirstSearchInput() {
+  await ensureHorsesLoaded();
+  // Panel mit den jetzt geladenen Treffern neu aufbauen, ohne die bereits
+  // getippte Eingabe zu verlieren - createSearchableSelect reagiert selbst
+  // auf "input", ein erneutes Event genügt dafür.
+  document.querySelector('#horse-search').dispatchEvent(new Event('input', { bubbles: true }));
+}
 
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');

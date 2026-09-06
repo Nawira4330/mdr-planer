@@ -59,7 +59,7 @@ async function init() {
   wireTagSuggestHandlers('Fohlenprüfung');
   await initAuthStatus();
   await loadDefaultBreeds();
-  await loadHorses();
+  document.querySelector('#horse-search').addEventListener('input', onFirstSearchInput, { once: true });
 }
 
 // Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
@@ -74,6 +74,21 @@ async function loadDefaultBreeds() {
     .eq('user_id', currentAuthSession.user.id)
     .maybeSingle();
   defaultBreeds = (!error && data) ? (data.preferred_breeds || []) : null;
+}
+
+// Lädt die (inzwischen recht große, >1200 Zeilen) Pferdeliste bewusst NICHT
+// beim Seitenaufruf, sondern erst bei der ersten Eingabe ins Namens-
+// Suchfeld (Nutzerwunsch 2026-09-05, wegen Supabase-Egress-Kontingent) -
+// Besitzer-/Rasse-/Schlagwort-Filter bleiben bis dahin leer/wirkungslos,
+// das ist so in Kauf genommen.
+let horsesLoadPromise = null;
+function ensureHorsesLoaded() {
+  if (!horsesLoadPromise) horsesLoadPromise = loadHorses();
+  return horsesLoadPromise;
+}
+async function onFirstSearchInput() {
+  await ensureHorsesLoaded();
+  document.querySelector('#horse-search').dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 async function loadHorses() {

@@ -70,7 +70,6 @@ async function init() {
   wireTagSuggestHandlers('Fohlen-Tracker');
   await initAuthStatus();
   await loadDefaultBreeds();
-  await loadHorses();
 }
 
 // Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
@@ -85,6 +84,18 @@ async function loadDefaultBreeds() {
     .eq('user_id', currentAuthSession.user.id)
     .maybeSingle();
   defaultBreeds = (!error && data) ? (data.preferred_breeds || []) : null;
+}
+
+// Lädt die (inzwischen recht große, >1200 Zeilen) Pferdeliste bewusst NICHT
+// beim Seitenaufruf, sondern erst bei der ersten Filter-Interaktion
+// (Nutzerwunsch 2026-09-05, wegen Supabase-Egress-Kontingent) - anders als
+// z.B. Zuchtbuch gibt es hier kein Namens-Suchfeld, das dafür herhalten
+// könnte, deshalb hier über renderTrackerTab/renderTop selbst (jeder
+// Filter ruft am Ende genau eine dieser beiden Funktionen auf).
+let horsesLoadPromise = null;
+function ensureHorsesLoaded() {
+  if (!horsesLoadPromise) horsesLoadPromise = loadHorses();
+  return horsesLoadPromise;
 }
 
 async function loadHorses() {
@@ -125,8 +136,6 @@ async function loadHorses() {
   }
   breedFilter.setHorses(allHorses);
   topBreedFilter.setHorses(allHorses);
-  renderTrackerTab();
-  renderTop();
 }
 
 function parentNames(horse) {
@@ -312,7 +321,8 @@ function trackerFilteredHorses() {
   });
 }
 
-function renderTrackerTab() {
+async function renderTrackerTab() {
+  await ensureHorsesLoaded();
   const container = document.querySelector('#tracker-result');
   buildRelatednessCaches();
   const filtered = trackerFilteredHorses();
@@ -482,7 +492,8 @@ function trackerSubRowHtml(row) {
 
 // --- Top 20 meiste Fohlen ---
 
-function renderTop() {
+async function renderTop() {
+  await ensureHorsesLoaded();
   const container = document.querySelector('#top-result');
   const owner = document.querySelector('#top-owner-select').value;
   const gender = document.querySelector('#top-gender-select').value;
