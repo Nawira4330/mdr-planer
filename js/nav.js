@@ -12,10 +12,15 @@
 // Nutzerwunsch: kein eigener "MDR-DB"-Reiter wie in der MDR-Datenbank -
 // der Link zur Pferdedatenbank hängt stattdessen im "Angemeldet als"/
 // "Gast"-Dropdown, analog zum "Konto"-Dropdown dort.
+// Turnierplaner/Zuchtbuch bewusst NICHT mehr gelistet (Nutzerwunsch
+// 2026-09-09) - beide sind jetzt direkt ins Pferdeprofil der
+// MDR-Datenbank integriert (Reiter "Turnierwerte"/"Zuchtbuch"). Die
+// Seiten selbst bleiben bestehen und ueber ihre direkte URL erreichbar
+// (fuer datenbankfremde Pferde per Freitext weiterhin die einzige
+// Moeglichkeit) - nur hier aus der Navigation entfernt, siehe auch
+// index.html.
 const PLANER_TOOL_LINKS = [
   { label: 'Zuchtplaner', url: 'zuchtplaner.html' },
-  { label: 'Turnierplaner', url: 'turnierplaner.html' },
-  { label: 'Zuchtbuch', url: 'zuchtbuch.html' },
   { label: 'Fohlen-Tracker', url: 'fohlen-tracker.html' },
   { label: 'Verwandtschaft', url: 'verwandtschaft.html' },
   { label: 'Fohlenprüfung', url: 'fohlenpruefung.html' },
