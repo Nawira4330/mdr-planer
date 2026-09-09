@@ -179,8 +179,14 @@ function ensureHorsesLoaded() {
   return horsesLoadPromise;
 }
 async function onFirstSearchInput() {
+  // Zeigt "Lädt Pferdeliste…" statt stillschweigend nichts/"Keine Treffer"
+  // anzuzeigen (Nutzerfeedback 2026-09-09: auf der echten Seite dauert der
+  // Abruf spürbar, wirkte dadurch wie ein Totalausfall - siehe Kommentar
+  // in js/searchableSelect.js). setLoading(false) rendert danach mit den
+  // inzwischen (in loadHorses()) gesetzten echten Treffern neu.
+  horseSelect.setLoading(true);
   await ensureHorsesLoaded();
-  document.querySelector('#relation-search').dispatchEvent(new Event('input', { bubbles: true }));
+  horseSelect.setLoading(false);
 }
 
 async function loadHorses() {

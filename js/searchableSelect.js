@@ -10,6 +10,16 @@ function createSearchableSelect(inputEl, panelEl, { onChange } = {}) {
   let filtered = [];
   let selectedId = '';
   let activeIndex = -1;
+  // Wird waehrend des verzoegerten Erstladens der Pferdeliste gesetzt
+  // (siehe setLoading/onFirstSearchInput in den Seiten-Scripts, Nutzer-
+  // feedback 2026-09-09: bis der echte Supabase-Abruf durch ist, zeigte
+  // das Panel entweder gar nichts oder faelschlich "Keine Treffer" an -
+  // wirkte dadurch komplett kaputt, WAR es aber nicht, das Laden dauert
+  // auf der echten Seite nur spuerbar laenger als lokal. Verliert das
+  // Feld waehrenddessen den Fokus, hielt der blur-Handler (siehe unten)
+  // das Panel danach dauerhaft versteckt, obwohl die Treffer laengst da
+  // waren - deshalb blur() waehrend "loading" bewusst ignorieren.
+  let loading = false;
 
   function matches(text) {
     const q = text.trim().toLowerCase();
@@ -17,9 +27,17 @@ function createSearchableSelect(inputEl, panelEl, { onChange } = {}) {
   }
 
   function renderPanel() {
-    filtered = matches(inputEl.value);
     activeIndex = -1;
     panelEl.innerHTML = '';
+    if (loading) {
+      const msg = document.createElement('div');
+      msg.className = 'checkdrop-empty';
+      msg.textContent = 'Lädt Pferdeliste…';
+      panelEl.appendChild(msg);
+      panelEl.hidden = false;
+      return;
+    }
+    filtered = matches(inputEl.value);
     if (!filtered.length) {
       const empty = document.createElement('div');
       empty.className = 'checkdrop-empty';
@@ -76,7 +94,10 @@ function createSearchableSelect(inputEl, panelEl, { onChange } = {}) {
   inputEl.addEventListener('focus', openAndSelectAll);
   inputEl.addEventListener('click', openAndSelectAll);
   inputEl.addEventListener('blur', () => {
-    setTimeout(() => { panelEl.hidden = true; }, 150);
+    // Waehrend des Erstladens NICHT verstecken (siehe "loading" oben) -
+    // sonst bleibt das Panel unsichtbar, obwohl setLoading(false) danach
+    // die echten Treffer laengst korrekt eingetragen hat.
+    setTimeout(() => { if (!loading) panelEl.hidden = true; }, 150);
   });
   inputEl.addEventListener('keydown', (e) => {
     if (panelEl.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
@@ -102,6 +123,18 @@ function createSearchableSelect(inputEl, panelEl, { onChange } = {}) {
   return {
     setItems(newItems) {
       items = newItems;
+    },
+    // Siehe "loading" oben - waehrend des verzoegerten Erstladens
+    // aufrufen (true VOR dem await, false NACH setItems), damit das
+    // Panel eine ehrliche Rueckmeldung zeigt statt stillschweigend leer/
+    // versteckt zu bleiben. Rendert nur neu, wenn das Feld gerade
+    // sichtbar/offen ist (Panel nicht hidden) oder loading gerade auf
+    // true wechselt - ein bereits verlassenes Feld ploetzlich wieder
+    // aufzuklappen waere unerwuenscht, die naechste Interaktion zeigt
+    // dank setItems() aber ohnehin sofort die korrekten Treffer.
+    setLoading(isLoading) {
+      loading = isLoading;
+      if (isLoading || !panelEl.hidden) renderPanel();
     },
     getValue() {
       return selectedId;

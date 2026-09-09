@@ -253,10 +253,18 @@ function ensureHorsesLoaded() {
   }
   return horsesLoadPromise;
 }
-async function onFirstSearchInput(e) {
-  const input = e.target;
+async function onFirstSearchInput() {
+  // Zeigt "Lädt Pferdeliste…" statt stillschweigend nichts/"Keine Treffer"
+  // anzuzeigen (Nutzerfeedback 2026-09-09: auf der echten Seite dauert der
+  // Abruf spürbar, wirkte dadurch wie ein Totalausfall - siehe Kommentar
+  // in js/searchableSelect.js). Ein Tastendruck in Stute ODER Hengst löst
+  // denselben gemeinsamen loadHorses()-Aufruf aus (siehe dort), deshalb
+  // beide Felder gemeinsam auf "lädt" setzen statt nur das ausgelöste.
+  mareSelect.setLoading(true);
+  stallionSelect.setLoading(true);
   await ensureHorsesLoaded();
-  input.dispatchEvent(new Event('input', { bubbles: true }));
+  mareSelect.setLoading(false);
+  stallionSelect.setLoading(false);
 }
 
 async function loadHorses() {

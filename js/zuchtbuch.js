@@ -110,11 +110,14 @@ function ensureHorsesLoaded() {
   return horsesLoadPromise;
 }
 async function onFirstSearchInput() {
+  // Zeigt "Lädt Pferdeliste…" statt stillschweigend nichts/"Keine Treffer"
+  // anzuzeigen (Nutzerfeedback 2026-09-09: auf der echten Seite dauert der
+  // Abruf spürbar, wirkte dadurch wie ein Totalausfall - siehe Kommentar
+  // in js/searchableSelect.js). setLoading(false) rendert danach mit den
+  // inzwischen (in loadHorses()) gesetzten echten Treffern neu.
+  horseSelect.setLoading(true);
   await ensureHorsesLoaded();
-  // Panel mit den jetzt geladenen Treffern neu aufbauen, ohne die bereits
-  // getippte Eingabe zu verlieren - createSearchableSelect reagiert selbst
-  // auf "input", ein erneutes Event genügt dafür.
-  document.querySelector('#horse-search').dispatchEvent(new Event('input', { bubbles: true }));
+  horseSelect.setLoading(false);
 }
 
 async function loadHorses() {
