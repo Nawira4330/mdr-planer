@@ -79,13 +79,10 @@ async function init() {
   wireTagSuggestHandlers('Verwandtschaftsmatrix');
   await initAuthStatus();
   await loadDefaultBreeds();
-  // Lädt die (inzwischen recht große, >1200 Zeilen) Pferdeliste bewusst
-  // NICHT beim Seitenaufruf, sondern erst bei der ersten echten Interaktion
-  // (Nutzerwunsch 2026-09-05, wegen Supabase-Egress-Kontingent) - hier zwei
-  // getrennte Einstiegspunkte: die Einzelabfrage über das Namens-Suchfeld,
-  // die Matrix über ensureHorsesLoaded() direkt in renderMatrix (jeder
-  // Matrix-Filter ruft die am Ende ohnehin auf).
-  document.querySelector('#relation-search').addEventListener('input', onFirstSearchInput, { once: true });
+  // Lädt die Pferdeliste wieder direkt beim Seitenaufruf (Nutzerwunsch
+  // 2026-09-09 - zurück vom bisherigen Lazy-Load bei der ersten Eingabe im
+  // Suchfeld, siehe ensureHorsesLoaded/loadHorses weiter unten).
+  await ensureHorsesLoaded();
 }
 
 // Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
@@ -178,17 +175,6 @@ function ensureHorsesLoaded() {
   if (!horsesLoadPromise) horsesLoadPromise = loadHorses();
   return horsesLoadPromise;
 }
-async function onFirstSearchInput() {
-  // Zeigt "Lädt Pferdeliste…" statt stillschweigend nichts/"Keine Treffer"
-  // anzuzeigen (Nutzerfeedback 2026-09-09: auf der echten Seite dauert der
-  // Abruf spürbar, wirkte dadurch wie ein Totalausfall - siehe Kommentar
-  // in js/searchableSelect.js). setLoading(false) rendert danach mit den
-  // inzwischen (in loadHorses()) gesetzten echten Treffern neu.
-  horseSelect.setLoading(true);
-  await ensureHorsesLoaded();
-  horseSelect.setLoading(false);
-}
-
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');
   // Bewusst ohne ZZL-/Geschlechtsfilter beim Laden (wie js/zuchtbuch.js) -

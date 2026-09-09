@@ -129,15 +129,11 @@ async function init() {
   await initAuthStatus();
   await loadVerpaarungLogEnabled();
   await loadDefaultBreeds();
-  // Lädt die (inzwischen recht große, >1200 Zeilen) Pferdeliste bewusst
-  // NICHT beim Seitenaufruf, sondern erst bei der ersten Eingabe in eines
-  // der beiden Namens-Suchfelder (Nutzerwunsch 2026-09-05, wegen Supabase-
-  // Egress-Kontingent) - renderBestMatches() lädt bei Bedarf zusätzlich
-  // selbst nach (siehe ensureHorsesLoaded), für den Direktlink-Fall
-  // "zuchtplaner.html?tab=auswahl" (siehe activateTabFromUrl unten), bei
-  // dem noch nie ins Suchfeld getippt wurde.
-  document.querySelector('#mare-search').addEventListener('input', onFirstSearchInput, { once: true });
-  document.querySelector('#stallion-search').addEventListener('input', onFirstSearchInput, { once: true });
+  // Lädt die Pferdeliste wieder direkt beim Seitenaufruf (Nutzerwunsch
+  // 2026-09-09 - zurück vom bisherigen Lazy-Load bei der ersten Eingabe in
+  // eines der beiden Namens-Suchfelder, siehe ensureHorsesLoaded/
+  // loadHorses weiter unten).
+  await ensureHorsesLoaded();
   activateTabFromUrl();
 }
 
@@ -252,19 +248,6 @@ function ensureHorsesLoaded() {
     loadEmpiricalDeviations(); // unabhängig von loadHorses(), blockiert nicht
   }
   return horsesLoadPromise;
-}
-async function onFirstSearchInput() {
-  // Zeigt "Lädt Pferdeliste…" statt stillschweigend nichts/"Keine Treffer"
-  // anzuzeigen (Nutzerfeedback 2026-09-09: auf der echten Seite dauert der
-  // Abruf spürbar, wirkte dadurch wie ein Totalausfall - siehe Kommentar
-  // in js/searchableSelect.js). Ein Tastendruck in Stute ODER Hengst löst
-  // denselben gemeinsamen loadHorses()-Aufruf aus (siehe dort), deshalb
-  // beide Felder gemeinsam auf "lädt" setzen statt nur das ausgelöste.
-  mareSelect.setLoading(true);
-  stallionSelect.setLoading(true);
-  await ensureHorsesLoaded();
-  mareSelect.setLoading(false);
-  stallionSelect.setLoading(false);
 }
 
 async function loadHorses() {
