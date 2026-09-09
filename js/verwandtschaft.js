@@ -255,7 +255,7 @@ function onTargetChange(id) {
   renderFreitext();
 }
 
-function onForeignHorseParse() {
+async function onForeignHorseParse() {
   const text = document.querySelector('#foreign-horse-raw-text').value;
   const statusEl = document.querySelector('#foreign-horse-parse-status');
   if (!text.trim()) {
@@ -264,6 +264,15 @@ function onForeignHorseParse() {
   }
   foreignTarget = parseHorseText(text);
   horseSelect.clear(); // löst onTargetChange('') aus - foreignTarget bleibt erhalten (id ist leer)
+  statusEl.textContent = 'Erkannt: ' + (foreignTarget.name || 'kein Name gefunden') + ' – lade Verwandtschafts-Abgleich…';
+  // Bugfix (Nutzerfeedback 2026-09-09): anders als die Namenssuche oben
+  // stieß dieser Button ensureHorsesLoaded() bisher NIE an - wer nur das
+  // Freitextfeld benutzt (ohne vorher ins Namens-Suchfeld zu tippen),
+  // bekam deshalb IMMER "0 verwandte Pferde", unabhängig vom Pferd, weil
+  // allHorses schlicht noch leer war (siehe ensureHorsesLoaded/loadHorses
+  // weiter unten - dieselbe Egress-bedingte Lazy-Load-Absicherung wie bei
+  // der Namenssuche, hier nur bisher vergessen).
+  await ensureHorsesLoaded();
   statusEl.textContent = 'Erkannt: ' + (foreignTarget.name || 'kein Name gefunden');
   renderFreitext();
 }

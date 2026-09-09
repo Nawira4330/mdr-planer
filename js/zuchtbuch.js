@@ -195,7 +195,7 @@ function onHorseSelect(id) {
   render();
 }
 
-function onForeignHorseParse() {
+async function onForeignHorseParse() {
   const text = document.querySelector('#foreign-horse-raw-text').value;
   const statusEl = document.querySelector('#foreign-horse-parse-status');
   if (!text.trim()) {
@@ -204,6 +204,14 @@ function onForeignHorseParse() {
   }
   foreignHorse = parseHorseText(text);
   horseSelect.clear(); // löst onHorseSelect('') aus - foreignHorse bleibt erhalten (id ist leer)
+  statusEl.textContent = 'Erkannt: ' + (foreignHorse.name || 'kein Name gefunden') + ' – lade Verwandtschafts-Abgleich…';
+  // Bugfix (Nutzerfeedback 2026-09-09, identisch zu js/verwandtschaft.js):
+  // anders als die Namenssuche oben stieß dieser Button ensureHorsesLoaded()
+  // bisher NIE an - relativesTableHtml() (in render()) braucht aber
+  // allHorses, das ohne dies noch leer war. Wer nur das Freitextfeld
+  // benutzte, bekam deshalb IMMER "0 verwandte Pferde", unabhängig vom
+  // Pferd.
+  await ensureHorsesLoaded();
   statusEl.textContent = 'Erkannt: ' + (foreignHorse.name || 'kein Name gefunden');
   render();
 }
