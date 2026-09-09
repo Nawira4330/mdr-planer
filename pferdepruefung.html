@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Pferdeprüfung – MDR Zucht- &amp; Turnierplaner</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%236b9d00%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2270%22%20font-size%3D%2262%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B4%3C%2Ftext%3E%3C%2Fsvg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>🔍 Pferdeprüfung</h1>
+    <nav>
+      <a class="btn secondary" href="index.html">← Zur Übersicht</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p class="muted small">
+      Für ein <strong>datenbankfremdes Pferd</strong> (nicht in der
+      Pferdedatenbank gespeichert): einmal den Spieltext einfügen und auf
+      einen Blick sowohl die Turnierwerte + LP-Prognose (wie im
+      Turnierplaner) als auch die Verwandtschaft zu den bereits
+      gespeicherten Pferden (wie in der Verwandtschaftsmatrix) sehen –
+      ohne denselben Text zweimal einfügen zu müssen. Es wird nichts
+      gespeichert.
+    </p>
+    <div id="tag-legend"></div>
+
+    <fieldset class="paste-box">
+      <legend>Text von der Pferdeseite einfügen</legend>
+      <p class="muted small">
+        Öffne die Pferdeseite im Spiel, markiere die komplette Seite (Strg+A) und
+        kopiere sie (Strg+C). Text hier einfügen und auf "Auslesen" klicken.
+      </p>
+      <textarea id="raw-text" placeholder="Hier den kopierten Seitentext einfügen…"></textarea>
+      <div class="paste-actions">
+        <button type="button" id="parse-btn">Auslesen</button>
+        <span id="parse-status" class="muted small"></span>
+      </div>
+    </fieldset>
+
+    <p id="load-error" class="error"></p>
+
+    <div id="profile-result"></div>
+
+    <div id="tournament-mobile-sort"></div>
+    <div id="tournament-wrap" class="table-wrap" hidden>
+      <table id="tournament-table" class="mobile-cards">
+        <thead>
+          <tr>
+            <th data-sort="category">Kategorie</th>
+            <th data-sort="name">Disziplin</th>
+            <th data-sort="wert">Wert</th>
+            <th data-sort="interieur">Interieur</th>
+            <th data-sort="lk">LK</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" class="muted">Noch kein Pferd eingelesen.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="related-result"></div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/authStatus.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/breeding.js"></script>
+  <script src="js/tournamentScoring.js"></script>
+  <script src="js/pferdepruefung.js"></script>
+</body>
+</html>
