@@ -127,8 +127,13 @@ async function init() {
   wireFarbwunschDropdown();
   document.addEventListener('click', onDecksprungClick);
   await initAuthStatus();
-  await loadVerpaarungLogEnabled();
-  await loadDefaultBreeds();
+  // loadVerpaarungLogEnabled/loadDefaultBreeds sind voneinander unabhängig
+  // (beide brauchen nur currentAuthSession aus initAuthStatus) - parallel
+  // statt seriell (Nutzerwunsch 2026-09-09, "Ladezeit weiter
+  // beschleunigen"). ensureHorsesLoaded() braucht defaultBreeds aber
+  // zuverlässig VOR seinem eigenen ersten Lauf (siehe initialSelection in
+  // createBreedFilter), bleibt deshalb bewusst danach.
+  await Promise.all([loadVerpaarungLogEnabled(), loadDefaultBreeds()]);
   // Lädt die Pferdeliste wieder direkt beim Seitenaufruf (Nutzerwunsch
   // 2026-09-09 - zurück vom bisherigen Lazy-Load bei der ersten Eingabe in
   // eines der beiden Namens-Suchfelder, siehe ensureHorsesLoaded/

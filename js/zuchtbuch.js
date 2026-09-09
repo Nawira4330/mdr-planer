@@ -81,8 +81,13 @@ async function init() {
   wireCompareAvg();
   wireTagSuggestHandlers('Zuchtbuch');
   await initAuthStatus();
-  await loadCompareTolerances();
-  await loadDefaultBreeds();
+  // loadCompareTolerances/loadDefaultBreeds sind voneinander unabhängig
+  // (beide brauchen nur currentAuthSession aus initAuthStatus) - parallel
+  // statt seriell (Nutzerwunsch 2026-09-09, "Ladezeit weiter
+  // beschleunigen"). ensureHorsesLoaded() braucht defaultBreeds aber
+  // zuverlässig VOR seinem eigenen ersten Lauf (siehe initialSelection in
+  // createBreedFilter), bleibt deshalb bewusst danach.
+  await Promise.all([loadCompareTolerances(), loadDefaultBreeds()]);
   // Lädt die Pferdeliste wieder direkt beim Seitenaufruf (Nutzerwunsch
   // 2026-09-09 - zurück vom bisherigen Lazy-Load bei der ersten Eingabe im
   // Suchfeld, siehe ensureHorsesLoaded/loadHorses weiter unten). Vorteil
