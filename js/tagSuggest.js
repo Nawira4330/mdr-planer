@@ -55,6 +55,11 @@ function wireTagSuggestHandlers(source) {
       const wrap = toggle.closest('.tag-suggest-wrap');
       toggle.hidden = true;
       wrap.querySelector('.tag-suggest-form').hidden = false;
+      // Status vom vorherigen Vorschlag ("✓ Vorgeschlagen...") nicht
+      // stehen lassen, wenn direkt danach ein weiteres Schlagwort
+      // vorgeschlagen wird - sonst wirkt es, als gehöre der alte Haken
+      // noch zum neuen (noch gar nicht abgeschickten) Vorschlag.
+      wrap.querySelector('.tag-suggest-status').textContent = '';
       return;
     }
     const cancel = e.target.closest('.tag-suggest-cancel');
@@ -84,6 +89,14 @@ function wireTagSuggestHandlers(source) {
         return;
       }
       wrap.querySelector('.tag-suggest-form').hidden = true;
+      // Toggle-Button wieder einblenden (Bugfix, Nutzerfeedback): sonst
+      // liesse sich nach dem ersten Vorschlag kein zweites/drittes
+      // Schlagwort mehr vorschlagen, ohne die Seite neu zu laden - z.B.
+      // wenn ein Pferd bereits ein Schlagwort hat und ein weiteres dazu
+      // vorgeschlagen werden soll. Note-Feld wird geleert, damit sie nicht
+      // versehentlich beim naechsten Vorschlag mit uebernommen wird.
+      wrap.querySelector('.tag-suggest-toggle').hidden = false;
+      wrap.querySelector('.tag-suggest-note').value = '';
       statusEl.textContent = '✓ Vorgeschlagen - wird in der Pferdedatenbank geprüft';
     }
   });
