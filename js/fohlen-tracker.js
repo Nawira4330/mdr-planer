@@ -549,17 +549,12 @@ async function renderTop() {
     return;
   }
 
-  // "Rang" bleibt an der ursprünglichen Fohlenanzahl-Reihenfolge hängen
-  // (das IST die Top-10-Auswahl) - der Spaltenklick sortiert nur die
-  // ANZEIGE-Reihenfolge der bereits feststehenden Top 20 um.
-  const rankedWithRank = ranked.map((r, i) => ({ ...r, rank: i + 1 }));
-  const sorted = applySortGeneric(rankedWithRank, topSort, topSortValue);
+  const sorted = applySortGeneric(ranked, topSort, topSortValue);
 
   const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(topSort, field)}</th>`;
   let html = `<div class="table-wrap"><table class="top-table">
     <thead><tr>
       <th></th>
-      ${th('rank', 'Rang')}
       ${th('name', 'Name', ' class="sticky-name"')}
       ${th('gender', 'Geschlecht')}
       ${th('breed', 'Rasse')}
@@ -576,7 +571,6 @@ async function renderTop() {
 
 function topSortValue(row, field) {
   switch (field) {
-    case 'rank': return row.rank;
     case 'name': return (row.horse.name || '').toLowerCase();
     case 'gender': return (row.horse.gender || '').toLowerCase();
     case 'breed': return (row.horse.breed || '').toLowerCase();
@@ -588,14 +582,13 @@ function topSortValue(row, field) {
   }
 }
 
-const TOP_ROW_COLSPAN = 9;
+const TOP_ROW_COLSPAN = 8;
 
 function topRowHtml(r) {
   const h = r.horse;
   const expanded = expandedTopIds.has(h.id);
   let html = `<tr class="top-row" data-id="${escapeHtml(h.id)}" style="cursor:pointer;">
     <td>${expanded ? '▾' : '▸'}</td>
-    <td data-label="Rang">${r.rank}</td>
     <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
