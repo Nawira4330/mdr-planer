@@ -155,6 +155,33 @@ function computeDerived(h) {
   };
 }
 
+// Farbliche Kodierung der Fohlen-Werte (GP/Ext/Ext%/Int) gegen den
+// jeweils aufgeklappten Elternteil (Nutzerwunsch) - gleiche Konvention wie
+// MDR-Planer/js/zuchtbuch.js (compareColor): gruen = besser als der
+// Elternteil, rot = schlechter, keine Farbe = gleich oder einer der beiden
+// Werte unbekannt. Hier dupliziert statt geteilt, da jede Seite in diesem
+// Repo ihre kleinen Anzeige-Helfer eigenstaendig haelt (siehe escapeHtml).
+const METRIC_HIGHER_IS_BETTER = { gp: true, ext: false, extpct: true, int: false };
+function compareColor(value, reference, metric) {
+  if (value == null || reference == null) return '';
+  if (value === reference) return 'var(--text)';
+  const higherIsBetter = METRIC_HIGHER_IS_BETTER[metric];
+  const better = higherIsBetter ? value > reference : value < reference;
+  return better ? 'var(--success)' : 'var(--danger)';
+}
+function metricCellStyle(value, reference, metric) {
+  const color = compareColor(value, reference, metric);
+  return color ? `color:${color}; font-weight:600;` : '';
+}
+
+// Schlagwort-Vorschlag-Button (js/tagSuggest.js) - nur fuer eingeloggte
+// Besitzer*innen des jeweiligen Fohlens, identisch zur Einbindung in
+// js/zuchtbuch.js (rowTagSuggestHtml).
+function rowTagSuggestHtml(horse) {
+  if (!horse || !isLoggedIn() || !isOwnerOf(horse.owner)) return '';
+  return tagSuggestButtonHtml(horse.id, horse.owner);
+}
+
 function zzlDisplay(breedingAllowed) {
   if (breedingAllowed === true) return 'Ja';
   if (breedingAllowed === false) return 'Nein';
@@ -449,7 +476,8 @@ function trackerSubSortValue(row, field) {
 function trackerSubTableHtml(foals, parentHorse) {
   const pool = trackerFilteredHorses();
   if (!foals.length) return '<p class="small muted" style="margin:0.3rem 0;">Keine eigenen Fohlen im sichtbaren Stammbaum der übrigen Pferde gefunden.</p>';
-  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), verwandte: countRelatedWide(h, pool), inzucht: countRelatedInzucht(h, pool), otherParent: otherParentOf(h, parentHorse) }));
+  const parentD = computeDerived(parentHorse);
+  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), parentD, verwandte: countRelatedWide(h, pool), inzucht: countRelatedInzucht(h, pool), otherParent: otherParentOf(h, parentHorse) }));
   const sorted = applySortGeneric(rows, trackerSubSort, trackerSubSortValue);
   const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(trackerSubSort, field)}</th>`;
   return `<div class="table-wrap"><table class="tracker-subtable">
@@ -474,19 +502,20 @@ function trackerSubTableHtml(foals, parentHorse) {
 function trackerSubRowHtml(row) {
   const h = row.horse;
   const d = row.d;
+  const p = row.parentD;
   return `<tr>
     <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
     <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
-    <td data-label="GP">${d.gp != null ? Math.round(d.gp) : '–'}</td>
-    <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
-    <td data-label="Ext%">${d.extPercent != null ? d.extPercent.toFixed(2) : '–'}</td>
-    <td data-label="Int">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}</td>
+    <td data-label="GP" style="${metricCellStyle(d.gp, p.gp, 'gp')}">${d.gp != null ? Math.round(d.gp) : '–'}</td>
+    <td data-label="Ext" style="${metricCellStyle(d.extAvg, p.extAvg, 'ext')}">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
+    <td data-label="Ext%" style="${metricCellStyle(d.extPercent, p.extPercent, 'extpct')}">${d.extPercent != null ? d.extPercent.toFixed(2) : '–'}</td>
+    <td data-label="Int" style="${metricCellStyle(d.intAvg, p.intAvg, 'int')}">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
     <td data-label="Verwandte">${row.verwandte}</td>
     <td data-label="Inzucht">${row.inzucht == null ? 'Selbst bereits eingezüchtet' : row.inzucht}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
-    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}</td>
+    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}${rowTagSuggestHtml(h)}</td>
   </tr>`;
 }
 
@@ -601,7 +630,8 @@ function topFoalSubSortValue(row, field) {
 }
 
 function topFoalSubTableHtml(foals, parentHorse) {
-  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), otherParent: otherParentOf(h, parentHorse) }));
+  const parentD = computeDerived(parentHorse);
+  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), parentD, otherParent: otherParentOf(h, parentHorse) }));
   const sorted = applySortGeneric(rows, topSubSort, topFoalSubSortValue);
   const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(topSubSort, field)}</th>`;
   return `<div class="table-wrap"><table class="top-subtable">
@@ -626,19 +656,20 @@ function topFoalSubTableHtml(foals, parentHorse) {
 function topFoalSubRowHtml(row) {
   const h = row.horse;
   const d = row.d;
+  const p = row.parentD;
   return `<tr>
     <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
     <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
-    <td data-label="GP">${d.gp != null ? Math.round(d.gp) : '–'}</td>
-    <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
-    <td data-label="Ext%">${d.extPercent != null ? d.extPercent.toFixed(2) : '–'}</td>
-    <td data-label="Int">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}</td>
+    <td data-label="GP" style="${metricCellStyle(d.gp, p.gp, 'gp')}">${d.gp != null ? Math.round(d.gp) : '–'}</td>
+    <td data-label="Ext" style="${metricCellStyle(d.extAvg, p.extAvg, 'ext')}">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
+    <td data-label="Ext%" style="${metricCellStyle(d.extPercent, p.extPercent, 'extpct')}">${d.extPercent != null ? d.extPercent.toFixed(2) : '–'}</td>
+    <td data-label="Int" style="${metricCellStyle(d.intAvg, p.intAvg, 'int')}">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}</td>
     <td data-label="ZZL">${zzlDisplay(h.breeding_allowed)}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
-    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}</td>
+    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}${rowTagSuggestHtml(h)}</td>
   </tr>`;
 }
 
