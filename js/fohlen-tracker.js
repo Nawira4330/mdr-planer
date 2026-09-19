@@ -365,13 +365,17 @@ async function renderTrackerTab() {
       d: computeDerived(h),
       hf: foals.filter((f) => f.gender === 'Hengst').length,
       sf: foals.filter((f) => f.gender === 'Stute').length,
-      verwandte: countRelatedWide(h, filtered),
-      inzucht: countRelatedInzucht(h, filtered),
+      // Nutzerwunsch: gegen den KOMPLETTEN Bestand zaehlen (nicht nur die
+      // gerade gefilterte Tabelle), damit die Zahlen mit dem Zuchtbuch-
+      // Reiter der MDR-Datenbank vergleichbar sind - der zaehlt ebenfalls
+      // gegen alle Pferde aller Zuechter, nicht gegen eine Teilmenge.
+      verwandte: countRelatedWide(h, allHorses),
+      inzucht: countRelatedInzucht(h, allHorses),
     };
   });
   const sorted = applySortGeneric(rows, trackerSort, trackerSortValue);
 
-  let html = `<p class="small muted">Zeigt ${filtered.length} Pferde entsprechend der Auswahl oben. Verwandten-Zählung bezieht sich auf diese gefilterte Menge (Filter anpassen, um gegen mehr/weniger Pferde zu prüfen).</p>`;
+  let html = `<p class="small muted">Zeigt ${filtered.length} Pferde entsprechend der Auswahl oben. Verwandten-/Inzucht-Zählung bezieht sich auf den KOMPLETTEN Bestand (alle Züchter), nicht nur diese gefilterte Menge - vergleichbar mit dem Zuchtbuch-Reiter der MDR-Datenbank.</p>`;
   html += `<div class="table-wrap"><table id="tracker-table">
     <thead><tr>
       <th data-sort="name" class="sticky-name">Pferdename${sortArrow(trackerSort, 'name')}</th>
@@ -474,10 +478,12 @@ function trackerSubSortValue(row, field) {
 }
 
 function trackerSubTableHtml(foals, parentHorse) {
-  const pool = trackerFilteredHorses();
   if (!foals.length) return '<p class="small muted" style="margin:0.3rem 0;">Keine eigenen Fohlen im sichtbaren Stammbaum der übrigen Pferde gefunden.</p>';
   const parentD = computeDerived(parentHorse);
-  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), parentD, verwandte: countRelatedWide(h, pool), inzucht: countRelatedInzucht(h, pool), otherParent: otherParentOf(h, parentHorse) }));
+  // Gegen den kompletten Bestand zaehlen, nicht nur die gefilterte Tabelle
+  // - siehe renderTrackerTab (gleiche Begruendung: Vergleichbarkeit mit
+  // dem Zuchtbuch-Reiter der MDR-Datenbank).
+  const rows = foals.map((h) => ({ horse: h, d: computeDerived(h), parentD, verwandte: countRelatedWide(h, allHorses), inzucht: countRelatedInzucht(h, allHorses), otherParent: otherParentOf(h, parentHorse) }));
   const sorted = applySortGeneric(rows, trackerSubSort, trackerSubSortValue);
   const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(trackerSubSort, field)}</th>`;
   return `<div class="table-wrap"><table class="tracker-subtable">
