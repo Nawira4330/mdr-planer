@@ -678,10 +678,14 @@ function presentGenesSummary(colorRows, coatColorName, notes, horseName, overrid
     manual.push({ locus, alleles: alleleCode, source: 'manuell' });
   }
 
+  // Der Pferdename wird NICHT nach Farbwörtern durchsucht (1:1 aus
+  // MDR-Datenbank/js/parser.js übernommen, Bugfix vom 20.09.2026,
+  // "Pearl Mirrow"): ein Pferd namens "Pearl Mirrow" hieß fälschlich
+  // Pearl-Träger, nur weil "Pearl" zufällig Teil des Namens war. Echte
+  // Farbangaben stehen zuverlässig in "coatColorName"/"notes".
   const hints = [
     ...inferGeneticHintsFromPhenotype(coatColorName),
     ...inferGeneticHintsFromPhenotype(notes),
-    ...inferGeneticHintsFromPhenotype(horseName),
   ];
   const seen = new Set();
   const inferred = [];
