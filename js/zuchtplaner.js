@@ -433,15 +433,29 @@ function renderInzuchtResult() {
 
 // Ergänzt die Genetik-Anzeige um "fl", wenn eine sonst unsichtbare
 // Flaxen-Trägerschaft (1 Kopie) nur über Eltern/Nachkommen erkennbar ist
-// (siehe hasFlaxenTrait in js/verpaarung.js) - sichtbares Flaxen (2
-// Kopien, "flfl") liefert presentGenesSummary bereits selbst über die
-// Fellfarbe (siehe PHENOTYPE_GENE_HINTS in js/parser.js), landet also
-// schon in "genetik" und wird hier nicht doppelt ergänzt.
-function genetikWithFlaxen(horse, genetik) {
-  if (!isVisiblyFlaxen(horse) && hasFlaxenTrait(horse, flaxenLookup, flaxenChildrenByName)) {
-    return genetik ? `${genetik} fl` : 'fl';
+// (siehe hasFlaxenTrait in js/verpaarung.js). Steht Flaxen bereits IRGENDWIE
+// in "genes" (sichtbares "flfl" aus der Fellfarbe ODER ein bereits
+// gespeichertes "fl"/"flfl" aus color_gene_overrides), wird hier NICHT
+// nochmal ergänzt.
+//
+// Bugfix (23.09.2026, "~~APH~~ Konrad -Cookie-" zeigte doppelt "fl fl"):
+// vorher wurde nur die SICHTBARE Fellfarbe geprüft (isVisiblyFlaxen /
+// \bflaxen\b), nicht aber ein bereits als Override gespeichertes "fl"
+// (het) - presentGenesSummary bekommt "color_gene_overrides" aber direkt
+// übergeben und liefert ein daraus abgeleitetes "fl" schon in "genes",
+// bevor diese Funktion überhaupt aufgerufen wird. Seit mdr-datenbank
+// Flaxen-Trägerschaft automatisch in color_gene_overrides nachträgt
+// (autoInheritFromParents/carrierBackfill, gemeinsame Datenbank), landete
+// das gesetzte "fl" also schon in "genes" UND wurde hier zusätzlich per
+// hasFlaxenTrait (eigene, unabhängige Eltern/Nachkommen-Prüfung, liest
+// KEINE Overrides) ein zweites Mal angehängt.
+function genetikWithFlaxen(horse, genes) {
+  const text = genes.map((g) => g.alleles).join(' ');
+  const alreadyShown = genes.some((g) => g.locus === 'Flaxen');
+  if (!alreadyShown && hasFlaxenTrait(horse, flaxenLookup, flaxenChildrenByName)) {
+    return text ? `${text} fl` : 'fl';
   }
-  return genetik;
+  return text;
 }
 
 const MAX_BREEDING_AGE = 25;
@@ -468,7 +482,7 @@ function parentSummaryHtml(label, horse) {
   const extPct = horse.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(horse.temperament, scoreTemperamentTerm);
   const genes = presentGenesSummary(horse.colors, horse.coat_color, horse.notes, horse.name, horse.color_gene_overrides);
-  const genetik = genetikWithFlaxen(horse, genes.map((g) => g.alleles).join(' '));
+  const genetik = genetikWithFlaxen(horse, genes);
 
   return `<div class="result-card">
     <h2 class="name-with-tags">${escapeHtml(label)}: ${escapeHtml(horse.name || '(ohne Name)')}${tagsBadgesHtml(horse.tags)}</h2>
@@ -833,7 +847,7 @@ function candidateCardHtml(rank, c, mare, stallion, weaknessOwnerLabel) {
   const extPct = h.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(h.temperament, scoreTemperamentTerm);
   const genes = presentGenesSummary(h.colors, h.coat_color, h.notes, h.name, h.color_gene_overrides);
-  const genetik = genetikWithFlaxen(h, genes.map((g) => g.alleles).join(' '));
+  const genetik = genetikWithFlaxen(h, genes);
 
   return `<div class="result-card">
     <h2 class="name-with-tags">${rank}. ${escapeHtml(h.name || '(ohne Name)')}${tagsBadgesHtml(h.tags)}</h2>
