@@ -2,7 +2,7 @@
 // Kennzahlen und den Verpaarungsratgeber (inkl. GP-Formel und
 // Genotyp-basierter Fohlen-Vorhersage) gebraucht werden.
 const HORSE_SELECT_FIELDS =
-  'id,name,owner,gender,breed,purebred_pct,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,birthdate,color_gene_overrides,tags';
+  'id,name,external_id,owner,gender,breed,purebred_pct,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,birthdate,color_gene_overrides,tags';
 
 // Leichtere Feldauswahl für die Datenbank-Schätzung (computeEmpiricalDeviations):
 // braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
@@ -472,7 +472,7 @@ function isTooOldForBreeding(horse) {
 function ageWarningHtml(horse) {
   const years = gameAgeYears(horse.birthdate);
   if (years == null || years < BREEDING_AGE_WARNING) return '';
-  return `<div class="notice notice-caution">⚠️ ${escapeHtml(horse.name || 'Dieses Pferd')} ist ${years} Spieljahre alt - ab ${MAX_BREEDING_AGE} Jahren nicht mehr in der Zuchtplaner-Auswahl.</div>`;
+  return `<div class="notice notice-caution">⚠️ ${linkedName(horse, 'Dieses Pferd')} ist ${years} Spieljahre alt - ab ${MAX_BREEDING_AGE} Jahren nicht mehr in der Zuchtplaner-Auswahl.</div>`;
 }
 
 function parentSummaryHtml(label, horse) {
@@ -485,7 +485,7 @@ function parentSummaryHtml(label, horse) {
   const genetik = genetikWithFlaxen(horse, genes);
 
   return `<div class="result-card">
-    <h2 class="name-with-tags">${escapeHtml(label)}: ${escapeHtml(horse.name || '(ohne Name)')}${tagsBadgesHtml(horse.tags)}</h2>
+    <h2 class="name-with-tags">${escapeHtml(label)}: ${linkedName(horse, '(ohne Name)')}${tagsBadgesHtml(horse.tags)}</h2>
     <p class="small muted">
       GP: <strong>${gp != null ? escapeHtml(String(gp)) : '–'}</strong>
       &nbsp;·&nbsp; Ext: <strong>${extAvg != null ? extAvg.toFixed(2) : '–'}</strong>
@@ -850,7 +850,7 @@ function candidateCardHtml(rank, c, mare, stallion, weaknessOwnerLabel) {
   const genetik = genetikWithFlaxen(h, genes);
 
   return `<div class="result-card">
-    <h2 class="name-with-tags">${rank}. ${escapeHtml(h.name || '(ohne Name)')}${tagsBadgesHtml(h.tags)}</h2>
+    <h2 class="name-with-tags">${rank}. ${linkedName(h, '(ohne Name)')}${tagsBadgesHtml(h.tags)}</h2>
     <p class="small muted">
       GP: <strong>${escapeHtml(String(gp))}</strong>
       &nbsp;·&nbsp; Ext: <strong>${fmtScore(extAvg)}</strong>
@@ -884,4 +884,20 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
+}
+
+// Nutzerwunsch: vor jedem angezeigten Pferdenamen einen Link zum echten
+// Spielprofil setzen (1:1 dieselbe URL-Konvention wie der 🔗-Button in
+// MDR-Datenbank/js/list.js bzw. den Verwaltungs-Tools dort). Ohne bekannte
+// externe ID (external_id) gibt es keinen Link, nur den (escapten) Namen -
+// betrifft hier auch den per Freitext eingelesenen "Fremder Hengst" (hat
+// nie eine external_id).
+function gameLinkPrefix(horse) {
+  if (!horse?.external_id) return '';
+  return `<a href="https://www.morning-dust-ranch.de/index2.php?site=pferd&id=${encodeURIComponent(horse.external_id)}" target="_blank" rel="noopener" title="Zum Pferd im Spiel">🔗</a> `;
+}
+
+function linkedName(horse, fallbackName) {
+  const name = horse?.name ?? fallbackName ?? '';
+  return `${gameLinkPrefix(horse)}${escapeHtml(name)}`;
 }

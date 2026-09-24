@@ -9,7 +9,7 @@
 // js/tagSuggest.js - muss also nach diesen Scripts eingebunden werden.
 
 const ZUCHTBUCH_FIELDS =
-  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags,birthdate,color_gene_overrides';
+  'id,name,external_id,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags,birthdate,color_gene_overrides';
 
 // Genau die vom Nutzer genannten 9 "Sondergene" (aus COLOR_WISH_OPTIONS in
 // js/verpaarung.js gefiltert) - siehe Aussortierhilfe-Farbvergleich.
@@ -427,6 +427,20 @@ function escapeHtml(str) {
   }[c]));
 }
 
+// Nutzerwunsch: vor jedem angezeigten Pferdenamen einen Link zum echten
+// Spielprofil setzen (1:1 dieselbe URL-Konvention wie der 🔗-Button in
+// MDR-Datenbank/js/list.js bzw. den Verwaltungs-Tools dort). Ohne bekannte
+// externe ID (external_id) gibt es keinen Link, nur den (escapten) Namen.
+function gameLinkPrefix(horse) {
+  if (!horse?.external_id) return '';
+  return `<a href="https://www.morning-dust-ranch.de/index2.php?site=pferd&id=${encodeURIComponent(horse.external_id)}" target="_blank" rel="noopener" title="Zum Pferd im Spiel">🔗</a> `;
+}
+
+function linkedName(horse, fallbackName) {
+  const name = horse?.name ?? fallbackName ?? '';
+  return `${gameLinkPrefix(horse)}${escapeHtml(name)}`;
+}
+
 // --- Gemeinsamer Render-Einstieg (kein Reiter-Umschalter mehr) ---
 
 function render() {
@@ -638,7 +652,7 @@ function horseSummaryHtml(h, label, showRelatedness) {
   const d = computeDerived(h);
   const ekh = affectedDiseaseLabels(h);
   const age = h.birthdate ? formatAge(h.birthdate) : '';
-  const heading = label ? `${escapeHtml(label)}: ${escapeHtml(h.name || '(ohne Name)')}` : escapeHtml(h.name || '(ohne Name)');
+  const heading = label ? `${escapeHtml(label)}: ${linkedName(h, '(ohne Name)')}` : linkedName(h, '(ohne Name)');
   const foreignNote = h.id == null ? '<p class="small muted">Datenbankfremdes Pferd (per Freitext eingelesen, nicht gespeichert).</p>' : '';
   return `<div class="result-card">
     <h2 class="name-with-tags">${heading}${tagsBadgesHtml(h.tags)}</h2>
@@ -769,7 +783,7 @@ function relativeRowHtml(r, refD) {
     return `<td data-label="${metric}" class="${cls}" style="${style}">${formatted}</td>`;
   };
   return `<tr>
-    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Beziehung"${r.beziehungDetail ? ` title="${escapeHtml(r.beziehungDetail)}"` : ''}><span>${escapeHtml(r.beziehung)}${r.otherParent ? `<br><span class="small muted">${escapeHtml(r.otherParent.label)}: ${escapeHtml(r.otherParent.name)}</span>` : ''}</span></td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '')}</td>
@@ -858,7 +872,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
 
   const rowsHtml = sorted.map((row) => {
     const isRef = row.horse && referenceHorse && row.horse.id === referenceHorse.id;
-    const name = row.horse ? (row.horse.name || '(ohne Name)') : `${row.name || ''} (nicht in der Datenbank)`;
+    const nameHtml = row.horse ? linkedName(row.horse, '(ohne Name)') : escapeHtml(`${row.name || ''} (nicht in der Datenbank)`);
     const cell = (metric, digits) => {
       const v = row[metric];
       if (!row.resolved || isRef) return `<td data-label="${metric}">${fmt(v, digits)}</td>`;
@@ -872,7 +886,7 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort, ownerHigh
       ownerCell = `<td data-label="Besitzer" style="${style}">${row.owner ? escapeHtml(row.owner) : '–'}${matches ? ' ✓' : ''}</td>`;
     }
     return `<tr${isRef ? ' style="font-weight:600;"' : ''}>
-      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
+      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${nameHtml}</td>
       <td data-label="Beziehung">${escapeHtml(row.label)}</td>
       <td data-label="Geschlecht">${row.gender ? escapeHtml(row.gender) : '–'}</td>
       <td data-label="EKH" style="${row.ekh.length ? 'color:var(--danger); font-weight:600;' : ''}">${row.ekh.length ? escapeHtml(row.ekh.join(', ')) : '–'}</td>
@@ -922,9 +936,9 @@ function colorComparisonTableHtml(rows) {
   }).join('');
 
   const rowsHtml = sorted.map((row) => {
-    const name = row.horse ? (row.horse.name || '(ohne Name)') : `${row.name || ''} (nicht in der Datenbank)`;
+    const nameHtml = row.horse ? linkedName(row.horse, '(ohne Name)') : escapeHtml(`${row.name || ''} (nicht in der Datenbank)`);
     return `<tr${row.isReference ? ' style="font-weight:600;"' : ''}>
-      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
+      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${nameHtml}</td>
       <td data-label="Beziehung">${escapeHtml(row.label)}</td>
       ${cells(row)}
     </tr>`;

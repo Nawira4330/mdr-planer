@@ -7,7 +7,7 @@
 // js/breedFilter.js - muss also nach diesen Scripts eingebunden werden.
 
 const FOHLENPRUEFUNG_FIELDS =
-  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags,birthdate,color_gene_overrides';
+  'id,name,external_id,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,hlp_slp,breeding_allowed,breed,purebred_pct,tags,birthdate,color_gene_overrides';
 
 // Genau die vom Nutzer genannten 9 "Sondergene" (aus COLOR_WISH_OPTIONS in
 // js/verpaarung.js gefiltert) - zeigen, wie "ausgefallen" eine Farbe ist
@@ -355,14 +355,14 @@ function valueComparisonTableHtml(tableId, rows, referenceHorse, sort) {
 
   const rowsHtml = sorted.map((row) => {
     const isRef = row.horse && referenceHorse && row.horse.id === referenceHorse.id;
-    const name = row.horse ? (row.horse.name || '(ohne Name)') : `${row.name || ''} (nicht in der Datenbank)`;
+    const nameHtml = row.horse ? linkedName(row.horse, '(ohne Name)') : escapeHtml(`${row.name || ''} (nicht in der Datenbank)`);
     const cell = (metric, digits) => {
       const v = row[metric];
       const color = !row.resolved || isRef ? '' : compareColor(v, ref[metric], metric);
       return `<td data-label="${metric}" style="${color ? `color:${color}; font-weight:600;` : ''}">${fmt(v, digits)}</td>`;
     };
     return `<tr${isRef ? ' style="font-weight:600;"' : ''}>
-      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
+      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${nameHtml}</td>
       ${beziehungCellHtml(row)}
       <td data-label="Geschlecht">${row.gender ? escapeHtml(row.gender) : '–'}</td>
       <td data-label="EKH" style="${row.ekh.length ? 'color:var(--danger); font-weight:600;' : ''}">${row.ekh.length ? escapeHtml(row.ekh.join(', ')) : '–'}</td>
@@ -411,9 +411,9 @@ function colorComparisonTableHtml(rows) {
   }).join('');
 
   const rowsHtml = sorted.map((row) => {
-    const name = row.horse ? (row.horse.name || '(ohne Name)') : `${row.name || ''} (nicht in der Datenbank)`;
+    const nameHtml = row.horse ? linkedName(row.horse, '(ohne Name)') : escapeHtml(`${row.name || ''} (nicht in der Datenbank)`);
     return `<tr${row.isReference ? ' style="font-weight:600;"' : ''}>
-      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${escapeHtml(name)}</td>
+      <td data-label="Name" class="sticky-name" style="${row.horse ? tagCellStyle(row.horse.tags) : ''}">${nameHtml}</td>
       ${beziehungCellHtml(row)}
       ${cells(row)}
     </tr>`;
@@ -522,7 +522,7 @@ function renderFohlenTab() {
   const rows = buildRelativeRows(currentHorse);
   const { father, mother } = parentNames(currentHorse);
 
-  let html = `<h2 class="name-with-tags">${escapeHtml(currentHorse.name || '(ohne Name)')}${tagsBadgesHtml(currentHorse.tags)}</h2>`;
+  let html = `<h2 class="name-with-tags">${linkedName(currentHorse, '(ohne Name)')}${tagsBadgesHtml(currentHorse.tags)}</h2>`;
   html += horseStatsLineHtml(currentHorse);
   html += `<p class="small">${tagSuggestButtonHtml(currentHorse.id, currentHorse.owner)}</p>`;
   if (!father && !mother) {
@@ -566,4 +566,19 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
+}
+
+// Nutzerwunsch: vor jedem Pferdenamen einen Link zum echten Spielprofil
+// (1:1 dieselbe URL-Konvention wie der 🔗-Button in MDR-Datenbank/js/list.js)
+// - erspart das manuelle Suchen im Spiel, z.B. beim Nachprüfen eines
+// Voll-/Halbgeschwister-Verdachts. Ohne bekannte externe ID (external_id)
+// gibt es keinen Link, nur den (escapten) Namen.
+function gameLinkPrefix(horse) {
+  if (!horse?.external_id) return '';
+  return `<a href="https://www.morning-dust-ranch.de/index2.php?site=pferd&id=${encodeURIComponent(horse.external_id)}" target="_blank" rel="noopener" title="Zum Pferd im Spiel">🔗</a> `;
+}
+
+function linkedName(horse, fallbackName) {
+  const name = horse?.name ?? fallbackName ?? '';
+  return `${gameLinkPrefix(horse)}${escapeHtml(name)}`;
 }

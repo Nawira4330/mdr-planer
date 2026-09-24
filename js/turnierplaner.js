@@ -1,5 +1,5 @@
 const TOURNAMENT_SELECT_FIELDS =
-  'id,name,owner,gender,coat_color,breeding_allowed,disciplines,traits,tournament_potential,exterior_genetics,exterior_descriptive,temperament,genetic_diseases,breed,purebred_pct';
+  'id,name,external_id,owner,gender,coat_color,breeding_allowed,disciplines,traits,tournament_potential,exterior_genetics,exterior_descriptive,temperament,genetic_diseases,breed,purebred_pct';
 
 let horses = [];
 let currentMode = 'db';
@@ -162,7 +162,7 @@ function renderProfile() {
   const intAvg = averageScore(currentProfile.temperament, scoreTemperamentTerm);
 
   let html = `<div class="result-card">`;
-  html += `<h2>${escapeHtml(currentProfile.name || '(ohne Name)')}</h2>`;
+  html += `<h2>${linkedName(currentProfile, '(ohne Name)')}</h2>`;
   html += `<p class="small muted">`;
   html += `GP: <strong>${gp != null ? gp : '–'}</strong>`;
   html += ` &nbsp;·&nbsp; Ext: <strong>${extAvg != null ? extAvg.toFixed(2) : '–'}</strong>`;
@@ -261,4 +261,20 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
+}
+
+// Nutzerwunsch: vor jedem angezeigten Pferdenamen einen Link zum echten
+// Spielprofil setzen (1:1 dieselbe URL-Konvention wie der 🔗-Button in
+// MDR-Datenbank/js/list.js bzw. den Verwaltungs-Tools dort). Ohne bekannte
+// externe ID (external_id) gibt es keinen Link, nur den (escapten) Namen -
+// betrifft hier nur den DB-Modus (currentMode 'db'), im Freitext-Modus ist
+// currentProfile immer datenbankfremd, hat also nie eine external_id.
+function gameLinkPrefix(horse) {
+  if (!horse?.external_id) return '';
+  return `<a href="https://www.morning-dust-ranch.de/index2.php?site=pferd&id=${encodeURIComponent(horse.external_id)}" target="_blank" rel="noopener" title="Zum Pferd im Spiel">🔗</a> `;
+}
+
+function linkedName(horse, fallbackName) {
+  const name = horse?.name ?? fallbackName ?? '';
+  return `${gameLinkPrefix(horse)}${escapeHtml(name)}`;
 }

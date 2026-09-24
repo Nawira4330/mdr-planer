@@ -10,7 +10,7 @@
 // werden.
 
 const RELATION_FIELDS =
-  'id,name,owner,breed,pedigree,tags,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+  'id,name,external_id,owner,breed,pedigree,tags,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
 
 let allHorses = [];
 let currentProfile = null;
@@ -307,8 +307,9 @@ function renderRelated() {
 }
 
 function relatedRowHtml(r) {
-  const targetName = escapeHtml(currentProfile.name || '(ohne Name)');
-  const otherName = escapeHtml(r.horse.name || '(ohne Name)');
+  const targetNamePlain = escapeHtml(currentProfile.name || '(ohne Name)');
+  const otherName = linkedName(r.horse, '(ohne Name)');
+  const otherNamePlain = escapeHtml(r.horse.name || '(ohne Name)');
   const m = r.closest;
   const pill = r.inbreeding
     ? '<span class="pill no">Inzucht-Gefahr</span>'
@@ -316,7 +317,7 @@ function relatedRowHtml(r) {
   return `<tr>
     <td data-label="Pferd" style="${tagCellStyle(r.horse.tags)}">${otherName}</td>
     <td data-label="Besitzer">${r.horse.owner ? escapeHtml(r.horse.owner) : '–'}</td>
-    <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetName}: ${escapeHtml(m.positionA)}, bei ${otherName}: ${escapeHtml(m.positionB)})</td>
+    <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetNamePlain}: ${escapeHtml(m.positionA)}, bei ${otherNamePlain}: ${escapeHtml(m.positionB)})</td>
     <td data-label="Bei Verpaarung">${pill}</td>
     <td data-label="Schlagwort" style="${tagCellStyle(r.horse.tags)}">${tagCellText(r.horse.tags)}</td>
   </tr>`;
@@ -326,4 +327,20 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
+}
+
+// Nutzerwunsch: vor jedem angezeigten Pferdenamen einen Link zum echten
+// Spielprofil setzen (1:1 dieselbe URL-Konvention wie der 🔗-Button in
+// MDR-Datenbank/js/list.js bzw. den Verwaltungs-Tools dort). Ohne bekannte
+// externe ID (external_id) gibt es keinen Link, nur den (escapten) Namen -
+// betrifft hier vor allem currentProfile selbst (immer datenbankfremd, kein
+// external_id), aber nicht die gefundenen Verwandten aus dem Bestand.
+function gameLinkPrefix(horse) {
+  if (!horse?.external_id) return '';
+  return `<a href="https://www.morning-dust-ranch.de/index2.php?site=pferd&id=${encodeURIComponent(horse.external_id)}" target="_blank" rel="noopener" title="Zum Pferd im Spiel">🔗</a> `;
+}
+
+function linkedName(horse, fallbackName) {
+  const name = horse?.name ?? fallbackName ?? '';
+  return `${gameLinkPrefix(horse)}${escapeHtml(name)}`;
 }

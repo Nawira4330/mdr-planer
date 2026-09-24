@@ -5,7 +5,7 @@
 // also nach parser.js/breeding.js eingebunden werden.
 
 const RELATION_FIELDS =
-  'id,name,owner,gender,coat_color,breed,purebred_pct,pedigree,breeding_allowed,tags,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+  'id,name,external_id,owner,gender,coat_color,breed,purebred_pct,pedigree,breeding_allowed,tags,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
 
 // Ab wie vielen Zellen (Zeilen × Spalten) die Matrix aus Performance- und
 // Übersichtlichkeitsgründen nicht mehr gerendert wird.
@@ -307,7 +307,7 @@ function renderFreitext() {
 
   const countLabel = `${related.length} verwandte Pferde (${inbreedingCount} davon mit Inzucht-Gefahr bei Verpaarung)`;
   const heading = foreignTarget
-    ? `${countLabel} für "${escapeHtml(target.name || '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
+    ? `${countLabel} für "${linkedName(target, '(ohne Name)')}" gefunden (datenbankfremdes Pferd)`
     : `${countLabel} gefunden`;
   let html = `<div class="group-heading">${heading}</div>`;
   const d = targetValues(target);
@@ -354,8 +354,10 @@ function sortArrowGeneric(sort, field) {
 }
 
 function relationRowHtml(r, target) {
-  const targetName = escapeHtml(target.name || '(ohne Name)');
-  const otherName = escapeHtml(r.horse.name || '(ohne Name)');
+  const targetName = linkedName(target, '(ohne Name)');
+  const targetNamePlain = escapeHtml(target.name || '(ohne Name)');
+  const otherName = linkedName(r.horse, '(ohne Name)');
+  const otherNamePlain = escapeHtml(r.horse.name || '(ohne Name)');
   const m = r.closest;
   const pill = r.inbreeding
     ? '<span class="pill no">Inzucht-Gefahr</span>'
@@ -363,7 +365,7 @@ function relationRowHtml(r, target) {
   return `<tr>
     <td data-label="Pferd" style="${tagCellStyle(r.horse.tags)}">${otherName}</td>
     <td data-label="Besitzer">${r.horse.owner ? escapeHtml(r.horse.owner) : '–'}</td>
-    <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetName}: ${escapeHtml(m.positionA)}, bei ${otherName}: ${escapeHtml(m.positionB)})</td>
+    <td data-label="Nächster gemeinsamer Vorfahre">${escapeHtml(m.name)} (bei ${targetNamePlain}: ${escapeHtml(m.positionA)}, bei ${otherNamePlain}: ${escapeHtml(m.positionB)})</td>
     <td data-label="Bei Verpaarung">${pill}</td>
     <td data-label="Schlagwort" style="${tagCellStyle(r.horse.tags)}">${tagCellText(r.horse.tags)}</td>
   </tr>`;
@@ -598,10 +600,10 @@ async function renderMatrix() {
   html += sortableMatrixHeaderHtml('name', 'Name') + sortableMatrixHeaderHtml('owner', 'Besitzer')
     + sortableMatrixHeaderHtml('breed', 'Rasse') + sortableMatrixHeaderHtml('count', 'Anzahl')
     + sortableMatrixHeaderHtml('inbreedingCount', 'Inzucht');
-  html += cols.map((c) => `<th class="col-header" title="${escapeHtml(c.owner || '')}">${escapeHtml(c.name || '(ohne Name)')}</th>`).join('');
+  html += cols.map((c) => `<th class="col-header" title="${escapeHtml(c.owner || '')}">${linkedName(c, '(ohne Name)')}</th>`).join('');
   html += '</tr></thead><tbody>';
   html += rowData.map((rd) => `<tr>
-    <td data-label="Name">${escapeHtml(rd.horse.name || '(ohne Name)')}</td>
+    <td data-label="Name">${linkedName(rd.horse, '(ohne Name)')}</td>
     <td data-label="Besitzer">${rd.horse.owner ? escapeHtml(rd.horse.owner) : '–'}</td>
     <td data-label="Rasse" title="${escapeHtml(rd.horse.breed || '')}">${escapeHtml(breedAbbreviation(rd.horse.breed))}</td>
     <td data-label="Anzahl">${rd.count}</td>
@@ -629,4 +631,18 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
+}
+
+// Nutzerwunsch: vor jedem angezeigten Pferdenamen einen Link zum echten
+// Spielprofil setzen (1:1 dieselbe URL-Konvention wie der 🔗-Button in
+// MDR-Datenbank/js/list.js bzw. den Verwaltungs-Tools dort). Ohne bekannte
+// externe ID (external_id) gibt es keinen Link, nur den (escapten) Namen.
+function gameLinkPrefix(horse) {
+  if (!horse?.external_id) return '';
+  return `<a href="https://www.morning-dust-ranch.de/index2.php?site=pferd&id=${encodeURIComponent(horse.external_id)}" target="_blank" rel="noopener" title="Zum Pferd im Spiel">🔗</a> `;
+}
+
+function linkedName(horse, fallbackName) {
+  const name = horse?.name ?? fallbackName ?? '';
+  return `${gameLinkPrefix(horse)}${escapeHtml(name)}`;
 }

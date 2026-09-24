@@ -6,7 +6,7 @@
 // auflösbar (kein mother_id/father_id in der DB).
 
 const TRACKER_FIELDS =
-  'id,name,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,breeding_allowed,breed,tags';
+  'id,name,external_id,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,breeding_allowed,breed,tags';
 
 let allHorses = [];
 let breedFilter;
@@ -426,7 +426,7 @@ function trackerRowHtml(row) {
     ? '<td data-label="Inzucht" title="Dieses Pferd hat bereits eine Namensdopplung im eigenen sichtbaren Stammbaum - die Zahl gegen alle anderen Pferde wäre dadurch trivial und irreführend.">Selbst bereits eingezüchtet</td>'
     : `<td data-label="Inzucht">${row.inzucht}</td>`;
   let html = `<tr class="tracker-row" data-id="${escapeHtml(h.id)}" style="cursor:pointer;">
-    <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${expanded ? '▾ ' : '▸ '}${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${expanded ? '▾ ' : '▸ '}${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="GP">${d.gp != null ? d.gp : '–'}</td>
     <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
@@ -510,7 +510,7 @@ function trackerSubRowHtml(row) {
   const d = row.d;
   const p = row.parentD;
   return `<tr>
-    <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="GP" style="${metricCellStyle(d.gp, p.gp, 'gp')}">${d.gp != null ? Math.round(d.gp) : '–'}</td>
@@ -602,7 +602,7 @@ function topRowHtml(r) {
   let html = `<tr class="top-row" data-id="${escapeHtml(h.id)}" style="cursor:pointer;">
     <td>${expanded ? '▾' : '▸'}</td>
     <td data-label="Rang">${r.rank}</td>
-    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
@@ -664,7 +664,7 @@ function topFoalSubRowHtml(row) {
   const d = row.d;
   const p = row.parentD;
   return `<tr>
-    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${escapeHtml(h.name || '(ohne Name)')}</td>
+    <td data-label="Name" class="sticky-name" style="${tagCellStyle(h.tags)}">${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
@@ -683,4 +683,18 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
+}
+
+// Nutzerwunsch: vor jedem angezeigten Pferdenamen einen Link zum echten
+// Spielprofil setzen (1:1 dieselbe URL-Konvention wie der 🔗-Button in
+// MDR-Datenbank/js/list.js bzw. den Verwaltungs-Tools dort). Ohne bekannte
+// externe ID (external_id) gibt es keinen Link, nur den (escapten) Namen.
+function gameLinkPrefix(horse) {
+  if (!horse?.external_id) return '';
+  return `<a href="https://www.morning-dust-ranch.de/index2.php?site=pferd&id=${encodeURIComponent(horse.external_id)}" target="_blank" rel="noopener" title="Zum Pferd im Spiel">🔗</a> `;
+}
+
+function linkedName(horse, fallbackName) {
+  const name = horse?.name ?? fallbackName ?? '';
+  return `${gameLinkPrefix(horse)}${escapeHtml(name)}`;
 }
