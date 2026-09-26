@@ -289,7 +289,19 @@ function countRelatedInzucht(horse, pool) {
   for (const other of pool) {
     if (other.id === horse.id) continue;
     const namesB = inzuchtNamesById.get(other.id) || [];
-    if (hasInternalDuplicate(namesB) || namesB.some((name) => setA.has(name))) n++;
+    // Bugfix (Nutzerfeedback: "Inzucht und verwandt haut nicht hin" -
+    // Inzucht-Zahl lag höher als Verwandte-Zahl): war bisher ein
+    // "||" statt "&&" - zählte "other" fälschlich schon als Inzucht-Risiko
+    // für "horse" mit, wenn "other" SELBST bereits irgendwo unabhängig
+    // eingezüchtet ist (interner Namens-Duplikat in dessen EIGENEM Pool),
+    // völlig unabhängig davon, ob überhaupt eine Namensüberschneidung mit
+    // "horse" bestand - dadurch wurden auch komplett unverwandte, aber
+    // selbst schon eingezüchtete Pferde im ganzen Bestand mitgezählt.
+    // Genau wie bei "horse" selbst (siehe namesA oben) wird ein bereits
+    // selbst eingezüchtetes "other" jetzt komplett übersprungen, statt es
+    // als Treffer gegen "horse" gegenzurechnen.
+    if (hasInternalDuplicate(namesB)) continue;
+    if (namesB.some((name) => setA.has(name))) n++;
   }
   return n;
 }
