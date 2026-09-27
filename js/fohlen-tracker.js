@@ -581,7 +581,7 @@ function trackerRowHtml(row) {
     const related = findRelatedWide(h, allHorses);
     html += `<tr class="tracker-subrow"><td colspan="${TRACKER_COLSPAN}">
       <div class="group-heading" style="font-size:0.9rem;">Alle Verwandten im sichtbaren Stammbaum (${related.length})</div>
-      ${trackerRelatedTableHtml(related)}
+      ${trackerRelatedTableHtml(related, h)}
     </td></tr>`;
   }
   return html;
@@ -675,6 +675,7 @@ function trackerRelatedSortValue(row, field) {
     case 'ext': return row.d.extAvg;
     case 'extpct': return row.d.extPercent;
     case 'int': return row.d.intAvg;
+    case 'inbreeding': return row.inbreeding ? 1 : 0;
     case 'tag': return tagSortValue(row.horse.tags);
     default: return null;
   }
@@ -688,10 +689,13 @@ function trackerRelatedSortValue(row, field) {
 // unabhängig von der Fohlen-Unter-Tabelle. Ohne Vergleichsfarbe gegen
 // EINEN Elternteil (anders als bei den Fohlen) - bei "allen Verwandten"
 // gibt es keinen einzelnen Bezugs-Elternteil, das "Bestes Kind"-★-Symbol
-// bleibt aber (global ermittelt, unabhängig von dieser Ansicht).
-function trackerRelatedTableHtml(relatedHorses) {
+// bleibt aber (global ermittelt, unabhängig von dieser Ansicht). Zusätzlich
+// pro Zeile die Inzucht-Gefahr GEGENÜBER dem aufgeklappten Pferd (referenceHorse)
+// via findSharedNames (js/breeding.js) - derselbe geprüfte Ansatz wie in
+// js/verwandtschaft.js/js/zuchtbuch.js.
+function trackerRelatedTableHtml(relatedHorses, referenceHorse) {
   if (!relatedHorses.length) return '<p class="small muted" style="margin:0.3rem 0;">Keine Verwandten im sichtbaren Stammbaum gefunden.</p>';
-  const rows = relatedHorses.map((h) => ({ horse: h, d: computeDerived(h) }));
+  const rows = relatedHorses.map((h) => ({ horse: h, d: computeDerived(h), inbreeding: findSharedNames(referenceHorse, h).length > 0 }));
   const sorted = applySortGeneric(rows, trackerRelatedSort, trackerRelatedSortValue);
   const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(trackerRelatedSort, field)}</th>`;
   return `<div class="table-wrap"><table class="tracker-related-subtable">
@@ -705,6 +709,7 @@ function trackerRelatedTableHtml(relatedHorses) {
       ${th('int', 'Int')}
       ${th('coat_color', 'Farbe')}
       ${th('owner', 'Besitzer')}
+      ${th('inbreeding', 'Verpaarung')}
       ${th('tag', 'Schlagwort')}
     </tr></thead>
     <tbody>${sorted.map(trackerRelatedRowHtml).join('')}</tbody>
@@ -718,6 +723,9 @@ function trackerRelatedRowHtml(row) {
   const parentsText = (father || mother)
     ? [father ? `Vater: ${father}` : null, mother ? `Mutter: ${mother}` : null].filter(Boolean).join(', ')
     : '–';
+  const inbreedingPill = row.inbreeding
+    ? '<span class="pill no">Inzucht-Gefahr</span>'
+    : '<span class="pill yes">Unbedenklich</span>';
   return `<tr>
     <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
@@ -728,6 +736,7 @@ function trackerRelatedRowHtml(row) {
     <td data-label="Int">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'intAvg')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
+    <td data-label="Verpaarung">${inbreedingPill}</td>
     <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}${rowTagSuggestHtml(h)}</td>
   </tr>`;
 }
