@@ -32,8 +32,31 @@ async function init() {
   wireSortableHeaders();
   wireMobileSort('tournament-mobile-sort-select', (field, dir) => { tournamentSort = { field, dir }; renderProfile(); });
   wireRelatedSortableHeaders();
+  wireExternalIdCapture();
   document.querySelector('#parse-btn').addEventListener('click', onParse);
   await initAuthStatus();
+}
+
+// Nutzerwunsch: auch für das per Freitext eingelesene, datenbankfremde
+// Pferd selbst den Spiellink anzeigen. parseHorseText() selbst (reine
+// Text-Auswertung) liefert keine ID - wie in MDR-Datenbank/js/horseForm.js
+// wird deshalb zusätzlich beim Einfügen die HTML-Fassung der
+// Zwischenablage nach dem Pferdebild durchsucht, dessen Dateiname mit der
+// Spiel-ID beginnt (z.B. "864841_002.png"). Klappt nur, wenn der
+// Browser/das Gerät beim Kopieren überhaupt eine HTML-Fassung mitliefert
+// (siehe dortiger Kommentar zur Geräteabhängigkeit) - sonst bleibt
+// pastedExternalId einfach null und der Name erscheint wie bisher ohne
+// Link.
+let pastedExternalId = null;
+function wireExternalIdCapture() {
+  document.querySelector('#raw-text')?.addEventListener('paste', (e) => {
+    const html = e.clipboardData?.getData('text/html');
+    const doc = html ? new DOMParser().parseFromString(html, 'text/html') : null;
+    const rawSrc = doc?.getElementById('pferdebild')?.getAttribute('src');
+    const filename = rawSrc ? (rawSrc.split(/[/\\]/).pop() || '') : '';
+    const idMatch = filename.match(/^(\d+)/);
+    pastedExternalId = idMatch ? idMatch[1] : null;
+  });
 }
 
 // Lädt die (inzwischen recht große, >1200 Zeilen) Pferdeliste bewusst NICHT
@@ -69,6 +92,7 @@ async function onParse() {
     return;
   }
   currentProfile = parseHorseText(text);
+  if (pastedExternalId) currentProfile.external_id = pastedExternalId;
   const name = currentProfile.name || 'kein Name gefunden';
   statusEl.textContent = 'Erkannt: ' + name + ' – lade Verwandtschafts-Abgleich…';
   renderProfile();
@@ -102,7 +126,7 @@ function renderProfile() {
   const intAvg = averageScore(currentProfile.temperament, scoreTemperamentTerm);
 
   let html = `<div class="result-card">`;
-  html += `<h2>${escapeHtml(currentProfile.name || '(ohne Name)')}</h2>`;
+  html += `<h2>${linkedName(currentProfile, '(ohne Name)')}</h2>`;
   html += `<p class="small muted">`;
   html += `GP: <strong>${gp != null ? gp : '–'}</strong>`;
   html += ` &nbsp;·&nbsp; Ext: <strong>${extAvg != null ? extAvg.toFixed(2) : '–'}</strong>`;
@@ -333,8 +357,12 @@ function escapeHtml(str) {
 // Spielprofil setzen (1:1 dieselbe URL-Konvention wie der 🔗-Button in
 // MDR-Datenbank/js/list.js bzw. den Verwaltungs-Tools dort). Ohne bekannte
 // externe ID (external_id) gibt es keinen Link, nur den (escapten) Namen -
-// betrifft hier vor allem currentProfile selbst (immer datenbankfremd, kein
-// external_id), aber nicht die gefundenen Verwandten aus dem Bestand.
+// bei currentProfile selbst (immer datenbankfremd) hängt das davon ab, ob
+// beim Einfügen eine ID aus der Zwischenablage erkannt wurde (siehe
+// wireExternalIdCapture/pastedExternalId oben) - klappt das nicht (z.B.
+// weil das Gerät keine HTML-Fassung beim Kopieren mitliefert), bleibt es
+// beim reinen Namen ohne Link, wie bei jedem anderen Pferd ohne
+// external_id auch.
 function gameLinkPrefix(horse) {
   if (!horse?.external_id) return '';
   return `<a href="https://www.morning-dust-ranch.de/index2.php?site=pferd&id=${encodeURIComponent(horse.external_id)}" target="_blank" rel="noopener" title="Zum Pferd im Spiel">🔗</a> `;
