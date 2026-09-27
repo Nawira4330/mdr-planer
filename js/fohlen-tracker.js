@@ -70,6 +70,7 @@ async function init() {
   document.querySelector('#owner-select').addEventListener('change', renderTrackerTab);
   document.querySelector('#gender-select').addEventListener('change', renderTrackerTab);
   document.querySelector('#zzl-select').addEventListener('change', renderTrackerTab);
+  document.querySelector('#related-own-only-toggle').addEventListener('change', renderTrackerTab);
   wireTrackerToggle();
   wireSortableHeaders();
   wireTopToggle();
@@ -81,6 +82,16 @@ async function init() {
   wireTagSuggestHandlers('Fohlen-Tracker');
   await initAuthStatus();
   await loadDefaultBreeds();
+  // "Nur eigene Pferde" bei "Alle Verwandten" ergibt ohne Login keinen
+  // Sinn (isOwnerOf() ist dann immer false, die Liste wäre also stets
+  // leer) - Checkbox deshalb deaktivieren statt eine irreführende leere
+  // Liste zu zeigen.
+  if (!isLoggedIn()) {
+    const toggle = document.querySelector('#related-own-only-toggle');
+    toggle.checked = false;
+    toggle.disabled = true;
+    toggle.title = 'Nur mit Login verfügbar';
+  }
 }
 
 // Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
@@ -450,6 +461,15 @@ function trackerSortValue(row, field) {
   }
 }
 
+// Nutzerwunsch: einstellbar, ob die "Alle Verwandten"-Liste (aufgeklappte
+// Zeile) nur die eigenen Pferde des eingeloggten Nutzers zeigt oder alle -
+// die Verwandten-/Inzucht-ZAHLEN in der Haupttabelle (row.verwandte/
+// row.inzucht, siehe renderTrackerTab) laufen davon unberührt IMMER gegen
+// den kompletten Bestand.
+function relatedOwnOnlyEnabled() {
+  return isLoggedIn() && document.querySelector('#related-own-only-toggle').checked;
+}
+
 function trackerFilteredHorses() {
   const owner = document.querySelector('#owner-select').value;
   const gender = document.querySelector('#gender-select').value;
@@ -579,9 +599,11 @@ function trackerRowHtml(row) {
     // siehe countRelatedWide/findRelatedWide) direkt mit Werten/Eltern/
     // Farbe einsehbar, statt nur als reine Zahl.
     const related = findRelatedWide(h, allHorses);
+    const visibleRelated = relatedOwnOnlyEnabled() ? related.filter((r) => isOwnerOf(r.owner)) : related;
+    const countLabel = visibleRelated.length === related.length ? `${related.length}` : `${visibleRelated.length} von ${related.length}`;
     html += `<tr class="tracker-subrow"><td colspan="${TRACKER_COLSPAN}">
-      <div class="group-heading" style="font-size:0.9rem;">Alle Verwandten im sichtbaren Stammbaum (${related.length})</div>
-      ${trackerRelatedTableHtml(related, h)}
+      <div class="group-heading" style="font-size:0.9rem;">Alle Verwandten im sichtbaren Stammbaum (${countLabel})</div>
+      ${trackerRelatedTableHtml(visibleRelated, h)}
     </td></tr>`;
   }
   return html;
