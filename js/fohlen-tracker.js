@@ -20,6 +20,7 @@ let defaultBreeds = null;
 let childrenByParentName = new Map();
 let trackerSort = { field: 'gp', dir: 'desc' };
 let trackerSubSort = { field: 'gp', dir: 'desc' };
+let trackerRelatedSort = { field: 'gp', dir: 'desc' };
 let topSort = { field: 'count', dir: 'desc' };
 let topSubSort = { field: 'gp', dir: 'desc' };
 let expandedTrackerIds = new Set();
@@ -240,6 +241,9 @@ function wireSortableHeaders() {
     } else if (table.classList.contains('tracker-subtable')) {
       trackerSubSort = nextSort(trackerSubSort, field, field !== 'name');
       renderTrackerTab();
+    } else if (table.classList.contains('tracker-related-subtable')) {
+      trackerRelatedSort = nextSort(trackerRelatedSort, field, field !== 'name');
+      renderTrackerTab();
     } else if (table.classList.contains('top-table')) {
       topSort = nextSort(topSort, field, field !== 'name');
       renderTop();
@@ -359,16 +363,25 @@ function hasInternalDuplicate(names) {
 }
 
 function countRelatedWide(horse, pool) {
+  return findRelatedWide(horse, pool).length;
+}
+
+// Wie countRelatedWide, liefert aber die tatsächlichen Pferde zurück statt
+// nur die Anzahl (Nutzerwunsch: "nicht nur Kinder, alle Verwandten aus
+// derselben Linie ansehen können") - dieselbe Logik/derselbe Cache
+// (ancestorPoolById), nur zusätzlich mit den gefundenen Pferden statt nur
+// mitgezählt.
+function findRelatedWide(horse, pool) {
   const own = ancestorPoolById.get(horse.id);
-  if (!own || !own.size) return 0;
-  let n = 0;
+  if (!own || !own.size) return [];
+  const related = [];
   for (const other of pool) {
     if (other.id === horse.id) continue;
     const otherSet = ancestorPoolById.get(other.id);
     if (!otherSet) continue;
-    for (const name of own) { if (otherSet.has(name)) { n++; break; } }
+    for (const name of own) { if (otherSet.has(name)) { related.push(other); break; } }
   }
-  return n;
+  return related;
 }
 
 function countRelatedInzucht(horse, pool) {
@@ -557,7 +570,19 @@ function trackerRowHtml(row) {
   </tr>`;
   if (expanded) {
     const foals = childrenByParentName.get(normalizeName(h.name)) || [];
-    html += `<tr class="tracker-subrow"><td colspan="${TRACKER_COLSPAN}">${trackerSubTableHtml(foals, h)}</td></tr>`;
+    html += `<tr class="tracker-subrow"><td colspan="${TRACKER_COLSPAN}">
+      <div class="group-heading" style="font-size:0.9rem;">Eigene Fohlen (${foals.length})</div>
+      ${trackerSubTableHtml(foals, h)}
+    </td></tr>`;
+    // Nutzerwunsch: nicht nur die direkten Fohlen, sondern ALLE Verwandten
+    // aus derselben Linie (dieselbe Zahl wie in der "Verwandte"-Spalte,
+    // siehe countRelatedWide/findRelatedWide) direkt mit Werten/Eltern/
+    // Farbe einsehbar, statt nur als reine Zahl.
+    const related = findRelatedWide(h, allHorses);
+    html += `<tr class="tracker-subrow"><td colspan="${TRACKER_COLSPAN}">
+      <div class="group-heading" style="font-size:0.9rem;">Alle Verwandten im sichtbaren Stammbaum (${related.length})</div>
+      ${trackerRelatedTableHtml(related)}
+    </td></tr>`;
   }
   return html;
 }
@@ -637,6 +662,73 @@ function trackerSubRowHtml(row) {
     <td data-label="Inzucht">${row.inzucht == null ? 'Selbst bereits eingezüchtet' : row.inzucht}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
     <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}${rowTagSuggestHtml(h)}</td>
+  </tr>`;
+}
+
+function trackerRelatedSortValue(row, field) {
+  switch (field) {
+    case 'name': return (row.horse.name || '').toLowerCase();
+    case 'gender': return (row.horse.gender || '').toLowerCase();
+    case 'coat_color': return (row.horse.coat_color || '').toLowerCase();
+    case 'owner': return (row.horse.owner || '').toLowerCase();
+    case 'gp': return row.d.gp;
+    case 'ext': return row.d.extAvg;
+    case 'extpct': return row.d.extPercent;
+    case 'int': return row.d.intAvg;
+    case 'tag': return tagSortValue(row.horse.tags);
+    default: return null;
+  }
+}
+
+// Nutzerwunsch: nicht nur die direkten Fohlen, sondern ALLE Verwandten aus
+// derselben Linie (dieselbe Zahl wie in der "Verwandte"-Spalte, siehe
+// countRelatedWide/findRelatedWide) direkt mit Werten/Eltern/Farbe
+// einsehbar statt nur als reine Zahl - eigene, separat sortierbare
+// Unter-Tabelle (siehe wireSortableHeaders/trackerRelatedSort),
+// unabhängig von der Fohlen-Unter-Tabelle. Ohne Vergleichsfarbe gegen
+// EINEN Elternteil (anders als bei den Fohlen) - bei "allen Verwandten"
+// gibt es keinen einzelnen Bezugs-Elternteil, das "Bestes Kind"-★-Symbol
+// bleibt aber (global ermittelt, unabhängig von dieser Ansicht).
+function trackerRelatedTableHtml(relatedHorses) {
+  if (!relatedHorses.length) return '<p class="small muted" style="margin:0.3rem 0;">Keine Verwandten im sichtbaren Stammbaum gefunden.</p>';
+  const rows = relatedHorses.map((h) => ({ horse: h, d: computeDerived(h) }));
+  const sorted = applySortGeneric(rows, trackerRelatedSort, trackerRelatedSortValue);
+  const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(trackerRelatedSort, field)}</th>`;
+  return `<div class="table-wrap"><table class="tracker-related-subtable">
+    <thead><tr>
+      ${th('name', 'Pferdename', ' class="sticky-name"')}
+      ${th('gender', 'Geschlecht')}
+      <th>Eltern</th>
+      ${th('gp', 'GP')}
+      ${th('ext', 'Ext')}
+      ${th('extpct', 'Ext%')}
+      ${th('int', 'Int')}
+      ${th('coat_color', 'Farbe')}
+      ${th('owner', 'Besitzer')}
+      ${th('tag', 'Schlagwort')}
+    </tr></thead>
+    <tbody>${sorted.map(trackerRelatedRowHtml).join('')}</tbody>
+  </table></div>`;
+}
+
+function trackerRelatedRowHtml(row) {
+  const h = row.horse;
+  const d = row.d;
+  const { father, mother } = parentNames(h);
+  const parentsText = (father || mother)
+    ? [father ? `Vater: ${father}` : null, mother ? `Mutter: ${mother}` : null].filter(Boolean).join(', ')
+    : '–';
+  return `<tr>
+    <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${linkedName(h, '(ohne Name)')}</td>
+    <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
+    <td data-label="Eltern">${escapeHtml(parentsText)}</td>
+    <td data-label="GP">${d.gp != null ? Math.round(d.gp) : '–'}${bestChildStar(h.id, 'gp')}</td>
+    <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'extAvg')}</td>
+    <td data-label="Ext%">${d.extPercent != null ? d.extPercent + '%' : '–'}${bestChildStar(h.id, 'extPercent')}</td>
+    <td data-label="Int">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'intAvg')}</td>
+    <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
+    <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
+    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}</td>
   </tr>`;
 }
 
