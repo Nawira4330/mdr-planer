@@ -37,6 +37,16 @@ let ancestorPoolById = new Map();
 let inzuchtNamesById = new Map();
 let relatednessCachesBuilt = false;
 
+// "Bestes Kind"-Abzeichen (Nutzerwunsch: "ob das Fohlen das beste unter
+// seinen Geschwistern (selbes Geschlecht) ist und wie die Werte im
+// Vergleich zu den Eltern sind") - 1:1 aus MDR-Datenbank/js/list.js
+// portiert (dort seit Längerem bewährt), hier erstmals in MDR-Planer.
+// bestChildBadges: Map<Pferd-Id, [{key, label, symbol, state, childValue,
+// parentValue, childLabel, parentLabel}]> - pro Pferd nur die Werte, bei
+// denen es unter seinen gleichgeschlechtigen Geschwistern (Söhne EINES
+// Vaters bzw. Töchter EINER Mutter) den Bestwert erreicht.
+let bestChildBadges = new Map();
+
 document.addEventListener('DOMContentLoaded', init);
 
 function wireTabButtons() {
@@ -256,7 +266,87 @@ function buildRelatednessCaches() {
     }
     inzuchtNamesById.set(h.id, names);
   }
+  bestChildBadges = computeBestChildBadges();
   relatednessCachesBuilt = true;
+}
+
+// Dieselben 4 Werte/Richtungen wie beim Ø-Vergleich - GP/Ext% sind besser,
+// je höher, Ext/Int besser, je niedriger.
+const BEST_CHILD_METRICS = [
+  { key: 'gp', lowerIsBetter: false, symbol: '★', label: 'GP' },
+  { key: 'extAvg', lowerIsBetter: true, symbol: '★', label: 'Ext' },
+  { key: 'extPercent', lowerIsBetter: false, symbol: '★', label: 'Ext%' },
+  { key: 'intAvg', lowerIsBetter: true, symbol: '★', label: 'Int' },
+];
+
+function formatBestChildValue(key, value) {
+  if (value == null) return '?';
+  if (key === 'gp') return String(value);
+  if (key === 'extPercent') return value + '%';
+  return value.toFixed(2);
+}
+
+// Ermittelt für eine Gruppe gleichgeschlechtiger Geschwister (Söhne EINES
+// Vaters ODER Töchter EINER Mutter) je Wert einzeln, wer unter den
+// Geschwistern am besten abschneidet, vergleicht diesen Bestwert mit dem
+// Elternteil und trägt das Ergebnis in "badges" ein - bei echtem
+// Gleichstand bekommen alle mit dem Bestwert das Symbol (nicht nur eines).
+function assignBestChildBadges(children, parentStats, badges, childLabel, parentLabel) {
+  for (const metric of BEST_CHILD_METRICS) {
+    const values = children.map((c) => c.stats[metric.key]).filter((v) => v != null);
+    if (!values.length) continue;
+    const bestValue = metric.lowerIsBetter ? Math.min(...values) : Math.max(...values);
+    const pv = parentStats[metric.key];
+    let state;
+    if (pv == null) {
+      state = 'unknown';
+    } else {
+      const childBetter = metric.lowerIsBetter ? bestValue < pv : bestValue > pv;
+      const parentBetter = metric.lowerIsBetter ? pv < bestValue : pv > bestValue;
+      state = childBetter ? 'better' : (parentBetter ? 'worse' : 'equal');
+    }
+    for (const c of children) {
+      if (c.stats[metric.key] !== bestValue) continue;
+      const list = badges.get(c.id) || [];
+      list.push({ ...metric, state, childValue: bestValue, parentValue: pv ?? null, childLabel, parentLabel });
+      badges.set(c.id, list);
+    }
+  }
+}
+
+// Gruppiert den kompletten Bestand nach Söhnen EINES Vaters bzw. Töchtern
+// EINER Mutter (1:1 aus MDR-Datenbank/js/list.js/loadBestChildBadges) und
+// weist je Gruppe die Bestes-Kind-Abzeichen zu. Fehlt der Elternteil selbst
+// in der Datenbank, wird die beste/n Geschwister trotzdem ermittelt, nur
+// ohne Farbaussage besser/gleich/schlechter (state "unknown").
+function computeBestChildBadges() {
+  const byName = new Map(allHorses.map((h) => [h.name, h]));
+  const sonsByFather = new Map();
+  const daughtersByMother = new Map();
+  for (const h of allHorses) {
+    const { father, mother } = parentNames(h);
+    if (h.gender === 'Hengst' || h.gender === 'Hengstfohlen' || h.gender === 'Wallach') {
+      if (!father) continue;
+      const list = sonsByFather.get(father) || [];
+      list.push({ id: h.id, stats: computeDerived(h) });
+      sonsByFather.set(father, list);
+    } else if (h.gender === 'Stute' || h.gender === 'Stutfohlen') {
+      if (!mother) continue;
+      const list = daughtersByMother.get(mother) || [];
+      list.push({ id: h.id, stats: computeDerived(h) });
+      daughtersByMother.set(mother, list);
+    }
+  }
+  const badges = new Map();
+  for (const [fatherName, sons] of sonsByFather) {
+    const father = byName.get(fatherName);
+    assignBestChildBadges(sons, father ? computeDerived(father) : {}, badges, 'Sohn', 'Vater');
+  }
+  for (const [motherName, daughters] of daughtersByMother) {
+    const mother = byName.get(motherName);
+    assignBestChildBadges(daughters, mother ? computeDerived(mother) : {}, badges, 'Tochter', 'Mutter');
+  }
+  return badges;
 }
 
 function hasInternalDuplicate(names) {
@@ -387,7 +477,7 @@ async function renderTrackerTab() {
   });
   const sorted = applySortGeneric(rows, trackerSort, trackerSortValue);
 
-  let html = `<p class="small muted">Zeigt ${filtered.length} Pferde entsprechend der Auswahl oben. Verwandten-/Inzucht-Zählung bezieht sich auf den KOMPLETTEN Bestand (alle Züchter), nicht nur diese gefilterte Menge - vergleichbar mit dem Zuchtbuch-Reiter der MDR-Datenbank.</p>`;
+  let html = `<p class="small muted">Zeigt ${filtered.length} Pferde entsprechend der Auswahl oben. Verwandten-/Inzucht-Zählung bezieht sich auf den KOMPLETTEN Bestand (alle Züchter), nicht nur diese gefilterte Menge - vergleichbar mit dem Zuchtbuch-Reiter der MDR-Datenbank. <span class="best-child-symbol" style="font-size:0.9em;">★</span> hinter GP/Ext/Ext%/Int: dieses Pferd ist bei diesem Wert das Beste unter seinen gleichgeschlechtigen Geschwistern (Söhne desselben Vaters bzw. Töchter derselben Mutter) - Farbe zeigt besser (grün) / gleichauf (gelb) / schlechter (rot) als der jeweilige Elternteil, hellblau = kein Vergleich möglich (Elternteil nicht in der Datenbank oder ohne diesen Wert).</p>`;
   html += `<div class="table-wrap"><table id="tracker-table">
     <thead><tr>
       <th data-sort="name" class="sticky-name">Pferdename${sortArrow(trackerSort, 'name')}</th>
@@ -430,6 +520,19 @@ function applyStickyOffsets(root) {
 
 const TRACKER_COLSPAN = 13;
 
+// "Bestes Kind"-Symbol für eine einzelne Wert-Zelle (siehe
+// computeBestChildBadges) - leeres Ergebnis, wenn dieses Pferd bei diesem
+// Wert kein "Bestes Kind" ist.
+const BEST_CHILD_STATE_LABELS = { better: 'besser', equal: 'gleichauf', worse: 'schlechter' };
+function bestChildStar(horseId, key) {
+  const m = (bestChildBadges.get(horseId) || []).find((b) => b.key === key);
+  if (!m) return '';
+  const title = m.state === 'unknown'
+    ? `${m.label}: ${m.childLabel} beste(r) unter den Geschwistern (Vergleich mit ${m.parentLabel} nicht möglich - fehlt in der Datenbank oder ohne diesen Wert)`
+    : `${m.label}: ${m.childLabel} ${formatBestChildValue(m.key, m.childValue)} ${BEST_CHILD_STATE_LABELS[m.state]} als ${m.parentLabel} ${formatBestChildValue(m.key, m.parentValue)}`;
+  return ` <span class="best-child-symbol best-child-${m.state}" title="${escapeHtml(title)}">${m.symbol}</span>`;
+}
+
 function trackerRowHtml(row) {
   const h = row.horse;
   const d = row.d;
@@ -440,10 +543,10 @@ function trackerRowHtml(row) {
   let html = `<tr class="tracker-row" data-id="${escapeHtml(h.id)}" style="cursor:pointer;">
     <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${expanded ? '▾ ' : '▸ '}${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
-    <td data-label="GP">${d.gp != null ? d.gp : '–'}</td>
-    <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
-    <td data-label="Ext%">${d.extPercent != null ? d.extPercent + '%' : '–'}</td>
-    <td data-label="Int">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}</td>
+    <td data-label="GP">${d.gp != null ? d.gp : '–'}${bestChildStar(h.id, 'gp')}</td>
+    <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'extAvg')}</td>
+    <td data-label="Ext%">${d.extPercent != null ? d.extPercent + '%' : '–'}${bestChildStar(h.id, 'extPercent')}</td>
+    <td data-label="Int">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'intAvg')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
     <td data-label="HF">${row.hf}</td>
     <td data-label="SF">${row.sf}</td>
@@ -525,10 +628,10 @@ function trackerSubRowHtml(row) {
     <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
-    <td data-label="GP" style="${metricCellStyle(d.gp, p.gp, 'gp')}">${d.gp != null ? Math.round(d.gp) : '–'}</td>
-    <td data-label="Ext" style="${metricCellStyle(d.extAvg, p.extAvg, 'ext')}">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
-    <td data-label="Ext%" style="${metricCellStyle(d.extPercent, p.extPercent, 'extpct')}">${d.extPercent != null ? d.extPercent.toFixed(2) : '–'}</td>
-    <td data-label="Int" style="${metricCellStyle(d.intAvg, p.intAvg, 'int')}">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}</td>
+    <td data-label="GP" style="${metricCellStyle(d.gp, p.gp, 'gp')}">${d.gp != null ? Math.round(d.gp) : '–'}${bestChildStar(h.id, 'gp')}</td>
+    <td data-label="Ext" style="${metricCellStyle(d.extAvg, p.extAvg, 'ext')}">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'extAvg')}</td>
+    <td data-label="Ext%" style="${metricCellStyle(d.extPercent, p.extPercent, 'extpct')}">${d.extPercent != null ? d.extPercent.toFixed(2) : '–'}${bestChildStar(h.id, 'extPercent')}</td>
+    <td data-label="Int" style="${metricCellStyle(d.intAvg, p.intAvg, 'int')}">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'intAvg')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
     <td data-label="Verwandte">${row.verwandte}</td>
     <td data-label="Inzucht">${row.inzucht == null ? 'Selbst bereits eingezüchtet' : row.inzucht}</td>
@@ -680,10 +783,10 @@ function topFoalSubRowHtml(row) {
     <td data-label="Anderer Elternteil">${row.otherParent ? `${escapeHtml(row.otherParent.label)}: ${escapeHtml(row.otherParent.name)}` : '–'}</td>
     <td data-label="Rasse">${escapeHtml(h.breed || '–')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
-    <td data-label="GP" style="${metricCellStyle(d.gp, p.gp, 'gp')}">${d.gp != null ? Math.round(d.gp) : '–'}</td>
-    <td data-label="Ext" style="${metricCellStyle(d.extAvg, p.extAvg, 'ext')}">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}</td>
-    <td data-label="Ext%" style="${metricCellStyle(d.extPercent, p.extPercent, 'extpct')}">${d.extPercent != null ? d.extPercent.toFixed(2) : '–'}</td>
-    <td data-label="Int" style="${metricCellStyle(d.intAvg, p.intAvg, 'int')}">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}</td>
+    <td data-label="GP" style="${metricCellStyle(d.gp, p.gp, 'gp')}">${d.gp != null ? Math.round(d.gp) : '–'}${bestChildStar(h.id, 'gp')}</td>
+    <td data-label="Ext" style="${metricCellStyle(d.extAvg, p.extAvg, 'ext')}">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'extAvg')}</td>
+    <td data-label="Ext%" style="${metricCellStyle(d.extPercent, p.extPercent, 'extpct')}">${d.extPercent != null ? d.extPercent.toFixed(2) : '–'}${bestChildStar(h.id, 'extPercent')}</td>
+    <td data-label="Int" style="${metricCellStyle(d.intAvg, p.intAvg, 'int')}">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'intAvg')}</td>
     <td data-label="ZZL">${zzlDisplay(h.breeding_allowed)}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>

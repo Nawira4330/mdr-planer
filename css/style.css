@@ -732,3 +732,18 @@ details.collapsible[open] > summary, details.howto[open] > summary { margin-bott
 .changelog-badge.feature { color: var(--accent); border: 1px solid var(--accent); }
 .changelog-badge.update { color: var(--info); border: 1px solid var(--info); }
 .changelog-badge.bugfix { color: var(--warning); border: 1px solid var(--warning); }
+
+/* "Bestes Kind"-Abzeichen (Fohlen-Tracker) - 1:1 aus MDR-Datenbank/
+   css/style.css portiert (dort seit Längerem bewährt). Zeigt je Wert-
+   Zelle (GP/Ext/Ext%/Int), ob dieses Pferd unter seinen gleichgeschlechtigen
+   Geschwistern (Söhne EINES Vaters bzw. Töchter EINER Mutter) den Bestwert
+   erreicht, eingefärbt danach, ob dieser Bestwert besser/gleichauf/
+   schlechter als der jeweilige Elternteil ist. */
+.best-child-symbol { font-size: 1rem; line-height: 1; cursor: default; margin-right: 0.15rem; color: #eab308; }
+.best-child-symbol.best-child-better { color: var(--success); }
+.best-child-symbol.best-child-equal { color: var(--warning); }
+.best-child-symbol.best-child-worse { color: var(--danger); }
+/* Elternteil fehlt in der Datenbank (oder hat diesen einen Wert nicht) -
+   bestes Geschwister wird trotzdem ermittelt und gezeigt, nur ohne
+   besser/gleich/schlechter-Aussage. */
+.best-child-symbol.best-child-unknown { color: var(--info); }
