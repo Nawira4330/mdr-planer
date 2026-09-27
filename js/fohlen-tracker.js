@@ -566,7 +566,7 @@ function trackerRowHtml(row) {
     <td data-label="Verwandte">${row.verwandte}</td>
     ${inzuchtCell}
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
-    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}</td>
+    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}${rowTagSuggestHtml(h)}</td>
   </tr>`;
   if (expanded) {
     const foals = childrenByParentName.get(normalizeName(h.name)) || [];
@@ -728,7 +728,7 @@ function trackerRelatedRowHtml(row) {
     <td data-label="Int">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'intAvg')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
-    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}</td>
+    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}${rowTagSuggestHtml(h)}</td>
   </tr>`;
 }
 
@@ -815,7 +815,7 @@ function topRowHtml(r) {
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
     <td data-label="ZZL">${zzlDisplay(h.breeding_allowed)}</td>
     <td data-label="Fohlen">${r.count}</td>
-    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}</td>
+    <td data-label="Schlagwort" style="${tagCellStyle(h.tags)}">${tagCellText(h.tags)}${rowTagSuggestHtml(h)}</td>
   </tr>`;
   if (expanded) {
     const foals = childrenByParentName.get(normalizeName(h.name)) || [];
