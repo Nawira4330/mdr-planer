@@ -424,6 +424,11 @@ function wireTrackerToggle() {
   document.addEventListener('click', (e) => {
     const row = e.target.closest('#tracker-table tr.tracker-row[data-id]');
     if (!row) return;
+    // Klicks im "Schlagwort vorschlagen"-Formular dürfen die Zeile nicht
+    // auf-/zuklappen: das Neu-Rendern würde das gerade geöffnete Formular
+    // sofort wieder zerstören (Bugreport: Tag vorschlagen ging im
+    // Fohlen-Tracker nicht).
+    if (e.target.closest('.tag-suggest-wrap')) return;
     const id = row.dataset.id;
     if (expandedTrackerIds.has(id)) expandedTrackerIds.delete(id);
     else expandedTrackerIds.add(id);
@@ -435,6 +440,7 @@ function wireTopToggle() {
   document.addEventListener('click', (e) => {
     const row = e.target.closest('#top-result tr.top-row[data-id]');
     if (!row) return;
+    if (e.target.closest('.tag-suggest-wrap')) return;
     const id = row.dataset.id;
     if (expandedTopIds.has(id)) expandedTopIds.delete(id);
     else expandedTopIds.add(id);

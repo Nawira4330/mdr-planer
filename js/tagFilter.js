@@ -7,6 +7,15 @@
 // Pferd das jeweilige Schlagwort trägt. "Kein Schlagwort" filtert auf
 // Pferde ganz ohne Eintrag (Muster/ODER-Semantik wie matchesTags in
 // MDR-Datenbank/js/list.js).
+//
+// Nutzerwunsch: Schlagwörter lassen sich zusätzlich AUSSCHLIESSEN. Je Zeile
+// gibt es zwei unabhängige Häkchen - "einschließen" (wie bisher: mindestens
+// eines der angehakten Schlagwörter muss zutreffen) und "✕ ausschließen"
+// (trifft eines der so markierten Schlagwörter zu, fällt das Pferd raus,
+// auch wenn es die Einschließen-Bedingung erfüllt). Ein Schlagwort kann
+// nie gleichzeitig ein- und ausgeschlossen sein (das eine Häkchen nimmt das
+// andere zurück). "Kein Schlagwort" ausschließen = nur Pferde MIT
+// mindestens einem Schlagwort.
 
 const TAG_FILTER_NONE = '__none__';
 
@@ -26,19 +35,31 @@ function createTagFilter(rootEl, { onChange } = {}) {
   const options = [...HORSE_TAG_OPTIONS.map((t) => t.label), TAG_FILTER_NONE];
   const optionLabel = (v) => (v === TAG_FILTER_NONE ? 'Kein Schlagwort' : v);
   let selected = new Set();
+  let excluded = new Set();
 
   function render() {
-    panel.innerHTML = options.map((v) => {
-      const checked = selected.has(v);
-      return `<label class="checkdrop-item">
-        <input type="checkbox" value="${escapeHtmlTagFilter(v)}" ${checked ? 'checked' : ''} />
-        <span>${escapeHtmlTagFilter(optionLabel(v))}</span>
-      </label>`;
-    }).join('');
+    const rows = options.map((v) => `<div class="checkdrop-item tag-filter-row">
+        <label class="tag-filter-include">
+          <input type="checkbox" data-mode="in" value="${escapeHtmlTagFilter(v)}" ${selected.has(v) ? 'checked' : ''} />
+          <span>${escapeHtmlTagFilter(optionLabel(v))}</span>
+        </label>
+        <label class="tag-filter-exclude" title="Dieses Schlagwort ausschließen">
+          <input type="checkbox" data-mode="ex" value="${escapeHtmlTagFilter(v)}" ${excluded.has(v) ? 'checked' : ''} />
+          <span>✕</span>
+        </label>
+      </div>`).join('');
+    panel.innerHTML = `<div class="checkdrop-empty">Häkchen = nur diese zeigen, ✕ = ausschließen</div>${rows}`;
 
     panel.querySelectorAll('input[type=checkbox]').forEach((cb) => {
       cb.addEventListener('change', () => {
-        if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+        const target = cb.dataset.mode === 'ex' ? excluded : selected;
+        const other = cb.dataset.mode === 'ex' ? selected : excluded;
+        if (cb.checked) {
+          target.add(cb.value);
+          other.delete(cb.value);
+        } else {
+          target.delete(cb.value);
+        }
         render();
         if (onChange) onChange();
       });
@@ -47,12 +68,15 @@ function createTagFilter(rootEl, { onChange } = {}) {
   }
 
   function updateToggleLabel() {
-    if (!selected.size) {
+    if (!selected.size && !excluded.size) {
       toggle.textContent = 'Alle';
       toggle.removeAttribute('title');
       return;
     }
-    const label = options.filter((v) => selected.has(v)).map(optionLabel).join(', ');
+    const parts = [];
+    if (selected.size) parts.push(options.filter((v) => selected.has(v)).map(optionLabel).join(', '));
+    if (excluded.size) parts.push('ohne: ' + options.filter((v) => excluded.has(v)).map(optionLabel).join(', '));
+    const label = parts.join(' | ');
     toggle.textContent = label;
     toggle.title = label;
   }
@@ -69,15 +93,17 @@ function createTagFilter(rootEl, { onChange } = {}) {
 
   return {
     matches(horse) {
-      if (!selected.size) return true; // kein Filter aktiv -> alles zeigen
       const tags = horse.tags || [];
-      return [...selected].some((v) => {
-        if (v === TAG_FILTER_NONE) return !tags.length;
-        return tags.some((t) => t.label === v);
-      });
+      const hit = (v) => (v === TAG_FILTER_NONE ? !tags.length : tags.some((t) => t.label === v));
+      if (excluded.size && [...excluded].some(hit)) return false;
+      if (!selected.size) return true; // keine Einschließen-Auswahl -> alles übrige zeigen
+      return [...selected].some(hit);
     },
     getSelected() {
       return [...selected];
+    },
+    getExcluded() {
+      return [...excluded];
     },
   };
 }
