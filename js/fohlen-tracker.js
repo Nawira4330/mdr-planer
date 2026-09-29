@@ -723,10 +723,12 @@ function trackerRelatedSortValue(row, field) {
 // js/verwandtschaft.js/js/zuchtbuch.js.
 function trackerRelatedTableHtml(relatedHorses, referenceHorse) {
   if (!relatedHorses.length) return '<p class="small muted" style="margin:0.3rem 0;">Keine Verwandten im sichtbaren Stammbaum gefunden.</p>';
-  const rows = relatedHorses.map((h) => ({ horse: h, d: computeDerived(h), inbreeding: findSharedNames(referenceHorse, h).length > 0 }));
+  const refD = computeDerived(referenceHorse);
+  const rows = relatedHorses.map((h) => ({ horse: h, d: computeDerived(h), refD, inbreeding: findSharedNames(referenceHorse, h).length > 0 }));
   const sorted = applySortGeneric(rows, trackerRelatedSort, trackerRelatedSortValue);
   const th = (field, label, extra) => `<th data-sort="${field}"${extra || ''}>${label}${sortArrow(trackerRelatedSort, field)}</th>`;
-  return `<div class="table-wrap"><table class="tracker-related-subtable">
+  return `<p class="small muted" style="margin:0.2rem 0;">Werte farbig gegen ${escapeHtml(referenceHorse.name || 'das aufgeklappte Pferd')}: <span style="color:var(--success); font-weight:600;">grün</span> = besser, <span style="color:var(--danger); font-weight:600;">rot</span> = schlechter.</p>
+  <div class="table-wrap"><table class="tracker-related-subtable">
     <thead><tr>
       ${th('name', 'Pferdename', ' class="sticky-name"')}
       ${th('gender', 'Geschlecht')}
@@ -747,6 +749,7 @@ function trackerRelatedTableHtml(relatedHorses, referenceHorse) {
 function trackerRelatedRowHtml(row) {
   const h = row.horse;
   const d = row.d;
+  const p = row.refD;
   const { father, mother } = parentNames(h);
   const parentsText = (father || mother)
     ? [father ? `Vater: ${father}` : null, mother ? `Mutter: ${mother}` : null].filter(Boolean).join(', ')
@@ -758,10 +761,10 @@ function trackerRelatedRowHtml(row) {
     <td data-label="Pferdename" class="sticky-name" style="${tagCellStyle(h.tags)}">${linkedName(h, '(ohne Name)')}</td>
     <td data-label="Geschlecht">${escapeHtml(h.gender || '–')}</td>
     <td data-label="Eltern">${escapeHtml(parentsText)}</td>
-    <td data-label="GP">${d.gp != null ? Math.round(d.gp) : '–'}${bestChildStar(h.id, 'gp')}</td>
-    <td data-label="Ext">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'extAvg')}</td>
-    <td data-label="Ext%">${d.extPercent != null ? d.extPercent + '%' : '–'}${bestChildStar(h.id, 'extPercent')}</td>
-    <td data-label="Int">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'intAvg')}</td>
+    <td data-label="GP" style="${metricCellStyle(d.gp, p.gp, 'gp')}">${d.gp != null ? Math.round(d.gp) : '–'}${bestChildStar(h.id, 'gp')}</td>
+    <td data-label="Ext" style="${metricCellStyle(d.extAvg, p.extAvg, 'ext')}">${d.extAvg != null ? d.extAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'extAvg')}</td>
+    <td data-label="Ext%" style="${metricCellStyle(d.extPercent, p.extPercent, 'extpct')}">${d.extPercent != null ? d.extPercent + '%' : '–'}${bestChildStar(h.id, 'extPercent')}</td>
+    <td data-label="Int" style="${metricCellStyle(d.intAvg, p.intAvg, 'int')}">${d.intAvg != null ? d.intAvg.toFixed(2) : '–'}${bestChildStar(h.id, 'intAvg')}</td>
     <td data-label="Farbe">${escapeHtml(h.coat_color || '–')}</td>
     <td data-label="Besitzer">${h.owner ? escapeHtml(h.owner) : '–'}</td>
     <td data-label="Verpaarung">${inbreedingPill}</td>
