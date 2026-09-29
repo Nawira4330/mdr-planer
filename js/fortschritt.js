@@ -33,6 +33,7 @@ const CHANGELOG = [
     points: [
       'Farbwünsche im Verpaarungsratgeber: ein zweiter Klick auf eine Farbe schließt sie aus (rotes ✕) - Kandidaten, die diese Farbe selbst tragen, fallen aus der Liste. Ein dritter Klick hebt es wieder auf, Wünsche und Ausschlüsse lassen sich kombinieren',
       'Schlagwörter-Filter (überall, auch im Fohlen-Tracker) funktioniert jetzt genauso: erster Klick = nur diese Schlagwörter, zweiter Klick = ausschließen, dritter = neutral',
+      'Rassen-Filter (überall): auch Rassen lassen sich ausschließen - erster Klick = nur diese Rasse, zweiter Klick = ausschließen (rotes ✕), dritter = neutral, kombinierbar mit eingeschlossenen Rassen',
       'Rasse "Rasselos" im Rassen-Filter des Zuchtplaners: zusätzlich zum Reinrassigkeits-Schwellenwert lassen sich die erlaubten Rassen im Mix anhaken - es bleiben nur Rasselose, deren Mischung ausschließlich aus diesen Rassen besteht (Pferde ohne erfasste Rasseanteile fallen dann raus)',
     ],
   },

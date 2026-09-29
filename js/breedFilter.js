@@ -7,6 +7,12 @@
 // Schwellenwert (purebred_pct) - normales Häkchen ansonsten, beliebig mit
 // anderen Rassen kombinierbar (kein Sonderzwang).
 //
+// Nutzerwunsch: Rassen lassen sich auch AUSSCHLIESSEN - Dreifach-Zustand wie
+// beim Schlagwort-Filter: erster Klick = einschließen (grün, ✓), zweiter =
+// ausschließen (rot, ✕), dritter = neutral. Ausgeschlossene Rassen fallen
+// immer raus, eingeschlossene wirken wie bisher (ODER); beides ist
+// kombinierbar. Nur Ausschlüsse gesetzt = alle übrigen Rassen bleiben.
+//
 // Nutzerwunsch: bei "Rasselos" lassen sich zusätzlich die ERLAUBTEN Rassen
 // wählen. Rasselose Pferde sind Mischlinge - ihre Zusammensetzung steht im
 // Feld breed_composition (Text wie "50.00% Knabstrupper, 50.00% American
@@ -74,10 +80,13 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
   const panel = rootEl.querySelector('.checkdrop-panel');
   let breeds = [];
   let selected = new Set();
+  let excluded = new Set();
   let rasselosThreshold = '';
   let mixBreeds = []; // Rassen, die in den Mischungen der geladenen Rasselosen vorkommen
   let allowedMix = new Set();
   let initialized = false;
+
+  const stateOf = (b) => (selected.has(b) ? 'include' : excluded.has(b) ? 'exclude' : 'neutral');
 
   function render() {
     if (!breeds.length) {
@@ -85,22 +94,23 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
       updateToggleLabel();
       return;
     }
-    panel.innerHTML = breeds.map((b) => {
+    panel.innerHTML = '<div class="checkdrop-empty">Klick = nur diese, zweiter Klick = ausschließen</div>' + breeds.map((b) => {
       const isRasselos = b === RASSELOS_LABEL;
-      const checked = selected.has(b);
-      let html = `<label class="checkdrop-item">
-        <input type="checkbox" value="${escapeHtmlBreed(b)}" ${checked ? 'checked' : ''} />
-        <span>${escapeHtmlBreed(b)}</span>
-      </label>`;
-      if (isRasselos) {
-        html += `<select class="rasselos-threshold" ${checked ? '' : 'disabled'} style="margin:0 0 0.3rem 1.6rem; width:calc(100% - 1.6rem);">
+      const state = stateOf(b);
+      let html = `<div class="checkdrop-item checkdrop-tristate" data-value="${escapeHtmlBreed(b)}" data-state="${state}" role="button" tabindex="0">
+        <span class="tristate-box"></span><span>${escapeHtmlBreed(b)}</span>
+      </div>`;
+      // Schwellenwert/erlaubte Mix-Rassen gelten nur, solange "Rasselos"
+      // eingeschlossen ist (bei ausgeschlossen/neutral ohne Wirkung).
+      if (isRasselos && state === 'include') {
+        html += `<select class="rasselos-threshold" style="margin:0 0 0.3rem 1.6rem; width:calc(100% - 1.6rem);">
           ${RASSELOS_THRESHOLDS.map((t) => `<option value="${t.value}"${t.value === rasselosThreshold ? ' selected' : ''}>${escapeHtmlBreed(t.label)}</option>`).join('')}
         </select>`;
         if (mixBreeds.length) {
           html += `<div class="rasselos-allowed">
             <div class="checkdrop-empty">Erlaubte Rassen im Mix (leer = alle):</div>
             ${mixBreeds.map((m) => `<label class="checkdrop-item">
-              <input type="checkbox" data-allowed-mix value="${escapeHtmlBreed(m)}" ${allowedMix.has(m) ? 'checked' : ''} ${checked ? '' : 'disabled'} />
+              <input type="checkbox" data-allowed-mix value="${escapeHtmlBreed(m)}" ${allowedMix.has(m) ? 'checked' : ''} />
               <span>${escapeHtmlBreed(m)}</span>
             </label>`).join('')}
           </div>`;
@@ -108,39 +118,57 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
       }
       return html;
     }).join('');
-
-    panel.querySelectorAll('input[type=checkbox]:not([data-allowed-mix])').forEach((cb) => {
-      cb.addEventListener('change', () => {
-        if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
-        render();
-        if (onChange) onChange();
-      });
-    });
-    panel.querySelectorAll('input[data-allowed-mix]').forEach((cb) => {
-      cb.addEventListener('change', () => {
-        if (cb.checked) allowedMix.add(cb.value); else allowedMix.delete(cb.value);
-        render();
-        if (onChange) onChange();
-      });
-    });
-    const rasselosSelect = panel.querySelector('.rasselos-threshold');
-    if (rasselosSelect) {
-      rasselosSelect.addEventListener('change', () => {
-        rasselosThreshold = rasselosSelect.value;
-        if (onChange) onChange();
-      });
-    }
     updateToggleLabel();
   }
 
+  // Ein Klick zyklt neutral -> einschließen -> ausschließen -> neutral (wie
+  // der Schlagwort-Filter und die Farbwünsche im Zuchtplaner).
+  function cycle(item) {
+    const b = item.dataset.value;
+    const state = stateOf(b);
+    selected.delete(b);
+    excluded.delete(b);
+    if (state === 'neutral') selected.add(b);
+    else if (state === 'include') excluded.add(b);
+    render();
+    if (onChange) onChange();
+  }
+
+  // Delegiert auf das Panel (render() baut den Inhalt bei jeder Änderung neu).
+  panel.addEventListener('click', (e) => {
+    const item = e.target.closest('.checkdrop-tristate');
+    if (item) cycle(item);
+  });
+  panel.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const item = e.target.closest('.checkdrop-tristate');
+    if (!item) return;
+    e.preventDefault();
+    cycle(item);
+  });
+  panel.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.matches && t.matches('input[data-allowed-mix]')) {
+      if (t.checked) allowedMix.add(t.value); else allowedMix.delete(t.value);
+      render();
+      if (onChange) onChange();
+    } else if (t.matches && t.matches('.rasselos-threshold')) {
+      rasselosThreshold = t.value;
+      if (onChange) onChange();
+    }
+  });
+
   function updateToggleLabel() {
-    if (!selected.size) {
+    if (!selected.size && !excluded.size) {
       toggle.textContent = 'Alle';
       toggle.removeAttribute('title');
       return;
     }
     // Reihenfolge wie in "breeds" (alphabetisch), nicht wie angeklickt.
-    const label = breeds.filter((b) => selected.has(b)).join(', ');
+    const parts = [];
+    if (selected.size) parts.push(breeds.filter((b) => selected.has(b)).join(', '));
+    if (excluded.size) parts.push('ohne: ' + breeds.filter((b) => excluded.has(b)).join(', '));
+    const label = parts.join(' | ');
     toggle.textContent = label;
     toggle.title = label; // volle Liste per Hover, falls der Button die Namen abschneidet
   }
@@ -179,12 +207,14 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
         initialized = true;
       } else {
         selected = new Set([...selected].filter((b) => breeds.includes(b)));
+        excluded = new Set([...excluded].filter((b) => breeds.includes(b)));
       }
       render();
     },
     matches(horse) {
-      if (!selected.size) return true; // kein Filter aktiv -> alles zeigen
       const breed = horse.breed;
+      if (breed && excluded.has(breed)) return false;
+      if (!selected.size) return true; // keine Einschließen-Auswahl -> alles übrige zeigen
       if (!breed || !selected.has(breed)) return false;
       if (breed === RASSELOS_LABEL) {
         if (!matchesRasselosThreshold(horse.purebred_pct, rasselosThreshold)) return false;
@@ -197,6 +227,9 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
     },
     getSelected() {
       return [...selected];
+    },
+    getExcluded() {
+      return [...excluded];
     },
     getAllowedMix() {
       return [...allowedMix];
