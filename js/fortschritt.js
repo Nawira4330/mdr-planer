@@ -29,6 +29,14 @@ const TYPE_META = {
 // (lokale Zeit, kein Zeitzonen-Suffix).
 const CHANGELOG = [
   {
+    date: '2026-09-29T20:00', type: 'feature', title: 'Zuchtplaner: Farben und Schlagwörter ausschließen, erlaubte Rassen bei Rasselos',
+    points: [
+      'Farbwünsche im Verpaarungsratgeber: ein zweiter Klick auf eine Farbe schließt sie aus (rotes ✕) - Kandidaten, die diese Farbe selbst tragen, fallen aus der Liste. Ein dritter Klick hebt es wieder auf, Wünsche und Ausschlüsse lassen sich kombinieren',
+      'Schlagwörter-Filter (überall, auch im Fohlen-Tracker) funktioniert jetzt genauso: erster Klick = nur diese Schlagwörter, zweiter Klick = ausschließen, dritter = neutral',
+      'Rasse "Rasselos" im Rassen-Filter des Zuchtplaners: zusätzlich zum Reinrassigkeits-Schwellenwert lassen sich die erlaubten Rassen im Mix anhaken - es bleiben nur Rasselose, deren Mischung ausschließlich aus diesen Rassen besteht (Pferde ohne erfasste Rasseanteile fallen dann raus)',
+    ],
+  },
+  {
     date: '2026-08-15T18:00', type: 'feature', title: 'Schlagwörter-Filter überall, alle Tabellen sortierbar, Fohlen-Tracker mit Top-20-Reiter',
     points: [
       'Neuer Schlagwörter-Filter (dieselbe feste Liste wie in der Pferdedatenbank: Verkauf/Reserviert/Bleibt/GBH/LastFoal/??? plus "Kein Schlagwort") überall dort ergänzt, wo bisher schon ein Rassen-Filter stand - Zuchtbuch, Fohlen-Tracker (beide Reiter), Fohlenprüfung, Turnierplaner, Zuchtplaner (Stute/Hengst/Verpaarungsratgeber-Kandidaten) und Verwandtschaftsmatrix (Einzelansicht + Matrix-Zeilen/-Spalten getrennt). Dabei nebenbei die in MDR-Planer stehengebliebene, veraltete Schlagwort-Liste (fehlte "LastFoal"/"???") synchronisiert',

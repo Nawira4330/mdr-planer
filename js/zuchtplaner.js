@@ -2,7 +2,7 @@
 // Kennzahlen und den Verpaarungsratgeber (inkl. GP-Formel und
 // Genotyp-basierter Fohlen-Vorhersage) gebraucht werden.
 const HORSE_SELECT_FIELDS =
-  'id,name,external_id,owner,gender,breed,purebred_pct,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,birthdate,color_gene_overrides,tags';
+  'id,name,external_id,owner,gender,breed,purebred_pct,breed_composition,coat_color,breeding_allowed,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,traits,disciplines,genetic_diseases,birthdate,color_gene_overrides,tags';
 
 // Leichtere Feldauswahl für die Datenbank-Schätzung (computeEmpiricalDeviations):
 // braucht ALLE Pferde (auch ohne ZZL, jedes Geschlecht), aber nur die Felder,
@@ -217,15 +217,19 @@ async function loadEmpiricalDeviations() {
   if (activeTab === 'auswahl') renderBestMatches();
 }
 
+// Farbwünsche mit Dreifach-Zustand (Nutzerwunsch "Farben ausschließen, doppelt
+// raufklicken"): ein Klick = gewünscht (grün, ✓), ein zweiter Klick =
+// ausgeschlossen (rot, ✕), ein dritter = wieder neutral. Gleiche Optik/
+// Bedienung wie der Schlagwort-Filter (js/tagFilter.js).
 function wireFarbwunschDropdown() {
   const root = document.querySelector('#farbwunsch-drop');
   const toggle = root.querySelector('.checkdrop-toggle');
   const panel = root.querySelector('.checkdrop-panel');
-  panel.innerHTML = COLOR_WISH_OPTIONS.map((o) => `
-    <label class="checkdrop-item">
-      <input type="checkbox" value="${escapeHtml(o.label)}" />
-      <span>${escapeHtml(o.label)}</span>
-    </label>
+  panel.innerHTML = '<div class="checkdrop-empty">Klick = gewünscht, zweiter Klick = ausschließen</div>' +
+    COLOR_WISH_OPTIONS.map((o) => `
+    <div class="checkdrop-item checkdrop-tristate" data-value="${escapeHtml(o.label)}" data-state="neutral" role="button" tabindex="0">
+      <span class="tristate-box"></span><span>${escapeHtml(o.label)}</span>
+    </div>
   `).join('');
 
   toggle.addEventListener('click', (e) => {
@@ -235,15 +239,41 @@ function wireFarbwunschDropdown() {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('#farbwunsch-drop')) panel.hidden = true;
   });
-  panel.addEventListener('change', () => {
-    const checked = [...panel.querySelectorAll('input:checked')];
-    toggle.textContent = checked.length ? `${checked.length} ausgewählt` : 'Alle';
+
+  function cycle(item) {
+    item.dataset.state = TRISTATE_CYCLE[item.dataset.state] || 'neutral';
+    const wanted = selectedFarbwuensche().length;
+    const excluded = selectedFarbausschluesse().length;
+    const parts = [];
+    if (wanted) parts.push(`${wanted} gewünscht`);
+    if (excluded) parts.push(`${excluded} ausgeschlossen`);
+    toggle.textContent = parts.length ? parts.join(', ') : 'Alle';
     renderBestMatches();
+  }
+  panel.addEventListener('click', (e) => {
+    const item = e.target.closest('.checkdrop-tristate');
+    if (item) cycle(item);
+  });
+  panel.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const item = e.target.closest('.checkdrop-tristate');
+    if (!item) return;
+    e.preventDefault();
+    cycle(item);
   });
 }
 
+// Neutral -> gewünscht -> ausgeschlossen -> neutral.
+const TRISTATE_CYCLE = { neutral: 'include', include: 'exclude', exclude: 'neutral' };
+
+function farbwunschValuesByState(state) {
+  return [...document.querySelectorAll(`#farbwunsch-drop .checkdrop-tristate[data-state="${state}"]`)].map((el) => el.dataset.value);
+}
 function selectedFarbwuensche() {
-  return [...document.querySelectorAll('#farbwunsch-drop input:checked')].map((cb) => cb.value);
+  return farbwunschValuesByState('include');
+}
+function selectedFarbausschluesse() {
+  return farbwunschValuesByState('exclude');
 }
 
 let horsesLoadPromise = null;
@@ -753,7 +783,7 @@ async function renderBestMatches() {
   // Kandidaten weiterhin "stallion" (auch wenn er hier tatsächlich eine
   // Stute ist), siehe candidateCardHtml unten.
   const { total, candidateCount, top } = rankStallions(primary, filteredCandidates, {
-    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), empiricalDeviations, flaxenLookup, flaxenChildrenByName,
+    schwerpunkt, sortMode, farbwuensche: selectedFarbwuensche(), farbausschluesse: selectedFarbausschluesse(), empiricalDeviations, flaxenLookup, flaxenChildrenByName,
     comboSecond, comboWeight,
   });
 

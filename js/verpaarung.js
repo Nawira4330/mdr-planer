@@ -925,16 +925,22 @@ function complementPercent(c) {
 // Farbwünsche), danach Sortierung nach dem gewählten Schwerpunkt +
 // Sortiermodus, Top 20 (RANK_RESULT_COUNT).
 function rankStallions(mare, stallions, {
-  schwerpunkt, farbwuensche, sortMode, empiricalDeviations, flaxenLookup, flaxenChildrenByName,
+  schwerpunkt, farbwuensche, farbausschluesse, sortMode, empiricalDeviations, flaxenLookup, flaxenChildrenByName,
   comboSecond, comboWeight,
 }) {
   const mareHasOvero = hasOveroGene(mare);
   const wishes = (farbwuensche || []).map((label) => COLOR_WISH_OPTIONS.find((o) => o.label === label)).filter(Boolean);
+  // Nutzerwunsch: Farben lassen sich auch AUSSCHLIESSEN (im Farbwunsch-
+  // Dropdown ein zweiter Klick) - Kandidaten, bei denen die Farbe
+  // vorkommt (gleiche Prüfung wie bei den Wünschen, colorWishPossible),
+  // fallen raus. Ein Label kann nie gleichzeitig Wunsch und Ausschluss sein.
+  const exclusions = (farbausschluesse || []).map((label) => COLOR_WISH_OPTIONS.find((o) => o.label === label)).filter(Boolean);
 
   const candidates = stallions.filter((stallion) => {
     if (findSharedNames(mare, stallion).length > 0) return false;
     if (mareHasOvero && hasOveroGene(stallion)) return false;
     if (wishes.length && !wishes.every((wish) => colorWishPossible(stallion, wish, flaxenLookup, flaxenChildrenByName))) return false;
+    if (exclusions.some((wish) => colorWishPossible(stallion, wish, flaxenLookup, flaxenChildrenByName))) return false;
     return true;
   });
 

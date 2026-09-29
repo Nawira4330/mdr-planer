@@ -301,9 +301,29 @@ label {
 }
 .checkdrop-item:hover { background: rgba(107, 157, 0, 0.12); }
 .checkdrop-item input { width: auto; }
-.tag-filter-row { cursor: default; justify-content: space-between; gap: 0.8rem; }
-.tag-filter-row label { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; margin: 0; font-weight: 400; }
-.tag-filter-exclude { color: var(--danger); }
+/* Dreifach-Zustand (Schlagwort-Filter, Farbwünsche): ein Klick zyklt neutral
+   -> einschließen (grün, ✓) -> ausschließen (rot, ✕) -> neutral - gleiche
+   Optik wie in der MDR-Datenbank (.checkdrop-tristate). */
+.tristate-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+}
+.checkdrop-tristate[data-state="include"] .tristate-box { background: var(--success); border-color: var(--success); }
+.checkdrop-tristate[data-state="include"] .tristate-box::before { content: '✓'; }
+.checkdrop-tristate[data-state="exclude"] .tristate-box { background: var(--danger); border-color: var(--danger); }
+.checkdrop-tristate[data-state="exclude"] .tristate-box::before { content: '✕'; }
+.checkdrop-tristate { user-select: none; }
+.rasselos-allowed { margin: 0 0 0.3rem 1.6rem; }
+.rasselos-allowed .checkdrop-item { padding: 0.15rem 0.3rem; }
 .checkdrop-empty { padding: 0.3rem; font-size: 0.85rem; color: var(--muted); }
 
 .list-header {

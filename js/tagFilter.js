@@ -8,14 +8,14 @@
 // Pferde ganz ohne Eintrag (Muster/ODER-Semantik wie matchesTags in
 // MDR-Datenbank/js/list.js).
 //
-// Nutzerwunsch: Schlagwörter lassen sich zusätzlich AUSSCHLIESSEN. Je Zeile
-// gibt es zwei unabhängige Häkchen - "einschließen" (wie bisher: mindestens
-// eines der angehakten Schlagwörter muss zutreffen) und "✕ ausschließen"
-// (trifft eines der so markierten Schlagwörter zu, fällt das Pferd raus,
-// auch wenn es die Einschließen-Bedingung erfüllt). Ein Schlagwort kann
-// nie gleichzeitig ein- und ausgeschlossen sein (das eine Häkchen nimmt das
-// andere zurück). "Kein Schlagwort" ausschließen = nur Pferde MIT
-// mindestens einem Schlagwort.
+// Nutzerwunsch: Schlagwörter lassen sich zusätzlich AUSSCHLIESSEN - wie bei
+// den Farbwünschen im Zuchtplaner und den Genetik-Filtern der MDR-Datenbank
+// per Dreifach-Zustand: ein Klick auf ein Schlagwort = einschließen (grün,
+// ✓), ein zweiter Klick = ausschließen (rot, ✕), ein dritter = wieder
+// neutral. Einschließen (ODER, mindestens eines muss zutreffen) und
+// Ausschließen (trifft eines zu, fällt das Pferd raus) lassen sich
+// kombinieren. "Kein Schlagwort" ausschließen = nur Pferde MIT mindestens
+// einem Schlagwort.
 
 const TAG_FILTER_NONE = '__none__';
 
@@ -37,35 +37,39 @@ function createTagFilter(rootEl, { onChange } = {}) {
   let selected = new Set();
   let excluded = new Set();
 
-  function render() {
-    const rows = options.map((v) => `<div class="checkdrop-item tag-filter-row">
-        <label class="tag-filter-include">
-          <input type="checkbox" data-mode="in" value="${escapeHtmlTagFilter(v)}" ${selected.has(v) ? 'checked' : ''} />
-          <span>${escapeHtmlTagFilter(optionLabel(v))}</span>
-        </label>
-        <label class="tag-filter-exclude" title="Dieses Schlagwort ausschließen">
-          <input type="checkbox" data-mode="ex" value="${escapeHtmlTagFilter(v)}" ${excluded.has(v) ? 'checked' : ''} />
-          <span>✕</span>
-        </label>
-      </div>`).join('');
-    panel.innerHTML = `<div class="checkdrop-empty">Häkchen = nur diese zeigen, ✕ = ausschließen</div>${rows}`;
+  const stateOf = (v) => (selected.has(v) ? 'include' : excluded.has(v) ? 'exclude' : 'neutral');
 
-    panel.querySelectorAll('input[type=checkbox]').forEach((cb) => {
-      cb.addEventListener('change', () => {
-        const target = cb.dataset.mode === 'ex' ? excluded : selected;
-        const other = cb.dataset.mode === 'ex' ? selected : excluded;
-        if (cb.checked) {
-          target.add(cb.value);
-          other.delete(cb.value);
-        } else {
-          target.delete(cb.value);
-        }
-        render();
-        if (onChange) onChange();
-      });
-    });
+  function render() {
+    panel.innerHTML = '<div class="checkdrop-empty">Klick = nur diese, zweiter Klick = ausschließen</div>' +
+      options.map((v) => `<div class="checkdrop-item checkdrop-tristate" data-value="${escapeHtmlTagFilter(v)}" data-state="${stateOf(v)}" role="button" tabindex="0">
+        <span class="tristate-box"></span><span>${escapeHtmlTagFilter(optionLabel(v))}</span>
+      </div>`).join('');
     updateToggleLabel();
   }
+
+  function cycle(item) {
+    const v = item.dataset.value;
+    const state = stateOf(v);
+    selected.delete(v);
+    excluded.delete(v);
+    if (state === 'neutral') selected.add(v);
+    else if (state === 'include') excluded.add(v);
+    render();
+    if (onChange) onChange();
+  }
+
+  // Delegiert auf das Panel (render() baut den Inhalt bei jeder Änderung neu).
+  panel.addEventListener('click', (e) => {
+    const item = e.target.closest('.checkdrop-tristate');
+    if (item) cycle(item);
+  });
+  panel.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const item = e.target.closest('.checkdrop-tristate');
+    if (!item) return;
+    e.preventDefault();
+    cycle(item);
+  });
 
   function updateToggleLabel() {
     if (!selected.size && !excluded.size) {
