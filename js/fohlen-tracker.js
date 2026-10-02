@@ -301,6 +301,17 @@ function formatBestChildValue(key, value) {
   return value.toFixed(2);
 }
 
+// Geschlecht robust zuordnen (Groß-/Kleinschreibung, Leerzeichen, Bindestriche
+// egal): 'male' (Hengst/Hengstfohlen/Wallach), 'female' (Stute/Stutfohlen),
+// sonst null - ein exakter Textvergleich ließ Pferde mit abweichend
+// geschriebenem Geschlecht aus der "Bestes Kind"-Auswertung fallen.
+function genderGroupOf(gender) {
+  const g = String(gender || '').trim().toLowerCase().replace(/[\s-]+/g, '');
+  if (g === 'hengst' || g === 'hengstfohlen' || g === 'wallach') return 'male';
+  if (g === 'stute' || g === 'stutfohlen') return 'female';
+  return null;
+}
+
 // Ermittelt für eine Gruppe gleichgeschlechtiger Geschwister (Söhne EINES
 // Vaters ODER Töchter EINER Mutter) je Wert einzeln, wer unter den
 // Geschwistern am besten abschneidet, vergleicht diesen Bestwert mit dem
@@ -340,12 +351,13 @@ function computeBestChildBadges() {
   const daughtersByMother = new Map();
   for (const h of allHorses) {
     const { father, mother } = parentNames(h);
-    if (h.gender === 'Hengst' || h.gender === 'Hengstfohlen' || h.gender === 'Wallach') {
+    const group = genderGroupOf(h.gender);
+    if (group === 'male') {
       if (!father) continue;
       const list = sonsByFather.get(father) || [];
       list.push({ id: h.id, stats: computeDerived(h) });
       sonsByFather.set(father, list);
-    } else if (h.gender === 'Stute' || h.gender === 'Stutfohlen') {
+    } else if (group === 'female') {
       if (!mother) continue;
       const list = daughtersByMother.get(mother) || [];
       list.push({ id: h.id, stats: computeDerived(h) });
