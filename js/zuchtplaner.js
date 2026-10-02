@@ -181,8 +181,8 @@ async function loadDefaultBreeds() {
 // warten muss.
 async function loadEmpiricalDeviations() {
   const [liveRes, refRes] = await Promise.all([
-    fetchAllRows((from, to) => supabaseClient.from('horses').select(STATS_SELECT_FIELDS).range(from, to)),
-    fetchAllRows((from, to) => supabaseClient.from('foal_reference_data').select(REFERENCE_SELECT_FIELDS).range(from, to)),
+    fetchAllRows((from, to) => supabaseClient.from('horses').select(STATS_SELECT_FIELDS).order('id').range(from, to)),
+    fetchAllRows((from, to) => supabaseClient.from('foal_reference_data').select(REFERENCE_SELECT_FIELDS).order('id').range(from, to)),
   ]);
   const liveHorses = liveRes.data || [];
   const liveIds = new Set(liveHorses.map((h) => h.id));
