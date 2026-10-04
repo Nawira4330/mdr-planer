@@ -1,5 +1,9 @@
+// exterior_genetics:exterior_genetics->overall (statt der vollen Spalte)
+// spart die 14-zeilige Genotyp-Tabelle je Pferd - hier wird nur
+// .overall.percent gelesen (siehe computeDerived unten), nie .rows
+// (Egress-Audit 2026-10-04, gleicher Fix wie in MDR-Datenbank/js/list.js).
 const TOURNAMENT_SELECT_FIELDS =
-  'id,name,external_id,owner,gender,coat_color,breeding_allowed,disciplines,traits,tournament_potential,exterior_genetics,exterior_descriptive,temperament,genetic_diseases,breed,purebred_pct';
+  'id,name,external_id,owner,gender,coat_color,breeding_allowed,disciplines,traits,tournament_potential,exterior_genetics:exterior_genetics->overall,exterior_descriptive,temperament,genetic_diseases,breed,purebred_pct';
 
 let horses = [];
 let currentMode = 'db';
@@ -158,7 +162,11 @@ function renderProfile() {
 
   const gp = currentProfile.tournament_potential?.['Gesamtpotenzial'];
   const extAvg = averageScore(currentProfile.exterior_descriptive, scoreExteriorTerm);
-  const extPct = currentProfile.exterior_genetics?.overall?.percent;
+  // currentProfile kommt entweder aus der (jetzt auf .overall zugeschnittenen)
+  // DB-Liste - dort liegt .percent direkt auf exterior_genetics - oder aus
+  // frisch eingefuegtem Spieltext (parseHorseText), das weiterhin die volle
+  // {overall: {...}, rows: [...]}-Form liefert - deshalb beide Formen lesen.
+  const extPct = currentProfile.exterior_genetics?.percent ?? currentProfile.exterior_genetics?.overall?.percent;
   const intAvg = averageScore(currentProfile.temperament, scoreTemperamentTerm);
 
   let html = `<div class="result-card">`;

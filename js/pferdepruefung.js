@@ -9,8 +9,15 @@
 // js/tournamentScoring.js - muss also nach diesen Scripts eingebunden
 // werden.
 
+// tournament_potential/exterior_genetics/exterior_descriptive/temperament
+// werden NIE aus allHorses gelesen (nur currentProfile, das aus frisch
+// eingefuegtem Spieltext kommt, nicht aus dieser Abfrage, braucht sie,
+// siehe renderProfile) - fuer findRelations/findSharedNames/
+// estimateBreedRelatedness genuegen pedigree/breed/name. Rausgenommen statt
+// nur zugeschnitten (Egress-Audit 2026-10-04, groesster Einzelposten
+// dieser Datei).
 const RELATION_FIELDS =
-  'id,name,external_id,owner,breed,pedigree,tags,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+  'id,name,external_id,owner,breed,pedigree,tags';
 
 let allHorses = [];
 let currentProfile = null;

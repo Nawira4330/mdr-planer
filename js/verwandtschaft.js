@@ -5,7 +5,7 @@
 // also nach parser.js/breeding.js eingebunden werden.
 
 const RELATION_FIELDS =
-  'id,name,external_id,owner,gender,coat_color,breed,purebred_pct,pedigree,breeding_allowed,tags,tournament_potential,exterior_genetics,exterior_descriptive,temperament';
+  'id,name,external_id,owner,gender,coat_color,breed,purebred_pct,pedigree,breeding_allowed,tags,tournament_potential,exterior_genetics:exterior_genetics->overall,exterior_descriptive,temperament';
 
 // Ab wie vielen Zellen (Zeilen × Spalten) die Matrix aus Performance- und
 // Übersichtlichkeitsgründen nicht mehr gerendert wird.
@@ -123,7 +123,11 @@ function targetValues(h) {
   return {
     gp: gpRaw != null && gpRaw !== '' ? Number(gpRaw) : null,
     extAvg: averageScore(h.exterior_descriptive, scoreExteriorTerm),
-    extPercent: h.exterior_genetics?.overall?.percent ?? null,
+    // h ist entweder currentTarget (aus allHorses, dort jetzt auf .overall
+    // zugeschnitten - .percent liegt direkt vor) oder foreignTarget (frisch
+    // per parseHorseText eingelesen, weiterhin volle {overall:{...}}-Form) -
+    // deshalb beide Formen lesen.
+    extPercent: h.exterior_genetics?.percent ?? h.exterior_genetics?.overall?.percent ?? null,
     intAvg: averageScore(h.temperament, scoreTemperamentTerm),
   };
 }

@@ -5,8 +5,11 @@
 // getrennt). Elternschaft ist ausschließlich über Namen im pedigree-Feld
 // auflösbar (kein mother_id/father_id in der DB).
 
+// exterior_genetics:exterior_genetics->overall (statt der vollen Spalte) -
+// computeDerived unten liest nur .overall.percent, nie .rows
+// (Egress-Audit 2026-10-04, gleicher Fix wie in MDR-Datenbank/js/list.js).
 const TRACKER_FIELDS =
-  'id,name,external_id,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics,exterior_descriptive,temperament,breeding_allowed,breed,tags';
+  'id,name,external_id,owner,gender,coat_color,colors,notes,pedigree,tournament_potential,exterior_genetics:exterior_genetics->overall,exterior_descriptive,temperament,breeding_allowed,breed,tags';
 
 let allHorses = [];
 let breedFilter;
@@ -172,7 +175,7 @@ function computeDerived(h) {
   return {
     gp: gpRaw != null && gpRaw !== '' ? Number(gpRaw) : null,
     extAvg: averageScore(h.exterior_descriptive, scoreExteriorTerm),
-    extPercent: h.exterior_genetics?.overall?.percent ?? null,
+    extPercent: h.exterior_genetics?.percent ?? null,
     intAvg: averageScore(h.temperament, scoreTemperamentTerm),
   };
 }
