@@ -95,6 +95,27 @@ async function init() {
   // findet das Zielelement jetzt zuverlässig schon befüllt vor.
   await ensureHorsesLoaded();
   scrollToHashTarget();
+  wireHorsesAutoRefresh(refreshHorses);
+}
+
+// Alle 5 Minuten (nur waehrend der Tab sichtbar ist, siehe
+// wireHorsesAutoRefresh in js/horsesCache.js) erneut pruefen, ob sich am
+// Bestand etwas geaendert hat - loadHorses() holt dank loadWithCache in
+// aller Regel nur die billige Pruefung und meldet dann false (nichts
+// geaendert): dann bleibt die Seite unangetastet (kein Neu-Rendern, das
+// z.B. die horizontale Scrollposition einer Tabelle zuruecksetzen wuerde).
+// Nur bei tatsaechlich neuen Daten das ausgewaehlte Pferd (per id) im neuen
+// allHorses neu aufloesen (die alte Objektreferenz waere sonst veraltet) und
+// neu rendern. Ein inzwischen geloeschtes Pferd leert die Auswahl.
+async function refreshHorses() {
+  const prevId = currentHorse?.id;
+  if (!(await loadHorses())) return;
+  if (compareBaseline) compareBaseline = computeCompareBaseline();
+  if (prevId != null) {
+    currentHorse = allHorses.find((h) => h.id === prevId) || null;
+    if (!currentHorse) { horseSelect.clear(); return; } // loest onHorseSelect('') und damit render() aus
+  }
+  render();
 }
 
 // Springt die Startseiten-Karte "Aussortierhilfe" mit #aussortierhilfe-
@@ -117,18 +138,35 @@ function ensureHorsesLoaded() {
   return horsesLoadPromise;
 }
 
+// Stand der zuletzt geladenen Daten (siehe loadWithCache in
+// js/horsesCache.js) - erlaubt dem 5-Minuten-Refresh zu erkennen, dass sich
+// nichts geaendert hat. Liefert true, wenn neue Daten uebernommen wurden.
+let horsesVersion = null;
+
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');
-  const { data, error } = await fetchAllRows((from, to) =>
-    supabaseClient.from('horses').select(ZUCHTBUCH_FIELDS).order('name').range(from, to));
-  if (error) {
+  const res = await loadWithCache({
+    cacheKey: 'zuchtbuch_horses_v1',
+    tables: ['horses'],
+    sig: ZUCHTBUCH_FIELDS,
+    knownVersion: horsesVersion,
+    fetchFresh: async () => {
+      const { data, error } = await fetchAllRows((from, to) =>
+        supabaseClient.from('horses').select(ZUCHTBUCH_FIELDS).order('name').range(from, to));
+      return { value: data, error };
+    },
+  });
+  if (res.error) {
     errorEl.textContent =
-      'Konnte Pferde nicht laden: ' + error.message +
+      'Konnte Pferde nicht laden: ' + res.error.message +
       ' (falls die Seite ohne Login genutzt wird, muss dafür einmalig die Migration ' +
       '"migration_005_public_read_access.sql" im Supabase-Dashboard ausgeführt worden sein).';
-    return;
+    return false;
   }
-  allHorses = data || [];
+  errorEl.textContent = '';
+  if (res.unchanged) return false;
+  horsesVersion = res.version;
+  allHorses = res.value || [];
 
   childrenByParentName = new Map();
   flaxenLookup = new Map();
@@ -149,6 +187,7 @@ async function loadHorses() {
 
   const owners = [...new Set(allHorses.map((h) => h.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
   const ownerSel = document.querySelector('#owner-select');
+  const prevOwner = ownerSel.value; // bei einem Refresh die bisherige Auswahl behalten
   ownerSel.innerHTML = '<option value="">Alle</option>';
   for (const owner of owners) {
     const opt = document.createElement('option');
@@ -156,8 +195,10 @@ async function loadHorses() {
     opt.textContent = owner;
     ownerSel.appendChild(opt);
   }
+  ownerSel.value = owners.includes(prevOwner) ? prevOwner : '';
   breedFilter.setHorses(allHorses);
   populateHorseSelect();
+  return true;
 }
 
 function populateHorseSelect() {

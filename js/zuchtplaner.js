@@ -140,6 +140,25 @@ async function init() {
   // loadHorses weiter unten).
   await ensureHorsesLoaded();
   activateTabFromUrl();
+  wireHorsesAutoRefresh(refreshHorses);
+}
+
+// Alle 5 Minuten (nur waehrend der Tab sichtbar ist, siehe
+// wireHorsesAutoRefresh in js/horsesCache.js) erneut pruefen, ob sich am
+// Bestand etwas geaendert hat - loadHorses()/loadEmpiricalDeviations() holen
+// dank fetchAllRowsCached/den Freshness-Pruefungen in aller Regel nur die
+// billige Pruefung, keinen vollen Datensatz. Die aktuelle Stute-/Hengst-
+// Auswahl bleibt erhalten (searchableSelect haelt selectedId unabhaengig von
+// setItems(), siehe js/searchableSelect.js) - selectedMare()/selectedStallion()
+// loesen sie bei jedem Render ohnehin frisch per id auf.
+// Nur bei tatsaechlich geaenderten Daten wird neu gerendert - sonst bleibt
+// die Seite unangetastet (kein Zuruecksetzen von Scrollpositionen o.ae.).
+async function refreshHorses() {
+  const horsesChanged = await loadHorses();
+  const empiricalChanged = await loadEmpiricalDeviations({ render: false });
+  if (!horsesChanged && !empiricalChanged) return;
+  renderInzuchtResult();
+  if (activeTab === 'auswahl') renderBestMatches();
 }
 
 // Fragt das Verpaarungs-Log-Setting des eingeloggten Kontos ab (nur bei
@@ -179,20 +198,41 @@ async function loadDefaultBreeds() {
 // siehe computeEmpiricalDeviations in js/verpaarung.js. Läuft im Hintergrund
 // und rendert bei Erfolg neu, damit die Seite nicht auf diesen Extra-Request
 // warten muss.
-async function loadEmpiricalDeviations() {
-  const [liveRes, refRes] = await Promise.all([
-    fetchAllRows((from, to) => supabaseClient.from('horses').select(STATS_SELECT_FIELDS).order('id').range(from, to)),
-    fetchAllRows((from, to) => supabaseClient.from('foal_reference_data').select(REFERENCE_SELECT_FIELDS).order('id').range(from, to)),
-  ]);
-  const liveHorses = liveRes.data || [];
-  const liveIds = new Set(liveHorses.map((h) => h.id));
-  // Nur Referenzdatensätze ergänzen, die NICHT schon live in "horses" stehen
-  // (Duplikate über horse_id vermeiden) - das deckt genau die Pferde ab, die
-  // inzwischen gelöscht wurden oder nie als eigenes Pferd behalten wurden
-  // (kept=false).
-  const extraFromReference = (refRes.data || []).filter((r) => !r.horse_id || !liveIds.has(r.horse_id));
-  const combined = [...liveHorses, ...extraFromReference];
-  if (!combined.length) return;
+// Stand der zuletzt verarbeiteten Daten (siehe loadWithCache in
+// js/horsesCache.js). Liefert true, wenn neue Daten uebernommen wurden;
+// "render: false" unterdrueckt das Neu-Rendern am Ende (der 5-Minuten-
+// Refresh rendert selbst, einmal fuer beide Ladefunktionen).
+let empiricalVersion = null;
+
+async function loadEmpiricalDeviations({ render = true } = {}) {
+  // Zwei Tabellen: "combined" kommt nur dann aus dem Zwischenspeicher bzw.
+  // bleibt unveraendert, wenn BEIDE unveraendert sind.
+  const res = await loadWithCache({
+    cacheKey: 'zuchtplaner_empirical_v1',
+    tables: ['horses', 'foal_reference_data'],
+    sig: STATS_SELECT_FIELDS + '|' + REFERENCE_SELECT_FIELDS,
+    knownVersion: empiricalVersion,
+    fetchFresh: async () => {
+      const [liveRes, refRes] = await Promise.all([
+        fetchAllRows((from, to) => supabaseClient.from('horses').select(STATS_SELECT_FIELDS).order('id').range(from, to)),
+        fetchAllRows((from, to) => supabaseClient.from('foal_reference_data').select(REFERENCE_SELECT_FIELDS).order('id').range(from, to)),
+      ]);
+      const liveHorses = liveRes.data || [];
+      const liveIds = new Set(liveHorses.map((h) => h.id));
+      // Nur Referenzdatensätze ergänzen, die NICHT schon live in "horses" stehen
+      // (Duplikate über horse_id vermeiden) - das deckt genau die Pferde ab, die
+      // inzwischen gelöscht wurden oder nie als eigenes Pferd behalten wurden
+      // (kept=false).
+      const extraFromReference = (refRes.data || []).filter((r) => !r.horse_id || !liveIds.has(r.horse_id));
+      return { value: [...liveHorses, ...extraFromReference], error: liveRes.error || refRes.error };
+    },
+  });
+  if (res.unchanged) return false;
+  const combined = res.value || [];
+  // Bei einem Ladefehler wie bisher mit den vorhandenen Teildaten weiterrechnen,
+  // aber die Version NICHT merken - der naechste Refresh versucht es erneut.
+  if (!res.error) empiricalVersion = res.version;
+  if (!combined.length) return false;
   empiricalDeviations = computeEmpiricalDeviations(combined);
   flaxenLookup = new Map();
   for (const h of combined) {
@@ -213,8 +253,11 @@ async function loadEmpiricalDeviations() {
       flaxenChildrenByName.get(key).push(h);
     }
   }
-  renderInzuchtResult();
-  if (activeTab === 'auswahl') renderBestMatches();
+  if (render) {
+    renderInzuchtResult();
+    if (activeTab === 'auswahl') renderBestMatches();
+  }
+  return true;
 }
 
 // Farbwünsche mit Dreifach-Zustand (Nutzerwunsch "Farben ausschließen, doppelt
@@ -285,20 +328,41 @@ function ensureHorsesLoaded() {
   return horsesLoadPromise;
 }
 
+// Eine gemeinsame Freshness-Pruefung (ueber den ganzen "horses"-Bestand,
+// nicht nur Stuten/Hengste getrennt) fuer beide Haelften zusammen - etwas
+// konservativer (eine Aenderung bei einem Hengst loest auch einen Refetch
+// der Stuten aus), aber mit nur 1 billigen Abfrage statt 2 (siehe
+// js/horsesCache.js). Liefert true, wenn neue Daten uebernommen wurden.
+let horsesVersion = null;
+
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');
-  const [mareRes, stallionRes] = await Promise.all([
-    fetchAllRows((from, to) => supabaseClient.from('horses').select(HORSE_SELECT_FIELDS).eq('gender', 'Stute').order('name').range(from, to)),
-    fetchAllRows((from, to) => supabaseClient.from('horses').select(HORSE_SELECT_FIELDS).eq('gender', 'Hengst').order('name').range(from, to)),
-  ]);
+  const res = await loadWithCache({
+    cacheKey: 'zuchtplaner_horses_v1',
+    tables: ['horses'],
+    sig: HORSE_SELECT_FIELDS,
+    knownVersion: horsesVersion,
+    fetchFresh: async () => {
+      const [mareRes, stallionRes] = await Promise.all([
+        fetchAllRows((from, to) => supabaseClient.from('horses').select(HORSE_SELECT_FIELDS).eq('gender', 'Stute').order('name').range(from, to)),
+        fetchAllRows((from, to) => supabaseClient.from('horses').select(HORSE_SELECT_FIELDS).eq('gender', 'Hengst').order('name').range(from, to)),
+      ]);
+      return { value: { mares: mareRes.data, stallions: stallionRes.data }, error: mareRes.error || stallionRes.error };
+    },
+  });
 
-  if (mareRes.error || stallionRes.error) {
+  if (res.error) {
     errorEl.textContent =
-      'Konnte Pferde nicht laden: ' + (mareRes.error?.message || stallionRes.error?.message) +
+      'Konnte Pferde nicht laden: ' + res.error.message +
       ' (falls die Seite ohne Login genutzt wird, muss dafür einmalig die Migration ' +
       '"migration_005_public_read_access.sql" im Supabase-Dashboard ausgeführt worden sein).';
-    return;
+    return false;
   }
+  errorEl.textContent = '';
+  if (res.unchanged) return false;
+  horsesVersion = res.version;
+  const mareRes = { data: res.value.mares };
+  const stallionRes = { data: res.value.stallions };
 
   // Nur Pferde mit ZZL (Zuchtzulassung) - der Zuchtplaner soll bei der
   // tatsächlichen Zuchtplanung helfen, das setzt eine bereits erteilte
@@ -316,8 +380,12 @@ async function loadHorses() {
   mareBreedFilter.setHorses(mares);
   stallionBreedFilter.setHorses(stallions);
   auswahlStallionBreedFilter.setHorses(stallions);
-  fillHorseSelect(mareSelect, mares, '#mare-owner-select', mareBreedFilter);
-  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select', stallionBreedFilter);
+  // Schlagwort-Filter mitgeben: beim Refresh darf eine bereits gesetzte
+  // Schlagwort-Auswahl die Liste nicht ploetzlich wieder aufweiten (beim
+  // ersten Laden sind die Filter neutral, dort also unveraendert).
+  fillHorseSelect(mareSelect, mares, '#mare-owner-select', mareBreedFilter, mareTagFilter);
+  fillHorseSelect(stallionSelect, stallions, '#stallion-owner-select', stallionBreedFilter, stallionTagFilter);
+  return true;
 }
 
 // Behält die bisherige Auswahl bei, falls sie unter den neuen Optionen
