@@ -63,6 +63,23 @@ async function init() {
   // 2026-09-09 - zurück vom bisherigen Lazy-Load bei der ersten Eingabe im
   // Suchfeld, siehe ensureHorsesLoaded/loadHorses weiter unten).
   await ensureHorsesLoaded();
+  wireHorsesAutoRefresh(refreshHorses);
+}
+
+// Alle 5 Minuten (nur waehrend der Tab sichtbar ist, siehe
+// wireHorsesAutoRefresh in js/horsesCache.js) pruefen, ob sich am Bestand
+// etwas geaendert hat - loadHorses() meldet bei unveraenderten Daten false
+// (dann bleibt die Seite unangetastet). Nur bei neuen Daten das gewaehlte
+// Pferd (per id) neu aufloesen und neu rendern; ein inzwischen geloeschtes
+// Pferd leert die Auswahl.
+async function refreshHorses() {
+  const prevId = currentHorse?.id;
+  if (!(await loadHorses())) return;
+  if (prevId != null) {
+    currentHorse = allHorses.find((h) => h.id === prevId) || null;
+    if (!currentHorse) { horseSelect.clear(); return; } // loest onHorseSelect('') und damit das Neu-Rendern aus
+  }
+  renderFohlenTab();
 }
 
 // Übernimmt dieselbe Rassen-Präferenz wie die Einstellungen in der
@@ -87,18 +104,39 @@ function ensureHorsesLoaded() {
   return horsesLoadPromise;
 }
 
+// Stand der zuletzt geladenen Daten (siehe loadWithCache in
+// js/horsesCache.js). loadHorses() liefert true, wenn neue Daten uebernommen
+// wurden.
+let horsesVersion = null;
+
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');
-  const { data, error } = await fetchAllRows((from, to) =>
-    supabaseClient.from('horses').select(FOHLENPRUEFUNG_FIELDS).order('name').range(from, to));
-  if (error) {
+  // Gleicher Cache-Eintrag wie das Zuchtbuch (identische Spaltenliste, siehe
+  // js/zuchtbuch.js): wer beide Seiten nacheinander oeffnet, laedt den
+  // grossen Datensatz nur einmal. Weicht die Spaltenliste einer Seite
+  // spaeter ab, trennt die Signatur (sig) die Staende sauber.
+  const res = await loadWithCache({
+    cacheKey: 'zuchtbuch_horses_v1',
+    tables: ['horses'],
+    sig: FOHLENPRUEFUNG_FIELDS,
+    knownVersion: horsesVersion,
+    fetchFresh: async () => {
+      const { data, error } = await fetchAllRows((from, to) =>
+        supabaseClient.from('horses').select(FOHLENPRUEFUNG_FIELDS).order('name').range(from, to));
+      return { value: data, error };
+    },
+  });
+  if (res.error) {
     errorEl.textContent =
-      'Konnte Pferde nicht laden: ' + error.message +
+      'Konnte Pferde nicht laden: ' + res.error.message +
       ' (falls die Seite ohne Login genutzt wird, muss dafür einmalig die Migration ' +
       '"migration_005_public_read_access.sql" im Supabase-Dashboard ausgeführt worden sein).';
-    return;
+    return false;
   }
-  allHorses = data || [];
+  errorEl.textContent = '';
+  if (res.unchanged) return false;
+  horsesVersion = res.version;
+  allHorses = res.value || [];
 
   // Reverse-Index (wer nennt diesen Namen als Vater/Mutter) - für die
   // Flaxen-Trägerschaft über Nachkommen (siehe hasFlaxenTrait in
@@ -122,6 +160,7 @@ async function loadHorses() {
 
   const owners = [...new Set(allHorses.map((h) => h.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
   const ownerSel = document.querySelector('#owner-select');
+  const prevOwner = ownerSel.value; // bei einem Refresh die bisherige Auswahl behalten
   ownerSel.innerHTML = '<option value="">Alle</option>';
   for (const owner of owners) {
     const opt = document.createElement('option');
@@ -129,8 +168,10 @@ async function loadHorses() {
     opt.textContent = owner;
     ownerSel.appendChild(opt);
   }
+  ownerSel.value = owners.includes(prevOwner) ? prevOwner : '';
   breedFilter.setHorses(allHorses);
   populateHorseSelect();
+  return true;
 }
 
 function populateHorseSelect() {
