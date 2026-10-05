@@ -722,6 +722,11 @@ const HORSE_TAG_OPTIONS = [
   { label: 'GBH', color: 'var(--tag-purple)' },
   { label: 'LastFoal', color: 'var(--info)' },
   { label: '???', color: 'var(--tag-slate)' },
+  { label: 'Exen', color: 'var(--tag-brown)' },
+  { label: 'FT', color: 'var(--tag-teal)' },
+  { label: 'Turnier', color: 'var(--tag-cyan)' },
+  { label: 'Beritt', color: 'var(--tag-navy)' },
+  { label: 'Zucht', color: 'var(--tag-pink)' },
 ];
 
 function tagColor(label) {
@@ -748,15 +753,27 @@ function tagsBadgesHtml(tags) {
   }).join('');
 }
 
-// Bei mehreren Schlagwörtern bestimmt normalerweise das erste die
-// Zellfarbe - Ausnahme: stehen "Verkauf" UND "Reserviert" gleichzeitig
-// (Nutzerwunsch), gewinnt immer "Reserviert", unabhängig von der
-// Reihenfolge im tags-Array.
+// Rangfolge für die Zeileneinfärbung (Nutzerwunsch): trägt ein Pferd mehrere
+// dieser Schlagwörter, gewinnt das weiter vorn stehende - unabhängig von der
+// Reihenfolge im tags-Array. Damit gilt auch "Reserviert schlägt Verkauf".
+// Ein einfärbendes Schlagwort, das hier nicht steht (derzeit nur "???"),
+// kommt nach allen genannten.
+const TAG_TINT_PRIORITY = ['Reserviert', 'Verkauf', 'Exen', 'GBH', 'LastFoal', 'Bleibt'];
+
+// Diese Schlagwörter färben Zeilen/Zellen gar nicht ein (Nutzerwunsch) - sie
+// erscheinen nur als Badge/in der Legende und im Schlagwort-Text. Ein Pferd,
+// das nur solche Schlagwörter trägt, bekommt keine Zeilenfarbe.
+const NO_ROW_TINT_TAG_LABELS = ['FT', 'Turnier', 'Beritt', 'Zucht'];
+
+// Bestimmt das Schlagwort, dessen Farbe die Zelle bekommt: unter den
+// einfärbenden Schlagwörtern (NO_ROW_TINT_TAG_LABELS zählen nicht) das mit
+// der höchsten Stelle in TAG_TINT_PRIORITY. null = keine Zeilenfarbe.
 function dominantTagLabel(tags) {
   if (!tags || !tags.length) return null;
-  const labels = tags.map((t) => t.label);
-  if (labels.includes('Verkauf') && labels.includes('Reserviert')) return 'Reserviert';
-  return tags[0].label;
+  const rank = (l) => { const i = TAG_TINT_PRIORITY.indexOf(l); return i === -1 ? TAG_TINT_PRIORITY.length : i; };
+  const labels = tags.map((t) => t.label).filter((l) => !NO_ROW_TINT_TAG_LABELS.includes(l));
+  if (!labels.length) return null;
+  return labels.reduce((best, l) => (rank(l) < rank(best) ? l : best));
 }
 
 // Für die eigene "Schlagwort"-Spalte in Tabellen (statt der Badges direkt
@@ -770,7 +787,9 @@ function dominantTagLabel(tags) {
 // liegende Zellen beim Scrollen durch.
 function tagCellStyle(tags) {
   if (!tags || !tags.length) return '';
-  const color = tagColor(dominantTagLabel(tags));
+  const label = dominantTagLabel(tags);
+  if (!label) return '';
+  const color = tagColor(label);
   return `background:color-mix(in srgb, ${color} 20%, var(--surface)); color:${color}; font-weight:600;`;
 }
 
