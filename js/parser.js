@@ -727,6 +727,7 @@ const HORSE_TAG_OPTIONS = [
   { label: 'Turnier', color: 'var(--tag-cyan)' },
   { label: 'Beritt', color: 'var(--tag-navy)' },
   { label: 'Zucht', color: 'var(--tag-pink)' },
+  { label: 'Training', color: 'var(--tag-olive)' },
 ];
 
 function tagColor(label) {
@@ -763,7 +764,7 @@ const TAG_TINT_PRIORITY = ['Reserviert', 'Verkauf', 'Exen', 'GBH', 'LastFoal', '
 // Diese Schlagwörter färben Zeilen/Zellen gar nicht ein (Nutzerwunsch) - sie
 // erscheinen nur als Badge/in der Legende und im Schlagwort-Text. Ein Pferd,
 // das nur solche Schlagwörter trägt, bekommt keine Zeilenfarbe.
-const NO_ROW_TINT_TAG_LABELS = ['FT', 'Turnier', 'Beritt', 'Zucht'];
+const NO_ROW_TINT_TAG_LABELS = ['FT', 'Turnier', 'Beritt', 'Zucht', 'Training'];
 
 // Bestimmt das Schlagwort, dessen Farbe die Zelle bekommt: unter den
 // einfärbenden Schlagwörtern (NO_ROW_TINT_TAG_LABELS zählen nicht) das mit
