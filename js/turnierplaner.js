@@ -72,8 +72,19 @@ function ensureHorsesLoaded() {
 
 async function loadHorses() {
   const errorEl = document.querySelector('#load-error');
-  const { data, error } = await fetchAllRows((from, to) =>
-    supabaseClient.from('horses').select(TOURNAMENT_SELECT_FIELDS).order('name').range(from, to));
+  // Zwischengespeichert (js/horsesCache.js): nur eine winzige Aktualitaets-Pruefung,
+  // der volle Abruf nur wenn sich am Bestand etwas geaendert hat.
+  const { value: data, error } = await loadWithCache({
+    cacheKey: 'turnierplaner_horses_v1',
+    tables: ['horses'],
+    sig: TOURNAMENT_SELECT_FIELDS,
+    knownVersion: null,
+    fetchFresh: async () => {
+      const { data: rows, error: fetchError } = await fetchAllRows((from, to) =>
+        supabaseClient.from('horses').select(TOURNAMENT_SELECT_FIELDS).order('name').range(from, to));
+      return { value: rows, error: fetchError };
+    },
+  });
   if (error) {
     errorEl.textContent =
       'Konnte Pferde nicht laden: ' + error.message +
