@@ -85,6 +85,10 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
   let mixBreeds = []; // Rassen, die in den Mischungen der geladenen Rasselosen vorkommen
   let allowedMix = new Set();
   let initialized = false;
+  // Festgesetzte Rasse (siehe setSelection): bleibt eingeschlossen und laesst
+  // sich weder abwaehlen noch ausschliessen.
+  let locked = null;
+  let lockedHint = '';
 
   const stateOf = (b) => (selected.has(b) ? 'include' : excluded.has(b) ? 'exclude' : 'neutral');
 
@@ -94,10 +98,12 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
       updateToggleLabel();
       return;
     }
-    panel.innerHTML = '<div class="checkdrop-empty">Klick = nur diese, zweiter Klick = ausschließen</div>' + breeds.map((b) => {
+    panel.innerHTML = '<div class="checkdrop-empty">Klick = nur diese, zweiter Klick = ausschließen</div>' +
+      (locked ? `<div class="checkdrop-empty">${escapeHtmlBreed(lockedHint)}</div>` : '') + breeds.map((b) => {
       const isRasselos = b === RASSELOS_LABEL;
       const state = stateOf(b);
-      let html = `<div class="checkdrop-item checkdrop-tristate" data-value="${escapeHtmlBreed(b)}" data-state="${state}" role="button" tabindex="0">
+      const isLocked = b === locked;
+      let html = `<div class="checkdrop-item checkdrop-tristate${isLocked ? ' checkdrop-locked' : ''}" data-value="${escapeHtmlBreed(b)}" data-state="${state}"${isLocked ? ` data-locked="true" aria-disabled="true" title="${escapeHtmlBreed(lockedHint)}"` : ''} role="button" tabindex="0">
         <span class="tristate-box"></span><span>${escapeHtmlBreed(b)}</span>
       </div>`;
       // Schwellenwert/erlaubte Mix-Rassen gelten nur, solange "Rasselos"
@@ -125,6 +131,7 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
   // der Schlagwort-Filter und die Farbwünsche im Zuchtplaner).
   function cycle(item) {
     const b = item.dataset.value;
+    if (b === locked) return; // festgesetzte Rasse bleibt eingeschlossen
     const state = stateOf(b);
     selected.delete(b);
     excluded.delete(b);
@@ -208,7 +215,24 @@ function createBreedFilter(rootEl, { onChange, initialSelection } = {}) {
       } else {
         selected = new Set([...selected].filter((b) => breeds.includes(b)));
         excluded = new Set([...excluded].filter((b) => breeds.includes(b)));
+        if (locked && !breeds.includes(locked)) { locked = null; lockedHint = ''; }
       }
+      render();
+    },
+    // Setzt die Auswahl von aussen neu (z.B. Partner-Rasse = Rasse des gewaehlten
+    // Pferds): nur die uebergebenen Rassen (soweit vorhanden) sind eingeschlossen,
+    // alle anderen neutral. Mit lock (Rasse) laesst sich diese Rasse danach nicht
+    // mehr abwaehlen/ausschliessen - weitere Rassen bleiben frei dazu waehlbar.
+    // Ohne lock (null) ist alles wieder frei aenderbar. Ruft onChange NICHT auf
+    // (der Aufrufer rendert ohnehin selbst neu).
+    setSelection(list, { lock = null, hint = '' } = {}) {
+      selected = new Set((list || []).filter((b) => breeds.includes(b)));
+      excluded = new Set();
+      locked = lock && selected.has(lock) ? lock : null;
+      lockedHint = locked ? hint : '';
+      rasselosThreshold = '';
+      allowedMix = new Set();
+      initialized = true;
       render();
     },
     matches(horse) {

@@ -817,6 +817,8 @@ function updateRichtungsLabels() {
     : `Bester Ausgleich der Stuten-Schwächen (${metricLabel})`;
 }
 
+let lastPartnerSeedKey = null;
+
 async function renderBestMatches() {
   await ensureHorsesLoaded();
   const container = document.querySelector('#auswahl-result');
@@ -838,6 +840,20 @@ async function renderBestMatches() {
 
   fillOwnerSelect('#hengst-besitzer-select', candidatePool);
   auswahlStallionBreedFilter.setHorses(candidatePool);
+  // Partner-Rasse: bei jedem neu gewaehlten Pferd (oder Richtungswechsel) ist
+  // zunaechst NUR dessen Rasse eingeschlossen (Nutzerwunsch 2026-10-14). Sie
+  // laesst sich nicht abwaehlen, ausser bei Rasselos; weitere Rassen kann man
+  // frei dazunehmen. Spaetere Aenderungen am Filter bleiben bis zur naechsten
+  // Pferdeauswahl erhalten.
+  const partnerSeedKey = `${richtung}|${primary.id ?? primary.name}|${primary.breed ?? ''}`;
+  if (partnerSeedKey !== lastPartnerSeedKey) {
+    lastPartnerSeedKey = partnerSeedKey;
+    const isRasselos = primary.breed === 'Rasselos';
+    auswahlStallionBreedFilter.setSelection(primary.breed ? [primary.breed] : [], {
+      lock: isRasselos ? null : primary.breed,
+      hint: `Rasse ${isHengstRichtung ? 'des Hengstes' : 'der Stute'} - nur bei Rasselos abwählbar`,
+    });
+  }
   const besitzerFilter = document.querySelector('#hengst-besitzer-select').value;
   const filteredCandidates = candidatePool
     .filter((h) => auswahlStallionBreedFilter.matches(h))
