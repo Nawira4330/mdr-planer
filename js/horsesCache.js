@@ -102,14 +102,18 @@ async function fetchTableFreshness(table) {
 //     { value, error }) und das Ergebnis zwischenspeichern.
 // Ist die Freshness-Pruefung nicht moeglich (version === null): beim ersten
 // Laden (knownVersion == null) wird sicherheitshalber normal voll geladen,
-// bei einem spaeteren Refresh dagegen NICHTS getan - sonst wuerde eine
-// gestoerte Pruefung bei jedem Takt einen teuren Volldownload ausloesen.
+// bei einem spaeteren Refresh dagegen standardmaessig NICHTS getan - sonst
+// wuerde eine gestoerte Pruefung bei jedem Takt einen teuren Volldownload
+// ausloesen (Auto-Refresh im Planer). Wer den Aufruf nach einer EIGENEN
+// Aenderung macht (Uebersicht der Pferdedatenbank) und dann zwingend frische
+// Daten braucht, uebergibt unknownMeansUnchanged: false - dann wird bei
+// nicht moeglicher Pruefung voll geladen.
 // "sig" (z.B. die Select-Spaltenliste) verhindert, dass nach einer
 // Code-Aenderung veraltete Zeilen mit anderen Spalten aus dem Cache kommen.
-async function loadWithCache({ cacheKey, tables, sig, knownVersion, fetchFresh }) {
+async function loadWithCache({ cacheKey, tables, sig, knownVersion, fetchFresh, unknownMeansUnchanged = true }) {
   const freshnesses = await Promise.all(tables.map((t) => fetchTableFreshness(t)));
   const version = freshnesses.every(Boolean) ? freshnesses.map((f) => `${f.updatedAt}|${f.count}`).join('#') : null;
-  if (version === null && knownVersion != null) return { unchanged: true, version: knownVersion, value: null, error: null };
+  if (version === null && knownVersion != null && unknownMeansUnchanged) return { unchanged: true, version: knownVersion, value: null, error: null };
   if (version !== null) {
     if (version === knownVersion) return { unchanged: true, version, value: null, error: null };
     const cached = await horsesCacheGet(cacheKey);
